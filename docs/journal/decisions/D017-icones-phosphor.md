@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-06 |
-| **Statut** | Acceptée |
+| **Statut** | Acceptée · mode d'intégration remplacé par [D026](D026-icones-phosphor-embarquees.md) |
 | **Décideurs** | À compléter |
 | **Liens** | Issue #1 · [Charte graphique](../../conception/05-charte-graphique.md) |
 

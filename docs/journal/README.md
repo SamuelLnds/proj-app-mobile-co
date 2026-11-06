@@ -46,7 +46,7 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D014](decisions/D014-stockage-local-sqlite.md) | Stockage local de l'app : SQLite, avec TanStack Query pour le réseau | 2026-11-06 | Acceptée |
 | [D015](decisions/D015-emplacement-simulateur.md) | Le simulateur de panneaux est placé dans `tools/` | 2026-11-06 | Acceptée |
 | [D016](decisions/D016-typographie-red-hat.md) | Typographie : famille Red Hat | 2026-11-06 | Acceptée |
-| [D017](decisions/D017-icones-phosphor.md) | Icônes : Phosphor, via la bibliothèque React Native | 2026-11-06 | Acceptée |
+| [D017](decisions/D017-icones-phosphor.md) | Icônes : Phosphor, via la bibliothèque React Native | 2026-11-06 | Remplacée en partie par D026 |
 | [D018](decisions/D018-palette-et-themes.md) | Palette accessible, thèmes clair et sombre | 2026-11-06 | Acceptée |
 | [D019](decisions/D019-outil-de-maquettage.md) | Outil de maquettage : design system et canevas intégrés à Claude | 2026-11-06 | Acceptée |
 | [D020](decisions/D020-inventaire-des-panneaux.md) | Inventaire des panneaux : fichier de seed et rattachement automatique | 2026-11-06 | Acceptée |
@@ -55,4 +55,5 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D023](decisions/D023-broker-mosquitto-auto-heberge.md) | Broker : Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel | 2026-11-06 | Acceptée |
 | [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
 | [D025](decisions/D025-integration-interface.md) | Intégration de l'interface sur données d'exemple, couche de données remplaçable | 2026-11-06 | Acceptée |
+| [D026](decisions/D026-icones-phosphor-embarquees.md) | Icônes Phosphor embarquées dans le code de l'app | 2026-11-06 | Acceptée |
 
