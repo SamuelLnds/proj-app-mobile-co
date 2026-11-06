@@ -1,0 +1,21 @@
+# Droits par client (section 6.3 de la cartographie technique).
+# Chaque client ne publie et ne lit que ce dont il a besoin.
+
+# API : tous les topics du projet
+user api
+topic readwrite solar/#
+
+# Simulateur : mesures des panneaux, et rôle de l'objet du site en mode simulation (D024)
+user simulator
+topic write solar/SITE01/panels/+/measurements
+topic readwrite solar/SITE01/measurements
+topic write solar/SITE01/status
+topic write solar/SITE01/state
+topic read solar/SITE01/setpoint
+
+# Objet du site (ESP32)
+user device-site01
+topic write solar/SITE01/measurements
+topic write solar/SITE01/status
+topic write solar/SITE01/state
+topic read solar/SITE01/setpoint

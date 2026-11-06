@@ -3,7 +3,7 @@ import { loadConfig } from "../src/config";
 
 /** Environnement valide de référence, copié puis modifié par chaque test. */
 const validEnv = {
-  MQTT_URL: "mqtts://xxxx.s1.eu.hivemq.cloud:8883",
+  MQTT_URL: "mqtt://127.0.0.1:1883",
   MQTT_USERNAME: "simulator",
   MQTT_PASSWORD: "secret-de-test",
   SITE_CODE: "SITE01",
@@ -13,7 +13,7 @@ describe("loadConfig", () => {
   it("lit les variables obligatoires et donne des listes vides pour les panneaux facultatifs", () => {
     const config = loadConfig({ ...validEnv });
 
-    expect(config.MQTT_URL).toBe("mqtts://xxxx.s1.eu.hivemq.cloud:8883");
+    expect(config.MQTT_URL).toBe("mqtt://127.0.0.1:1883");
     expect(config.MQTT_USERNAME).toBe("simulator");
     expect(config.MQTT_PASSWORD).toBe("secret-de-test");
     expect(config.SITE_CODE).toBe("SITE01");

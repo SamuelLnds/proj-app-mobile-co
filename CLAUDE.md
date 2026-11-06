@@ -4,7 +4,7 @@ Règles du projet pour tous les membres du groupe et leurs assistants. Elles s'a
 
 ## Le projet
 
-Application mobile de supervision et de pilotage d'un petit parc solaire (module « Applications mobiles et connectées », M2 DFS). Un ESP32 simulé dans Wokwi publie ses mesures en MQTT (HiveMQ Cloud) ; une API Node enregistre tout dans PostgreSQL + TimescaleDB ; une app Expo affiche les données et envoie des consignes (répartition de la production entre batterie et réseau).
+Application mobile de supervision et de pilotage d'un petit parc solaire (module « Applications mobiles et connectées », M2 DFS). Un ESP32 simulé dans Wokwi publie ses mesures en MQTT (broker Mosquitto auto-hébergé) ; une API Node enregistre tout dans PostgreSQL + TimescaleDB ; une app Expo affiche les données et envoie des consignes (répartition de la production entre batterie et réseau).
 
 ## Sources de vérité
 

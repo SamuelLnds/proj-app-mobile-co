@@ -1,5 +1,6 @@
 # Services d'infrastructure du développement local.
-# Les variables POSTGRES_* sont lues dans infra/.env (copie de .env.example, ignorée par Git).
+# Les variables sont lues dans infra/.env (copie de .env.example, ignorée par Git).
+# Avant le premier démarrage du broker : pnpm mqtt:setup
 
 services:
   db:
@@ -25,5 +26,32 @@ services:
       retries: 10
       start_period: 10s
 
+  mqtt:
+    # Broker MQTT auto-hébergé (D023) : identifiants, droits par client, TLS sur 8883
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      # Sans TLS, accessible depuis cette machine seulement
+      - "127.0.0.1:${MQTT_PORT:-1883}:1883"
+      # Avec TLS, pour l'ESP32 dans Wokwi (via un tunnel TCP)
+      - "${MQTTS_PORT:-8883}:8883"
+    volumes:
+      - ./mosquitto/config:/src/config:ro
+      - ./mosquitto/generated:/src/generated:ro
+      - solar-mqtt-data:/mosquitto/data
+    # Copie la configuration avec les permissions exigées par Mosquitto, puis le démarre
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /etc/mosquitto-solar &&
+        cp /src/config/mosquitto.conf /src/config/acl /etc/mosquitto-solar/ &&
+        cp /src/generated/passwd /src/generated/ca.crt /src/generated/server.crt /src/generated/server.key /etc/mosquitto-solar/ &&
+        chown -R mosquitto:mosquitto /etc/mosquitto-solar /mosquitto/data &&
+        chmod 0700 /etc/mosquitto-solar &&
+        chmod 0600 /etc/mosquitto-solar/* &&
+        exec mosquitto -c /etc/mosquitto-solar/mosquitto.conf
+
 volumes:
   solar-db-data:
+  solar-mqtt-data:

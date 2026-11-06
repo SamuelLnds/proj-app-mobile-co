@@ -10,9 +10,11 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "pnpm db:up && concurrently --names api,simulator --prefix-colors cyan,magenta --kill-others-on-fail \"pnpm --filter api dev\" \"pnpm --filter simulator dev\"",
+    "dev": "pnpm db:up && pnpm mqtt:up && concurrently --names api,simulator --prefix-colors cyan,magenta --kill-others-on-fail \"pnpm --filter api dev\" \"pnpm --filter simulator dev\"",
     "build": "pnpm -r --if-present build",
     "db:up": "docker compose -f infra/docker-compose.yml up -d db",
+    "mqtt:setup": "node infra/mosquitto/setup.mjs",
+    "mqtt:up": "docker compose -f infra/docker-compose.yml up -d mqtt",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "lint": "pnpm -r --if-present lint && eslint .",
     "typecheck": "pnpm -r --if-present typecheck",

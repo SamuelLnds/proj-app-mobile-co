@@ -23,3 +23,6 @@ firmware/**/include/secrets.h
 Thumbs.db
 *.log
 .claude/settings.local.json
+
+# Mots de passe hachés et certificats générés pour Mosquitto
+infra/mosquitto/generated/
