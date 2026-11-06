@@ -7,6 +7,24 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    # Versions bloquées volontairement (voir la pull request du socle, #66)
+    ignore:
+      # 0.45 plante au chargement sous Windows : rester en 0.44
+      - dependency-name: argon2
+        versions: [">=0.45.0"]
+      # TypeScript 7 n'est pas encore accepté par typescript-eslint
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # React, React Native et Expo suivent la version du SDK Expo :
+      # ils se mettent à jour avec « npx expo install --fix », pas un par un
+      - dependency-name: react
+      - dependency-name: react-dom
+      - dependency-name: react-test-renderer
+      - dependency-name: react-native
+      - dependency-name: "react-native-*"
+      - dependency-name: expo
+      - dependency-name: "expo-*"
+      - dependency-name: jest-expo
     groups:
       # Mises à jour mineures et correctifs regroupés en une seule pull request
       minor-and-patch:
