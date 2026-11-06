@@ -1,0 +1,222 @@
+<title>Banc d'essai des sujets</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout : une fiche de banc de mesure. En-tête court, barre de filtres collante, puis une ligne par sujet (score à gauche, description, critères alignés, notes). */
+:root{
+  --bg:#f5f7f6; --surface:#ffffff; --ink:#15211f; --muted:#5b6b67; --line:#d9e1df;
+  --accent:#0e7c6b; --accent-soft:#dff1ed; --amber:#b86e00; --off:#e7ecea; --off-ink:#a3b0ac;
+  --good:#1f8a4c; --mid:#b86e00; --low:#b3412e;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#162020; --ink:#e4ecea; --muted:#94a6a1; --line:#2a3836;
+  --accent:#3cc5ad; --accent-soft:#163a34; --amber:#f0a83a; --off:#1d2826; --off-ink:#4f605c;
+  --good:#4fc982; --mid:#f0a83a; --low:#ee7a66; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#162020; --ink:#e4ecea; --muted:#94a6a1; --line:#2a3836;
+  --accent:#3cc5ad; --accent-soft:#163a34; --amber:#f0a83a; --off:#1d2826; --off-ink:#4f605c;
+  --good:#4fc982; --mid:#f0a83a; --low:#ee7a66; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,40px);letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 10px;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:24px 0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.box p{margin:0 0 8px}
+.box ul{margin:0;padding-left:18px}
+.box li{margin:2px 0}
+.k{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent)}
+.top{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.top a{display:inline-flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);background:var(--accent-soft);border-radius:999px;padding:4px 12px;font-weight:600}
+.top a span{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.bar label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 12px var(--mono);border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.chip:focus-visible,select:focus-visible,.top a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font:12px var(--mono);color:var(--muted);margin-left:auto}
+.list{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:64px minmax(0,1fr) 300px 150px;gap:16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;scroll-margin-top:80px}
+.row.fav{border-color:var(--accent)}
+.total{font:800 26px/1 var(--display);font-variant-numeric:tabular-nums;text-align:center}
+.total small{display:block;font:11px var(--mono);color:var(--muted);margin-top:4px}
+.t-hi{color:var(--good)} .t-mid{color:var(--mid)} .t-lo{color:var(--low)}
+.name{font:700 17px/1.25 var(--display);margin:0}
+.theme{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--amber);margin-bottom:2px}
+.pitch{margin:4px 0 8px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13.5px;color:var(--muted)}
+.dl dt{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;padding-top:2px;color:var(--ink)}
+.dl dd{margin:0;min-width:0}
+.crit{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.c{font:600 11px var(--mono);text-align:center;border-radius:4px;padding:4px 2px;background:var(--off);color:var(--off-ink)}
+.c.on{background:var(--accent-soft);color:var(--accent)}
+.c.on.rgpd{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+.scores{display:flex;flex-direction:column;gap:5px}
+.s{display:grid;grid-template-columns:86px 1fr 14px;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.s b{font:600 12px var(--mono);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.track{height:6px;border-radius:3px;background:var(--off);overflow:hidden}
+.fill{height:100%;background:var(--accent);border-radius:3px}
+.note{grid-column:2 / -1;font-size:13.5px;border-top:1px dashed var(--line);padding-top:8px;margin-top:-4px}
+.note b{color:var(--ink)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 16px;font-size:13.5px}
+.legend span.c{display:inline-block;min-width:66px;margin-right:6px}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
+@media (max-width:900px){
+  .row{grid-template-columns:52px minmax(0,1fr)}
+  .crit,.scores{grid-column:2}
+  .note{grid-column:1 / -1;margin-top:0}
+  .total{font-size:22px}
+}
+@media (prefers-reduced-motion:no-preference){.fill{transition:width .3s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Banc d'essai des sujets</h1>
+    <p class="lede">30 sujets possibles pour le projet « Applications mobiles et connectées », évalués sur la carte du module : les cinq gestes (lire, afficher, alerter au seuil, synchroniser, démo), les sept chapitres, et la faisabilité en 45 h 30 avec Wokwi, MQTT et Expo. Les notes sont une proposition de départ, à discuter en groupe.</p>
+  </header>
+
+  <section class="meta" aria-label="Méthode">
+    <div class="box">
+      <h2>Comment lire les notes</h2>
+      <p>Quatre axes notés de 1 à 5, total sur 20 :</p>
+      <ul>
+        <li><span class="k">Conformité</span> proximité avec les exemples du module (météo, plantes, domotique, présence), cinq gestes faisables, chapitres couverts</li>
+        <li><span class="k">Technique</span> richesse : actionneurs, temps réel, carte, volume, sécurité</li>
+        <li><span class="k">Faisabilité</span> simulable dans Wokwi, métier maîtrisable en 45 h 30</li>
+        <li><span class="k">Originalité</span> se démarquer des projets attendus</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h2>Les huit critères</h2>
+      <div class="legend">
+        <div><span class="c on">Seuil</span>une alerte au seuil a du sens</div>
+        <div><span class="c on">Action</span>commande retour vers l'objet</div>
+        <div><span class="c on">Carte</span>localisation, plan ou carte utile</div>
+        <div><span class="c on">Flux</span>source de données réelles publique</div>
+        <div><span class="c on">Terrain</span>usage hors ligne, réseau intermittent</div>
+        <div><span class="c on">Batterie</span>objet autonome, économie d'énergie</div>
+        <div><span class="c on">Volume</span>assez de mesures pour une base temporelle</div>
+        <div><span class="c on rgpd">RGPD</span>données personnelles en jeu (enjeu, pas défaut)</div>
+      </div>
+    </div>
+    <div class="box">
+      <h2>En tête du classement</h2>
+      <div class="top" id="top"></div>
+      <p style="margin-top:12px;font-size:13.5px;color:var(--muted)">Les sujets proches des exemples du module (serre, éclairage, présence BLE) ont la meilleure conformité mais une originalité plus faible. Le compromis est à trancher en groupe.</p>
+    </div>
+  </section>
+
+  <div class="bar" role="toolbar" aria-label="Filtres">
+    <label for="sort">Trier par
+      <select id="sort">
+        <option value="total">Total</option>
+        <option value="C">Conformité</option>
+        <option value="T">Technique</option>
+        <option value="F">Faisabilité</option>
+        <option value="O">Originalité</option>
+        <option value="id">Numéro</option>
+      </select>
+    </label>
+    <label for="theme">Thème
+      <select id="theme"><option value="">Tous</option></select>
+    </label>
+    <div class="chips" id="chips" aria-label="Critères exigés"></div>
+    <span class="count" id="count" aria-live="polite"></span>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <footer>
+    Sources citées : Open-Meteo, RTE éCO2mix (via ODRÉ) et EcoWatt, Hub'Eau (hydrométrie, piézométrie, qualité et température des cours d'eau), Vigicrues, Atmo France, sensor.community, PVGIS (Commission européenne), GBFS, Géorisques, USGS, data.gouv.fr. Vérifier les conditions d'utilisation et les quotas de chaque API avant de s'engager. Composants Wokwi : un potentiomètre peut toujours remplacer une grandeur analogique absente du catalogue.
+  </footer>
+</div>
+
+<script>
+const CRIT = [
+  ["seuil","Seuil"],["action","Action"],["carte","Carte"],["flux","Flux"],
+  ["terrain","Terrain"],["energie","Batterie"],["volume","Volume"],["rgpd","RGPD"]
+];
+const D = [
+ {id:1,nom:"Serre connectée",theme:"Domotique",pitch:"Arrosage, aération et éclairage d'une serre ; l'arrosage est retardé si la pluie est prévue.",wokwi:"Humidité du sol (potentiomètre), DHT22, LDR, relais pompe, servo d'aération",src:"Open-Meteo (pluie prévue, évapotranspiration)",f:"seuil action flux energie volume",C:5,T:4,F:5,O:2,note:"Exemple direct du module. Peu surprenant : la différence se fera sur la qualité d'exécution."},
+ {id:2,nom:"Air des salles de classe",theme:"Bâtiment",pitch:"CO2, température et occupation par salle ; ventilation pilotée et conseil d'ouvrir ou non les fenêtres selon l'air extérieur.",wokwi:"Capteur de gaz (CO2 simulé), DHT22, PIR, relais ventilation, LED d'état",src:"Atmo France (indice extérieur), sensor.community",f:"seuil action carte flux volume",C:5,T:4,F:5,O:3,note:"Seuil reconnu (1 000 ppm de CO2), sujet concret. Le plan du bâtiment sert de carte."},
+ {id:3,nom:"Pilotage carbone du logement",theme:"Énergie",pitch:"Décaler automatiquement chauffe-eau et recharge de voiture vers les heures où l'électricité est la plus décarbonée.",wokwi:"Relais (charges), potentiomètres (courant), écran OLED",src:"RTE éCO2mix via ODRÉ (intensité carbone au quart d'heure), EcoWatt (compte RTE requis)",f:"seuil action flux volume rgpd",C:4,T:5,F:4,O:5,note:"Original et d'actualité. La logique de décision (quand déclencher) est à concevoir soi-même."},
+ {id:4,nom:"Présence et salles par badge BLE",theme:"Bâtiment",pitch:"Le téléphone sert de badge : occupation des salles en temps réel, réservation, accès.",wokwi:"ESP32 réel obligatoire (BLE non simulé), PIR, relais de gâche",src:"Aucune (données internes)",f:"seuil action carte rgpd",C:5,T:5,F:3,O:3,note:"Exemple du module. RGPD et rejeu BLE très formateurs, mais matériel réel et development build Expo obligatoires."},
+ {id:5,nom:"Éclairage domestique adaptatif",theme:"Domotique",pitch:"Scènes LED selon la présence et la luminosité, calées sur le lever et le coucher du soleil.",wokwi:"NeoPixel, LDR, PIR, potentiomètre (variateur)",src:"Open-Meteo (lever et coucher du soleil)",f:"seuil action flux",C:5,T:3,F:5,O:2,note:"Démo visuelle immédiate, mais peu de données à stocker et à analyser."},
+ {id:6,nom:"Alarme maison",theme:"Domotique",pitch:"Intrusion et ouvertures détectées, armement à distance, notification push critique.",wokwi:"PIR, contact d'ouverture (bouton), clavier, buzzer, LCD",src:"Aucune",f:"seuil action energie rgpd",C:4,T:4,F:5,O:2,note:"Temps réel et sécurité naturels. Sujet très classique."},
+ {id:7,nom:"Énergie d'un petit bâtiment",theme:"Énergie",pitch:"Consommation par circuit, coût selon le tarif du jour, délestage pendant les pointes.",wokwi:"Potentiomètres (pinces de courant), relais",src:"Jours Tempo et EcoWatt (RTE), éCO2mix",f:"seuil action flux volume rgpd",C:4,T:4,F:4,O:3,note:"Gros volume de mesures. Recoupe en partie le sujet 3."},
+ {id:8,nom:"Chaîne du froid en restauration",theme:"Commerce",pitch:"Surveiller les frigos d'un restaurant, alerter avec escalade, produire le registre de températures exigé par l'HACCP.",wokwi:"DS18B20 (plusieurs sondes), contact de porte, buzzer",src:"Aucune",f:"seuil terrain volume",C:4,T:3,F:5,O:3,note:"Utilité réelle (obligation réglementaire), mais peu spectaculaire."},
+ {id:9,nom:"Cave à vin",theme:"Domotique",pitch:"Température et hygrométrie stables, ventilation pilotée, inventaire des bouteilles.",wokwi:"DHT22, DS18B20, relais ventilateur",src:"Open-Meteo (conditions extérieures)",f:"seuil action flux",C:4,T:2,F:5,O:2,note:"Simple, trop proche d'une station météo d'intérieur."},
+ {id:10,nom:"Fuite d'eau et coupure",theme:"Domotique",pitch:"Détecter une fuite ou une consommation anormale et fermer la vanne, à distance ou automatiquement.",wokwi:"Capteur d'eau (bouton), potentiomètre (débit), relais (électrovanne)",src:"Aucune",f:"seuil action energie volume",C:4,T:3,F:5,O:3,note:"Scénario d'alerte fort et facile à démontrer."},
+ {id:11,nom:"Animaux de compagnie",theme:"Domotique",pitch:"Gamelle pesée, distribution programmée, chatière qui détecte l'animal.",wokwi:"HX711, servo, PIR",src:"Aucune",f:"seuil action energie",C:3,T:3,F:4,O:3,note:"Sympathique, peu de profondeur côté données."},
+ {id:12,nom:"Détection de chute",theme:"Santé",pitch:"Détecter une chute ou une immobilité prolongée et prévenir un proche.",wokwi:"MPU6050, bouton SOS, buzzer",src:"Jeux de données publics de chutes (ex. SisFall), rejoués",f:"seuil energie volume rgpd",C:3,T:4,F:4,O:3,note:"Données de santé : RGPD lourd. Algorithme de détection délicat à rendre fiable."},
+ {id:13,nom:"Parking intelligent",theme:"Ville",pitch:"Places libres en temps réel sur une carte, guidage, statistiques d'occupation.",wokwi:"HC-SR04 par place, LED rouge et verte, LCD",src:"Open data parkings temps réel de certaines métropoles (ex. Nantes Métropole)",f:"seuil carte flux volume",C:4,T:4,F:4,O:3,note:"Carte et temps réel parlants, peu d'actionneurs."},
+ {id:14,nom:"Poubelles et tournées",theme:"Ville",pitch:"Niveau de remplissage des bacs et tournée de collecte optimisée.",wokwi:"HC-SR04, HX711, DHT22",src:"Open data points de collecte (data.gouv.fr)",f:"seuil carte flux terrain energie",C:4,T:4,F:4,O:3,note:"Algorithme d'itinéraire valorisant. Pas d'actionneur."},
+ {id:15,nom:"Station air de quartier",theme:"Ville",pitch:"Réseau de stations citoyennes comparées aux stations officielles.",wokwi:"Capteur de gaz, DHT22, particules fines (potentiomètre)",src:"sensor.community, Atmo France",f:"seuil carte flux energie volume",C:5,T:4,F:5,O:3,note:"Prolongement direct de la station météo, avec des données de référence réelles."},
+ {id:16,nom:"Surveillance de crues",theme:"Environnement",pitch:"Capteurs de niveau d'eau de quartier croisés avec les stations officielles, alertes graduées, sirène.",wokwi:"HC-SR04 (niveau), pluviomètre (bouton), buzzer (sirène)",src:"Hub'Eau hydrométrie (temps réel), Vigicrues",f:"seuil action carte flux terrain energie volume",C:4,T:5,F:4,O:4,note:"Connectivité intermittente et alertes critiques très réalistes."},
+ {id:17,nom:"Éclairage public adaptatif",theme:"Ville",pitch:"Lampadaires allumés selon la présence et la luminosité, avec signalement automatique des pannes.",wokwi:"NeoPixel, PIR, LDR",src:"Open-Meteo (lever et coucher du soleil)",f:"seuil action carte flux energie volume",C:5,T:3,F:5,O:3,note:"Domotique LED transposée à la ville. Économie d'énergie facile à chiffrer."},
+ {id:18,nom:"Vélos en libre-service",theme:"Mobilité",pitch:"Disponibilité des stations et prédiction ; une borne simulée détecte les vélos présents.",wokwi:"Boutons ou capteurs de présence par emplacement, LED",src:"GBFS (ex. Vélib')",f:"seuil carte flux volume",C:3,T:3,F:4,O:3,note:"Données réelles riches, mais l'objet joue un petit rôle."},
+ {id:19,nom:"Bruit urbain",theme:"Ville",pitch:"Carte du bruit et alertes de dépassement près des écoles ou des bars.",wokwi:"Niveau sonore simulé (potentiomètre), micro du téléphone en complément",src:"Peu de flux publics en temps réel",f:"seuil carte volume rgpd",C:3,T:3,F:3,O:3,note:"Traitement du signal audio difficile à simuler de façon crédible."},
+ {id:20,nom:"Îlots de chaleur urbains",theme:"Ville",pitch:"Réseau de capteurs de température en ville, carte des îlots de chaleur, conseils en période de canicule.",wokwi:"DHT22, DS18B20 (température de surface), LDR, relais brumisateur en option",src:"Open-Meteo (référence et prévisions de canicule)",f:"seuil carte flux energie volume",C:5,T:4,F:5,O:4,note:"Station météo transposée à la ville, carte très parlante. Actionneur seulement en option."},
+ {id:21,nom:"Nappes et puits",theme:"Environnement",pitch:"Niveau des puits et forages en période de sécheresse, comparé aux piézomètres officiels.",wokwi:"HC-SR04 (niveau), relais pompe",src:"Hub'Eau piézométrie",f:"seuil action carte flux terrain energie",C:4,T:3,F:4,O:4,note:"Sujet d'actualité (sécheresses), données officielles disponibles."},
+ {id:22,nom:"Parc solaire",theme:"Énergie",pitch:"Carte du parc, production réelle comparée à l'attendue, panneaux défaillants, interventions des techniciens hors ligne, trackers.",wokwi:"LDR, DS18B20, potentiomètres (tension, courant), servo + MPU6050 (tracker), relais",src:"Open-Meteo (rayonnement), PVGIS",f:"seuil action carte flux terrain energie volume rgpd",C:4,T:5,F:4,O:4,note:"Carte et hors ligne très naturels. Le métier est à simplifier (modèle de production basique)."},
+ {id:23,nom:"Petite éolienne",theme:"Énergie",pitch:"Production, vitesse du vent, mise en sécurité (frein) en cas de rafales.",wokwi:"Potentiomètre (anémomètre), servo (frein), LED",src:"Open-Meteo (vent, rafales)",f:"seuil action flux energie volume",C:4,T:3,F:4,O:3,note:"Proche du parc solaire, avec moins de matière."},
+ {id:24,nom:"Ruche connectée",theme:"Agriculture",pitch:"Poids, température du couvain, détection d'essaimage.",wokwi:"HX711, DS18B20, DHT22",src:"Open-Meteo",f:"seuil carte flux terrain energie",C:4,T:3,F:4,O:4,note:"Original et attachant, peu d'actionneurs."},
+ {id:25,nom:"Irrigation par parcelles",theme:"Agriculture",pitch:"Vannes par parcelle pilotées selon l'humidité du sol, l'évapotranspiration et la pluie prévue, sur la carte de l'exploitation.",wokwi:"Humidité du sol (potentiomètres), relais (vannes), débit (potentiomètre)",src:"Open-Meteo (pluie, évapotranspiration)",f:"seuil action carte flux terrain energie volume",C:5,T:5,F:4,O:3,note:"La serre à l'échelle d'une exploitation : très complet, assez classique."},
+ {id:26,nom:"Qualité des rivières",theme:"Environnement",pitch:"Température, turbidité et pH de cours d'eau comparés aux stations officielles ; alertes pour la pêche ou la baignade.",wokwi:"DS18B20, potentiomètres (pH, turbidité)",src:"Hub'Eau (température et qualité des cours d'eau)",f:"seuil carte flux terrain energie volume",C:4,T:3,F:4,O:4,note:"Données officielles riches, capteurs simulés approximatifs."},
+ {id:27,nom:"Cuves et silos",theme:"Agriculture",pitch:"Niveau de cuves (fioul, eau de pluie, grain) et déclenchement du réapprovisionnement.",wokwi:"HC-SR04, HX711, relais pompe",src:"Open-Meteo (pluie pour les récupérateurs d'eau)",f:"seuil action flux energie",C:4,T:3,F:5,O:2,note:"Simple et utile, peu original."},
+ {id:28,nom:"Maintenance prédictive",theme:"Industrie",pitch:"Vibrations et température de machines, détection d'anomalies avant la panne, arrêt de sécurité.",wokwi:"MPU6050, DS18B20, relais (arrêt machine)",src:"Jeux de données publics de roulements (ex. CWRU), rejoués",f:"seuil action volume",C:3,T:5,F:3,O:4,note:"Très technique (signal, anomalies), mais s'éloigne des exemples du module."},
+ {id:29,nom:"Talus et ouvrages",theme:"Environnement",pitch:"Inclinaison et vibrations d'un talus, d'un mur ou d'un pont, alerte en cas de mouvement.",wokwi:"MPU6050, pluviomètre (bouton)",src:"Géorisques (API), USGS (séismes)",f:"seuil carte flux terrain energie volume",C:3,T:4,F:4,O:4,note:"Original. Une détection fine est difficile à rendre crédible en simulation."},
+ {id:30,nom:"Logistique sous température",theme:"Logistique",pitch:"Colis ou camions frigorifiques : température, chocs, position, preuve du respect de la chaîne du froid.",wokwi:"DS18B20, MPU6050, position simulée par le firmware",src:"Aucune (trajets simulés)",f:"seuil carte terrain energie volume rgpd",C:3,T:5,F:3,O:3,note:"Connectivité intermittente réaliste. Géolocalisation des chauffeurs : enjeu RGPD."}
+];
+D.forEach(d=>{d.flags=new Set(d.f.split(" "));d.total=d.C+d.T+d.F+d.O});
+
+const AX=[["C","Conformité"],["T","Technique"],["F","Faisabilité"],["O","Originalité"]];
+const $=s=>document.querySelector(s);
+const state={sort:"total",theme:"",req:new Set()};
+
+const themes=[...new Set(D.map(d=>d.theme))].sort((a,b)=>a.localeCompare(b,"fr"));
+themes.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;$("#theme").append(o)});
+CRIT.forEach(([k,l])=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=l;b.setAttribute("aria-pressed","false");b.dataset.k=k;
+  b.addEventListener("click",()=>{state.req.has(k)?state.req.delete(k):state.req.add(k);b.setAttribute("aria-pressed",state.req.has(k));render()});$("#chips").append(b)});
+$("#sort").addEventListener("change",e=>{state.sort=e.target.value;render()});
+$("#theme").addEventListener("change",e=>{state.theme=e.target.value;render()});
+
+const tcls=t=>t>=17?"t-hi":t>=15?"t-mid":"t-lo";
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const top=[...D].sort((a,b)=>b.total-a.total||b.O-a.O).slice(0,7);
+$("#top").innerHTML=top.map(d=>`<a href="#s${d.id}">${esc(d.nom)}<span>${d.total}/20</span></a>`).join("");
+
+function render(){
+  let rows=D.filter(d=>(!state.theme||d.theme===state.theme)&&[...state.req].every(k=>d.flags.has(k)));
+  const k=state.sort;
+  rows.sort((a,b)=>k==="id"?a.id-b.id:(b[k]-a[k])||(b.total-a.total)||a.id-b.id);
+  $("#count").textContent=`${rows.length} sujet${rows.length>1?"s":""} sur 30`;
+  if(!rows.length){$("#list").innerHTML=`<div class="empty box">Aucun sujet ne coche tous ces critères. Retirez un critère pour élargir.</div>`;return}
+  $("#list").innerHTML=rows.map(d=>`
+  <article class="row" id="s${d.id}">
+    <div class="total ${tcls(d.total)}">${d.total}<small>/20</small></div>
+    <div>
+      <div class="theme">${d.id}. ${esc(d.theme)}</div>
+      <h3 class="name">${esc(d.nom)}</h3>
+      <p class="pitch">${esc(d.pitch)}</p>
+      <dl class="dl"><dt>Objet</dt><dd>${esc(d.wokwi)}</dd><dt>Données</dt><dd>${esc(d.src)}</dd></dl>
+    </div>
+    <div class="crit" aria-label="Critères">${CRIT.map(([c,l])=>`<span class="c ${d.flags.has(c)?"on":""} ${c==="rgpd"?"rgpd":""}" title="${l} : ${d.flags.has(c)?"oui":"non"}">${d.flags.has(c)?"":"<span style='position:absolute;left:-9999px'>pas de </span>"}${l}</span>`).join("")}</div>
+    <div class="scores">${AX.map(([a,l])=>`<div class="s"><span>${l}</span><div class="track"><div class="fill" style="width:${d[a]*20}%"></div></div><b>${d[a]}</b></div>`).join("")}</div>
+    <div class="note"><b>À retenir :</b> ${esc(d.note)}</div>
+  </article>`).join("");
+}
+render();
+</script>
