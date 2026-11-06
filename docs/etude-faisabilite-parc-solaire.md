@@ -176,7 +176,7 @@ flowchart LR
 | Couche | Technologie | Rôle |
 |---|---|---|
 | Firmware | C++ (Arduino ou ESP-IDF) via PlatformIO | Lecture des capteurs, publication MQTT, tampon hors ligne |
-| Simulation | Wokwi (+ Wokwi IoT Gateway pour joindre le broker local) | Exécution des firmwares sans matériel |
+| Simulation | Wokwi (réseau `Wokwi-GUEST` via la passerelle publique gratuite, qui ne joint qu'Internet) | Exécution des firmwares sans matériel |
 | Broker | Mosquitto | Transport MQTT, TLS, ACL par appareil |
 | Ingestion | Service Node.js (TypeScript) | Validation des messages, déduplication, écriture en base |
 | Base | TimescaleDB + PostGIS | Mesures (tables temporelles), modèle métier, géométries |
@@ -495,7 +495,7 @@ Le volume du module est de 45 h 30 de cours. Le travail personnel s'y ajoute.
 
 | Risque | Probabilité | Impact | Parade |
 |---|---|---|---|
-| Wokwi ne joint pas le broker local | Moyenne | Fort | Tester le Wokwi IoT Gateway en phase 0 ; repli sur un broker exposé avec TLS et authentification |
+| Wokwi ne joint pas le broker local (la passerelle privée est payante) | Certaine en offre gratuite | Fort | Broker hébergé sur Internet avec TLS et authentification (petit serveur ou HiveMQ Cloud), ou abonnement Wokwi Hobby pendant la durée du projet |
 | Dispersion entre trop de pistes | Forte | Fort | Ordre de priorité socle → valorisant → bonus ; revue à chaque fin de phase |
 | La 3D consomme le planning | Forte | Moyen | Budget fixé, preuve de concept précoce, repli sur la carte 2,5D |
 | Performances 3D insuffisantes sur téléphone | Moyenne | Moyen | Instances, niveau de détail, rendu à la demande ; option B en repli |
@@ -513,7 +513,8 @@ Le volume du module est de 45 h 30 de cours. Le travail personnel s'y ajoute.
 - [ ] Accord du groupe sur le sujet et sur la place de la 3D.
 - [ ] Validation du sujet par l'enseignant (le métier est une variante de « station météo »).
 - [ ] Taille définitive du groupe (binôme ou trinôme), qui conditionne le périmètre.
-- [ ] Test de connexion Wokwi → Mosquitto local (Wokwi IoT Gateway).
+- [ ] Hébergement du broker joignable depuis Wokwi (serveur public, HiveMQ Cloud, ou abonnement Wokwi Hobby pour la passerelle privée).
+- [ ] Comportement de la veille profonde dans Wokwi (un retour communautaire indique qu'elle se comporte comme un redémarrage).
 - [ ] Conditions d'utilisation et limites de requêtes d'Open-Meteo et de PVGIS.
 - [ ] Choix de la bibliothèque de carte (MapLibre ou `react-native-maps`) et des fonds de carte hors ligne.
 - [ ] Faisabilité de la preuve de concept 3D sur les téléphones du groupe.
