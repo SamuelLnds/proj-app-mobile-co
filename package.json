@@ -1,0 +1,24 @@
+{
+  "name": "proj-app-mobile-co",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Supervision et pilotage d'un petit parc solaire (app mobile, API, simulateur, firmware)",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "echo \"Aucun service à lancer pour l'instant : sera complété avec la base, l'API et le simulateur.\"",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "format": "pnpm -r --if-present format",
+    "format:check": "pnpm -r --if-present format:check"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}
