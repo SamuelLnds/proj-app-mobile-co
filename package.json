@@ -10,7 +10,7 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "echo \"Aucun service à lancer pour l'instant : sera complété avec la base, l'API et le simulateur.\"",
+    "dev": "pnpm db:up && concurrently --names api,simulator --prefix-colors cyan,magenta --kill-others-on-fail \"pnpm --filter api dev\" \"pnpm --filter simulator dev\"",
     "build": "pnpm -r --if-present build",
     "db:up": "docker compose -f infra/docker-compose.yml up -d db",
     "db:down": "docker compose -f infra/docker-compose.yml down",
@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
