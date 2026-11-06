@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Annule les exécutions obsolètes d'une même branche
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, types et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Base PostgreSQL + TimescaleDB pour les tests de l'API qui exigent une base
+    services:
+      db:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: solar
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: solar
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U solar -d solar"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Valeurs de test uniquement, sans aucun secret
+      DATABASE_URL: postgres://solar:ci-password@localhost:5432/solar
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # La version de pnpm vient du champ packageManager du package.json racine
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
