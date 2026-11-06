@@ -6,7 +6,7 @@ Documents de référence du projet. En cas de contradiction entre un document et
 |---|---|---|
 | 1. Modélisation | [01-modele-donnees.md](01-modele-donnees.md) · [02-uml.md](02-uml.md) · [03-cartographie-technique.md](03-cartographie-technique.md) | À relire par le groupe |
 | 2. Besoins fonctionnels | [04-besoins-fonctionnels.md](04-besoins-fonctionnels.md) · [issues GitHub](https://github.com/SamuelLnds/proj-app-mobile-co/issues) | Terminé |
-| 3. Maquettage | Typographie, icônes, couleurs, écrans | À faire |
+| 3. Maquettage | [05-charte-graphique.md](05-charte-graphique.md) · design system et maquettes (liens dans le document) | À relire par le groupe |
 | 4. Règles de travail | `CLAUDE.md`, dossier `.claude/` | À faire |
 | 5. Socle | Dépendances, découpage du dépôt, Dependabot, CI/CD | À faire |
 

@@ -98,6 +98,7 @@ erDiagram
     float latitude
     float longitude
     int rated_power_w
+    panel_source source
   }
   SITE_MEASUREMENTS {
     timestamptz time PK
@@ -149,6 +150,7 @@ erDiagram
 | `user_role` | `operator`, `viewer` | L'exploitant (`operator`) peut envoyer des consignes, le lecteur (`viewer`) consulte seulement |
 | `mobile_platform` | `android`, `ios` | Plateforme du téléphone qui a enregistré un jeton de notification |
 | `device_status` | `unknown`, `online`, `offline` | `unknown` tant que l'objet n'a jamais rien publié |
+| `panel_source` | `seed`, `discovered`, `manual` | Origine du panneau : données de démonstration, détecté automatiquement à la réception de ses mesures, ou ajouté par un exploitant ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `control_mode` | `manual`, `automatic`, `discharge` | Modes manuel, automatique et restitution (voir l'étude de faisabilité, section 4) |
 | `setpoint_status` | `sent`, `applied`, `partial`, `rejected`, `no_response` | Voir le diagramme d'états dans [02-uml.md](02-uml.md) |
 | `rejection_reason` | `battery_full`, `battery_low`, `charge_limit`, `invalid_setpoint` | Raison donnée par l'objet quand il n'applique pas tout ou partie d'une consigne |
@@ -217,9 +219,15 @@ Dans le socle, chaque site a exactement un objet. Le modèle autorise plusieurs 
 | `site_id` | `uuid` | non | | FK → `sites.id`, `ON DELETE CASCADE` | Site d'appartenance |
 | `code` | `text` | non | | `^P[0-9]{2,3}$`, unique par site | Code utilisé dans les topics MQTT (`P07`) |
 | `name` | `text` | non | | 1 à 100 caractères | Nom affiché (« Rangée A, panneau 7 ») |
-| `latitude` | `double precision` | non | | entre -90 et 90 | Position sur la carte |
-| `longitude` | `double precision` | non | | entre -180 et 180 | Position sur la carte |
-| `rated_power_w` | `integer` | non | | > 0 | Puissance maximale du panneau (W) |
+| `latitude` | `double precision` | oui | | entre -90 et 90 ; renseignée **si et seulement si** `longitude` l'est | Position sur la carte ; vide tant que le panneau n'est pas positionné |
+| `longitude` | `double precision` | oui | | entre -180 et 180 | Position sur la carte |
+| `rated_power_w` | `integer` | non | | > 0 | Puissance maximale du panneau (W) ; 200 par défaut pour un panneau détecté, modifiable par l'exploitant |
+| `source` | `panel_source` | non | `'manual'` | | Origine du panneau |
+
+**Inventaire des panneaux** ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) :
+- les panneaux de démonstration sont créés par le seed (`source = 'seed'`) ;
+- quand l'API reçoit les mesures d'un code inconnu sur un site connu, elle crée le panneau avec `source = 'discovered'`, `name` = son code, sans position et avec la puissance par défaut (`INSERT … ON CONFLICT (site_id, code) DO NOTHING`), dans la limite de `MAX_PANELS_PER_SITE` ;
+- un panneau sans position est dit **non positionné** : absent de la carte, il apparaît dans la liste « Panneaux à positionner » ; l'exploitant le positionne (position GPS du téléphone), le renomme, corrige sa puissance ou le supprime.
 
 ### `site_measurements` (table TimescaleDB)
 
@@ -324,6 +332,7 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TYPE user_role AS ENUM ('operator', 'viewer');
 CREATE TYPE mobile_platform AS ENUM ('android', 'ios');
 CREATE TYPE device_status AS ENUM ('unknown', 'online', 'offline');
+CREATE TYPE panel_source AS ENUM ('seed', 'discovered', 'manual');
 CREATE TYPE control_mode AS ENUM ('manual', 'automatic', 'discharge');
 CREATE TYPE setpoint_status AS ENUM ('sent', 'applied', 'partial', 'rejected', 'no_response');
 CREATE TYPE rejection_reason AS ENUM ('battery_full', 'battery_low', 'charge_limit', 'invalid_setpoint');
@@ -381,10 +390,12 @@ CREATE TABLE panels (
   site_id       uuid NOT NULL REFERENCES sites (id) ON DELETE CASCADE,
   code          text NOT NULL CHECK (code ~ '^P[0-9]{2,3}$'),
   name          text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 100),
-  latitude      double precision NOT NULL CHECK (latitude BETWEEN -90 AND 90),
-  longitude     double precision NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+  latitude      double precision CHECK (latitude BETWEEN -90 AND 90),
+  longitude     double precision CHECK (longitude BETWEEN -180 AND 180),
   rated_power_w integer NOT NULL CHECK (rated_power_w > 0),
-  UNIQUE (site_id, code)
+  source        panel_source NOT NULL DEFAULT 'manual',
+  UNIQUE (site_id, code),
+  CHECK ((latitude IS NULL) = (longitude IS NULL))
 );
 
 -- Measurements (TimescaleDB hypertables)
@@ -452,7 +463,7 @@ CREATE UNIQUE INDEX alerts_active_unique_idx
 
 ## 8. Données de démonstration
 
-Insérées par un script de *seed* (étape 5). Les **mots de passe ne figurent pas ici** : ils sont lus dans des variables d'environnement du script.
+Insérées par un script de *seed* (étape 5), à partir du fichier versionné `infra/seed/demo-site.json` (site, objet, panneaux). Les **mots de passe ne figurent pas ici** : ils sont lus dans des variables d'environnement du script. Les panneaux du seed ont `source = 'seed'`.
 
 | Donnée | Valeur |
 |---|---|

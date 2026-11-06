@@ -218,6 +218,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `@tanstack/react-query` | Appels à l'API, rafraîchissement périodique |
 | `expo-sqlite` | Stockage local des dernières données (disponibles sans réseau) |
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
+| `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push |
 | `react-native-maps` | Carte |
@@ -271,7 +272,7 @@ apps/mobile/
 | `tsx` | Exécution |
 | `@solar/contracts` (interne) | Format des messages et topics |
 
-Comportement : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo.
+Comportement : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo. La variable `EXTRA_PANELS` (par exemple `P21`) ajoute des panneaux absents du seed : l'API les détecte et les crée à l'état « non positionné », ce qui permet de démontrer l'inventaire ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)).
 
 ### 5.5 `firmware/site-device` (plus tard)
 
@@ -453,6 +454,8 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 | GET | `/v1/sites/{id}/measurements` | viewer | `from`, `to` (ISO, écart ≤ 7 jours), `interval` (`1m`, `5m`, `15m`, `1h`) | 200 liste de points moyennés |
 | GET | `/v1/sites/{id}/panels` | viewer | | 200 liste de `PanelSummary` |
 | GET | `/v1/panels/{id}` | viewer | | 200 `PanelDetail` |
+| PATCH | `/v1/panels/{id}` | **operator** | `{ name?, latitude?, longitude?, ratedPowerW? }` (latitude et longitude ensemble) | 200 `PanelDetail` |
+| DELETE | `/v1/panels/{id}` | **operator** | | 204 (supprime aussi ses mesures et alertes) |
 | GET | `/v1/panels/{id}/measurements` | viewer | `from`, `to`, `interval` | 200 liste de points moyennés |
 | POST | `/v1/sites/{id}/setpoints` | **operator** | `{ mode, batteryShare }` | 202 `Setpoint` |
 | GET | `/v1/sites/{id}/setpoints` | viewer | `limit`, `before` | 200 page de `Setpoint` |
@@ -466,7 +469,7 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 | `SiteSummary` | `id`, `code`, `name`, `latitude`, `longitude`, `deviceStatus`, `latestMeasurement` (ou `null`), `activeAlertCount` |
 | `SiteDetail` | Champs de `SiteSummary` + `peakPowerW`, `batteryCapacityWh`, `maxChargePowerW`, `currentSetpoint` (ou `null`), `controlState` (dernier `ControlState` reçu, ou `null`), `deviceLastSeenAt` |
 | `LatestMeasurement` | `timestamp`, `irradiance`, `production`, `expectedProduction`, `temperature`, `batteryLevel`, `batteryPower`, `gridPower`, `mode`, `simulatedFault` |
-| `PanelSummary` | `id`, `code`, `name`, `latitude`, `longitude`, `status` (`normal`, `alert`, `no_data`), `latestProduction`, `latestTemperature` |
+| `PanelSummary` | `id`, `code`, `name`, `latitude` et `longitude` (ou `null` si non positionné), `placed`, `source` (`seed`, `discovered`, `manual`), `status` (`normal`, `alert`, `no_data`), `latestProduction`, `latestTemperature` |
 | `PanelDetail` | Champs de `PanelSummary` + `ratedPowerW`, `expectedProduction`, `activeAlerts` |
 | `Setpoint` | `id`, `mode`, `requestedBatteryShare`, `status`, `appliedBatteryShare`, `rejectionReason`, `author` (`{ id, name }`), `createdAt`, `respondedAt` |
 | `Alert` | `id`, `type`, `severity`, `message`, `status`, `site` (`{ id, name }`), `panel` (`{ id, name }` ou `null`), `startedAt`, `endedAt` |
@@ -494,6 +497,8 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `MIN_IRRADIANCE_FOR_ALERT_W_M2` | 100 | API |
 | `LOW_PRODUCTION_DURATION_S` | 60 | API |
 | `BATTERY_SHARE_STEP_PCT` | 10 | App, API |
+| `DEFAULT_PANEL_RATED_POWER_W` | 200 | API (panneau détecté) |
+| `MAX_PANELS_PER_SITE` | 200 | API (limite de la création automatique) |
 | Paramètres du site de démo | crête 4 000 W, batterie 10 000 Wh, charge max 3 000 W, facteur 4.0 | Seed, objet |
 
 ## 9. Variables d'environnement
@@ -513,6 +518,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` | | **oui** (mot de passe) |
 | simulator | `SITE_CODE` | `SITE01` | non |
 | simulator | `FAULTY_PANELS` | `P07,P12` | non |
+| simulator | `EXTRA_PANELS` | `P21` | non |
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 

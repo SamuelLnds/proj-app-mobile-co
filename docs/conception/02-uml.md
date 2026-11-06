@@ -42,11 +42,12 @@ flowchart LR
     UC12["UC12 Appliquer une consigne"]
     UC13["UC13 Signaler sa présence"]
     UC14["UC14 Publier les mesures des panneaux"]
+    UC17["UC17 Positionner ou corriger un panneau"]
   end
 
   viewer --- UC01 & UC02 & UC03 & UC04 & UC05 & UC06 & UC08 & UC09 & UC10
   operator -. hérite de .-> viewer
-  operator --- UC07
+  operator --- UC07 & UC17
   device --- UC11 & UC12 & UC13
   simulator --- UC14
   UC10 --- expo
@@ -67,9 +68,11 @@ flowchart LR
 | UC11 | Publier les mesures du site | Objet | Toutes les 5 s | Socle |
 | UC12 | Appliquer une consigne | Objet | Application avec limites de sécurité, réponse avec l'état appliqué | Socle |
 | UC13 | Signaler sa présence | Objet | Statut `online` à la connexion, `offline` via le Last Will | Socle |
-| UC14 | Publier les mesures des panneaux | Simulateur | Toutes les 10 s par panneau | Socle |
+| UC14 | Publier les mesures des panneaux | Simulateur | Toutes les 10 s par panneau ; un code inconnu crée un panneau non positionné | Socle |
 | UC15 | Consulter la vue 3D | Lecteur | Panneaux en 3D colorés par statut | Bonus |
 | UC16 | Piloter l'orientation des panneaux | Exploitant | Mode automatique ou position de sécurité du tracker | Bonus |
+| UC17 | Positionner ou corriger un panneau | Exploitant | Placer un panneau détecté à la position GPS du téléphone, corriger son nom ou sa puissance, le supprimer | Socle |
+| UC18 | Ajouter un panneau sur le terrain | Exploitant | Scanner le QR code d'un panneau, capter la position, enregistrer | Bonus |
 
 ### Description détaillée de UC07 « Envoyer une consigne »
 
@@ -129,6 +132,8 @@ classDiagram
     +float latitude
     +float longitude
     +int ratedPowerW
+    +PanelSource source
+    +isPlaced() bool
   }
   class SiteMeasurement {
     +DateTime time
@@ -363,6 +368,42 @@ sequenceDiagram
   end
 ```
 
+### 4.6 Détection puis positionnement d'un panneau (UC14, UC17)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant S as Simulateur
+  participant B as Broker HiveMQ
+  participant API as API
+  participant DB as Base
+  actor E as Exploitant
+  participant App as App mobile
+
+  S->>B: PUBLISH solar/SITE01/panels/P21/measurements
+  B->>API: Mesure du panneau P21
+  API->>DB: Panneau P21 connu sur SITE01 ?
+  alt Panneau inconnu et limite par site non atteinte
+    API->>DB: INSERT panels (code P21, name P21, source discovered, sans position, 200 W)
+    API->>DB: INSERT panel_measurements
+  else Limite par site atteinte
+    API->>API: Message ignoré, avertissement dans les logs
+  end
+
+  E->>App: Carte, vue Liste, section « Panneaux à positionner »
+  App->>API: GET /sites/{id}/panels
+  API-->>App: P21 avec placed = false
+  E->>App: Se place devant le panneau, « Placer ici »
+  App->>App: Position GPS du téléphone (expo-location)
+  App->>API: PATCH /panels/{id} (latitude, longitude, éventuellement name et ratedPowerW)
+  API->>API: Vérification du rôle operator et des bornes
+  API->>DB: UPDATE panels
+  API-->>App: 200 panneau positionné
+  App-->>E: P21 apparaît sur la carte
+```
+
+Un panneau supprimé par erreur réapparaît comme « détecté » à sa prochaine mesure : c'est voulu, la suppression sert à retirer un panneau qui ne publie plus.
+
 ## 5. Diagrammes d'états
 
 ### 5.1 Consigne (`setpoint_status`)
@@ -437,6 +478,8 @@ L'ensoleillement utilisé pour les panneaux est celui de la **dernière mesure d
 | `normal` | Aucune alerte active sur le panneau, mesure reçue depuis moins de 60 s | Vert, icône « validé » |
 | `alert` | Au moins une alerte active sur le panneau | Orange ou rouge selon la gravité, icône « attention » |
 | `no_data` | Aucune mesure depuis 60 s | Gris, icône « déconnecté » |
+
+Un panneau **non positionné** (sans latitude ni longitude) a l'un de ces statuts, mais n'apparaît pas sur la carte : il est listé dans la section « Panneaux à positionner » de la vue Liste.
 
 ## 7. Algorithme de pilotage de l'objet
 

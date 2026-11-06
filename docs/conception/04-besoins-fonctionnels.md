@@ -153,6 +153,9 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #58 | Bonus : vue 3D du parc | M7 | mobile |
 | #59 | Bonus : rotation des panneaux | M7 | firmware, api, mobile |
 | #60 | Bonus : flux temps réel poussé (SSE) | M7 | api, mobile |
+| #61 | API : positionnement, modification et suppression d'un panneau | M3 | api |
+| #62 | Mobile : panneaux à positionner | M3 | mobile |
+| #63 | Bonus : ajout d'un panneau sur le terrain par QR code | M7 | api, mobile |
 
 ---
 
@@ -380,11 +383,12 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Labels :** `type:chore`, `area:api`, `priority:core`
 
-**À faire :** script `db:seed` insérant le site, l'objet, les 20 panneaux et les 2 utilisateurs de la section 8 du modèle de données ; mots de passe lus dans `SEED_OPERATOR_PASSWORD` et `SEED_VIEWER_PASSWORD`.
+**À faire :** fichier versionné `infra/seed/demo-site.json` (site, objet, 20 panneaux) et script `db:seed` qui le lit et insère aussi les 2 utilisateurs de la section 8 du modèle de données ; mots de passe lus dans `SEED_OPERATOR_PASSWORD` et `SEED_VIEWER_PASSWORD`.
 
 **Critères d'acceptation :**
 - [ ] Le script peut être relancé sans erreur ni doublon.
-- [ ] Les valeurs correspondent exactement à la section 8.
+- [ ] Les valeurs correspondent exactement à la section 8 ; les panneaux ont `source = 'seed'`.
+- [ ] Le fichier JSON est validé par un schéma avant insertion (erreur explicite sinon).
 
 **Dépend de :** #13 · **Références :** [Modèle de données, section 8](01-modele-donnees.md)
 
@@ -613,10 +617,10 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Labels :** `type:feature`, `area:simulator`, `priority:core`
 
-**À faire :** abonnement à `solar/SITE01/measurements` pour connaître l'ensoleillement ; toutes les 10 s, publication d'un `PanelMeasurement` pour chacun des 20 panneaux (production = ensoleillement × 200 / 1000, ± 5 %) ; panneaux listés dans `FAULTY_PANELS` divisés par 5.
+**À faire :** abonnement à `solar/SITE01/measurements` pour connaître l'ensoleillement ; toutes les 10 s, publication d'un `PanelMeasurement` pour chacun des 20 panneaux (production = ensoleillement × 200 / 1000, ± 5 %) ; panneaux listés dans `FAULTY_PANELS` divisés par 5 ; panneaux listés dans `EXTRA_PANELS` (absents du seed) publiés en plus.
 
 **Critères d'acceptation :**
-- [ ] 20 messages valides toutes les 10 s.
+- [ ] 20 messages valides toutes les 10 s, plus un par panneau de `EXTRA_PANELS`.
 - [ ] Les panneaux en panne produisent environ 5 fois moins que les autres.
 
 **Dépend de :** #8, #16 · **Références :** [Cartographie, section 5.4](03-cartographie-technique.md)
@@ -625,11 +629,15 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Labels :** `type:feature`, `area:api`, `priority:core`
 
-**Critères d'acceptation :**
-- [ ] Les mesures sont insérées dans `panel_measurements` (résolution site + code panneau).
-- [ ] Un panneau inconnu est ignoré et journalisé (test).
+**À faire :** résolution du site et du code de panneau ; pour un code inconnu sur un site connu, création automatique du panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) : `source = 'discovered'`, nom = code, sans position, puissance `DEFAULT_PANEL_RATED_POWER_W`, dans la limite de `MAX_PANELS_PER_SITE`.
 
-**Dépend de :** #23, #30
+**Critères d'acceptation :**
+- [ ] Les mesures sont insérées dans `panel_measurements`.
+- [ ] Un code inconnu crée un panneau non positionné, une seule fois même si plusieurs messages arrivent en même temps (test).
+- [ ] Au-delà de `MAX_PANELS_PER_SITE`, le message est ignoré et journalisé (test).
+- [ ] Un site inconnu est ignoré et journalisé (test).
+
+**Dépend de :** #23, #30 · **Références :** [UML, séquence 4.6](02-uml.md)
 
 ### #32 · API : routes de consultation des panneaux
 
@@ -981,3 +989,48 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Une coupure du flux ne bloque pas l'app.
 
 **Dépend de :** M6 terminé · **Références :** [D010](../journal/decisions/D010-api-rest-fastify.md)
+
+### #63 · Bonus : ajout d'un panneau sur le terrain par QR code
+
+**Labels :** `type:feature`, `area:api`, `area:mobile`, `priority:bonus`
+
+**À faire :** route `POST /v1/sites/{id}/panels` (rôle `operator`, `source = 'manual'`) ; écran d'ajout dans l'app : scan du QR code du panneau (caméra, `expo-camera`), position GPS du téléphone, puissance nominale, validation. Les documents de conception sont mis à jour avant le code.
+
+**Critères d'acceptation :**
+- [ ] Un panneau scanné et validé apparaît sur la carte.
+- [ ] Un code déjà existant sur le site est refusé avec un message clair.
+- [ ] Refus de la caméra ou de la localisation : saisie manuelle possible, message expliquant l'intérêt de l'autorisation.
+
+**Dépend de :** #61, #62, M6 terminé · **Références :** [D020](../journal/decisions/D020-inventaire-des-panneaux.md), [UML, UC18](02-uml.md)
+
+---
+
+## 10. Ajouts au socle après la création des issues
+
+Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/decisions/D020-inventaire-des-panneaux.md). Elles appartiennent à la milestone **M3 · Supervision**.
+
+### #61 · API : positionnement, modification et suppression d'un panneau
+
+**Labels :** `type:feature`, `area:api`, `priority:core`
+
+**À faire :** `PATCH /v1/panels/{id}` (`name`, `latitude` et `longitude` ensemble, `ratedPowerW`) et `DELETE /v1/panels/{id}`, réservées au rôle `operator` ; `GET /v1/sites/{id}/panels` renvoie aussi les panneaux non positionnés (`placed = false`, position `null`).
+
+**Critères d'acceptation :**
+- [ ] `viewer` → 403 ; latitude sans longitude, ou valeurs hors bornes → 422 (tests).
+- [ ] La suppression retire aussi les mesures et alertes du panneau.
+- [ ] Un panneau supprimé qui publie de nouveau réapparaît comme détecté (test).
+
+**Dépend de :** #27, #31, #32 · **Références :** [Cartographie, section 7](03-cartographie-technique.md), [UML, séquence 4.6](02-uml.md)
+
+### #62 · Mobile : panneaux à positionner
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** dans la vue Liste de l'écran Carte, section « Panneaux à positionner » (code, date de détection, dernière production) ; bouton « Placer ici » qui demande l'autorisation de localisation (`expo-location`), affiche la position et sa précision, puis envoie le `PATCH` ; formulaire pour corriger le nom et la puissance ; suppression avec confirmation. Actions masquées pour un `viewer`.
+
+**Critères d'acceptation :**
+- [ ] Un panneau ajouté au simulateur (`EXTRA_PANELS`) apparaît dans la section, puis sur la carte une fois placé.
+- [ ] Refus de la localisation : message expliquant comment l'autoriser, aucune erreur bloquante.
+- [ ] Conforme à la maquette « Carte · liste et panneaux à positionner ».
+
+**Dépend de :** #35, #61 · **Références :** [UML, UC17](02-uml.md), maquettes (#2)
