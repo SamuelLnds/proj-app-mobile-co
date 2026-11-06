@@ -1,0 +1,29 @@
+# Services d'infrastructure du développement local.
+# Les variables POSTGRES_* sont lues dans infra/.env (copie de .env.example, ignorée par Git).
+
+services:
+  db:
+    # Image PostgreSQL 16 avec les extensions timescaledb et citext disponibles
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # Port exposé pour le développement seulement
+      - "5432:5432"
+    volumes:
+      # Volume nommé : les données survivent à l'arrêt des conteneurs
+      - solar-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  solar-db-data:
