@@ -4,6 +4,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 
+import { QueryProvider } from "../src/api";
+import { AuthProvider } from "../src/auth/AuthProvider";
 import { appFonts, ThemeProvider, useTheme } from "../src/theme";
 
 // L'écran de lancement reste affiché jusqu'au chargement des polices.
@@ -28,7 +30,7 @@ function ThemedStack() {
   );
 }
 
-// Racine de l'app : polices, thème, puis navigation.
+// Racine de l'app : polices, requêtes, session, thème, puis navigation.
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(appFonts);
 
@@ -39,8 +41,12 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <ThemeProvider>
-      <ThemedStack />
-    </ThemeProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ThemedStack />
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
 }

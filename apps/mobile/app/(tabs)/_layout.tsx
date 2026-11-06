@@ -1,6 +1,8 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import type { ColorValue } from "react-native";
 
+import { useActiveAlertCount } from "../../src/api";
+import { useAuth } from "../../src/auth/AuthProvider";
 import { fontFamilies, Icon, useTheme, type IconName } from "../../src/theme";
 
 const tabIcon =
@@ -10,6 +12,14 @@ const tabIcon =
 // Barre d'onglets de la charte : Supervision, Carte, Pilotage, Alertes.
 export default function TabsLayout() {
   const { colors } = useTheme();
+  const { user } = useAuth();
+  if (!user) return <Redirect href="/login" />;
+  return <AuthenticatedTabs alertColor={colors.statusCritical} />;
+}
+
+function AuthenticatedTabs({ alertColor }: { alertColor: string }) {
+  const { colors } = useTheme();
+  const alertCount = useActiveAlertCount();
   return (
     <Tabs
       screenOptions={{
@@ -31,7 +41,16 @@ export default function TabsLayout() {
         name="control"
         options={{ title: "Pilotage", tabBarIcon: tabIcon("SlidersHorizontal") }}
       />
-      <Tabs.Screen name="alerts" options={{ title: "Alertes", tabBarIcon: tabIcon("Bell") }} />
+      <Tabs.Screen
+        name="alerts"
+        options={{
+          title: "Alertes",
+          tabBarIcon: tabIcon(alertCount > 0 ? "BellRinging" : "Bell"),
+          tabBarBadge: alertCount > 0 ? alertCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: alertColor, color: colors.onPrimary },
+          tabBarAccessibilityLabel: alertCount > 0 ? `Alertes, ${alertCount} actives` : "Alertes",
+        }}
+      />
     </Tabs>
   );
 }
