@@ -84,11 +84,14 @@ Ces commandes sont mises en place par les issues du socle (#5 à #18) : vérifie
 
 ## Git et GitHub
 
-- Une issue = une branche = une pull request. Branche : `<type>/<numéro>-<sujet-court>` (par exemple `feat/41-envoi-consigne`, `chore/5-monorepo`).
+- **Branches permanentes** ([D021](docs/journal/decisions/D021-regles-de-travail.md)) :
+  - `develop` : branche d'intégration et branche par défaut. Elle reçoit les branches d'issue par pull request ; la documentation seule (`docs/`, `CLAUDE.md`, `.claude/`) peut y être poussée directement.
+  - `main` : version livrable. Elle ne reçoit **que** des pull requests venant de `develop` (vérifié par la CI), fusionnées par **merge commit**.
+- Une issue = une branche = une pull request vers `develop`. Branche créée depuis `develop` : `<type>/<numéro>-<sujet-court>` (par exemple `feat/41-envoi-consigne`).
 - **Commits** : conventional commit sur **une seule ligne**, type et scope en anglais, description en français (`feat(api): ajoute l'envoi d'une consigne`). Une seconde ligne est permise uniquement pour référencer une issue (`Refs #41`). **Jamais de ligne `Co-Authored-By`** ni d'autre mention d'outil.
 - Types : `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`, `style`. Scopes : `api`, `mobile`, `contracts`, `simulator`, `firmware`, `infra`, `ci`, `design`, `journal`.
-- Pull request : titre au même format que les commits, description reprenant la définition de « terminé » et `Closes #<numéro>`. Fusion en **squash merge** : le titre de la pull request devient le commit sur `main`.
-- Jamais de push direct ni forcé sur `main`. Pas de push sans demande explicite de la personne qui travaille.
+- Pull request d'issue : titre au même format que les commits, description reprenant la définition de « terminé » et `Closes #<numéro>`, cible `develop`, fusion en **squash merge** (le titre devient le commit sur `develop`).
+- Jamais de push direct sur `main`, jamais de push forcé sur `main` ni `develop`. Pas de push sans demande explicite de la personne qui travaille.
 - Une issue se modifie d'abord dans `04-besoins-fonctionnels.md`, puis sur GitHub.
 
 ## Définition de « terminé »

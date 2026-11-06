@@ -50,5 +50,6 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D018](decisions/D018-palette-et-themes.md) | Palette accessible, thèmes clair et sombre | 2026-11-06 | Acceptée |
 | [D019](decisions/D019-outil-de-maquettage.md) | Outil de maquettage : design system et canevas intégrés à Claude | 2026-11-06 | Acceptée |
 | [D020](decisions/D020-inventaire-des-panneaux.md) | Inventaire des panneaux : fichier de seed et rattachement automatique | 2026-11-06 | Acceptée |
-| [D021](decisions/D021-regles-de-travail.md) | Règles de travail communes : CLAUDE.md, skills et flux Git | 2026-11-06 | Proposée |
+| [D021](decisions/D021-regles-de-travail.md) | Règles de travail communes : CLAUDE.md, skills et flux Git (`develop` et `main`) | 2026-11-06 | Proposée |
+| [D022](decisions/D022-socle-par-agents.md) | Socle réalisé par des agents, sur une seule branche | 2026-11-06 | Acceptée |
 
