@@ -1,0 +1,177 @@
+{
+  "site": {
+    "code": "SITE01",
+    "name": "Parc solaire de démonstration",
+    "latitude": 47.25,
+    "longitude": -1.55,
+    "peakPowerW": 4000,
+    "batteryCapacityWh": 10000,
+    "maxChargePowerW": 3000,
+    "productionFactor": 4
+  },
+  "device": {
+    "mqttClientId": "device-site01"
+  },
+  "panels": [
+    {
+      "code": "P01",
+      "name": "Rangée A, panneau 1",
+      "latitude": 47.250135,
+      "longitude": -1.550265,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P02",
+      "name": "Rangée A, panneau 2",
+      "latitude": 47.250135,
+      "longitude": -1.550132,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P03",
+      "name": "Rangée A, panneau 3",
+      "latitude": 47.250135,
+      "longitude": -1.55,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P04",
+      "name": "Rangée A, panneau 4",
+      "latitude": 47.250135,
+      "longitude": -1.549868,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P05",
+      "name": "Rangée A, panneau 5",
+      "latitude": 47.250135,
+      "longitude": -1.549735,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P06",
+      "name": "Rangée B, panneau 1",
+      "latitude": 47.250045,
+      "longitude": -1.550265,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P07",
+      "name": "Rangée B, panneau 2",
+      "latitude": 47.250045,
+      "longitude": -1.550132,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P08",
+      "name": "Rangée B, panneau 3",
+      "latitude": 47.250045,
+      "longitude": -1.55,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P09",
+      "name": "Rangée B, panneau 4",
+      "latitude": 47.250045,
+      "longitude": -1.549868,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P10",
+      "name": "Rangée B, panneau 5",
+      "latitude": 47.250045,
+      "longitude": -1.549735,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P11",
+      "name": "Rangée C, panneau 1",
+      "latitude": 47.249955,
+      "longitude": -1.550265,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P12",
+      "name": "Rangée C, panneau 2",
+      "latitude": 47.249955,
+      "longitude": -1.550132,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P13",
+      "name": "Rangée C, panneau 3",
+      "latitude": 47.249955,
+      "longitude": -1.55,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P14",
+      "name": "Rangée C, panneau 4",
+      "latitude": 47.249955,
+      "longitude": -1.549868,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P15",
+      "name": "Rangée C, panneau 5",
+      "latitude": 47.249955,
+      "longitude": -1.549735,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P16",
+      "name": "Rangée D, panneau 1",
+      "latitude": 47.249865,
+      "longitude": -1.550265,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P17",
+      "name": "Rangée D, panneau 2",
+      "latitude": 47.249865,
+      "longitude": -1.550132,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P18",
+      "name": "Rangée D, panneau 3",
+      "latitude": 47.249865,
+      "longitude": -1.55,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P19",
+      "name": "Rangée D, panneau 4",
+      "latitude": 47.249865,
+      "longitude": -1.549868,
+      "ratedPowerW": 200,
+      "source": "seed"
+    },
+    {
+      "code": "P20",
+      "name": "Rangée D, panneau 5",
+      "latitude": 47.249865,
+      "longitude": -1.549735,
+      "ratedPowerW": 200,
+      "source": "seed"
+    }
+  ]
+}

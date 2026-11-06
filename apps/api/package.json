@@ -1,0 +1,33 @@
+{
+  "name": "api",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "API Fastify : REST pour l'app mobile, client MQTT et accès à PostgreSQL",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts"
+  },
+  "dependencies": {
+    "@solar/contracts": "workspace:*",
+    "argon2": "^0.44.0",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.8",
+    "fastify-type-provider-zod": "^7.0.0",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "pino-pretty": "^13.2.0",
+    "tsx": "^4.23.15",
+    "vitest": "^5.1.0"
+  }
+}

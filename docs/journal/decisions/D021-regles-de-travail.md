@@ -23,17 +23,21 @@ Le binôme développe en parallèle, chacun avec son assistant. Sans règles éc
 
 **Flux Git**
 
-| Critère | Commits directs sur `main` | Branche par issue, merge commit | Branche par issue, squash merge |
+| Critère | Tout sur `main` | Branches d'issue vers `main` | `develop` d'intégration + `main` livrable |
 |---|---|---|---|
 | Relecture avant fusion | Non | Oui | Oui |
-| Historique de `main` | Bruité | Commits intermédiaires visibles | Un commit par issue, au format conventional commit |
-| Lien avec les issues | Manuel | `Closes #n` | `Closes #n` |
+| Version stable toujours disponible | Non | Variable | Oui : `main` ne bouge qu'à chaque livraison |
+| Documentation poussée sans pull request | Oui | Non | Oui, sur `develop` |
+| Historique | Bruité | Un commit par issue | Un commit par issue sur `develop`, une fusion par livraison sur `main` |
 
 ## Décision
 
 - Règles dans **`CLAUDE.md`** (court, directif, renvoie aux documents de conception) et **six skills** dans `.claude/skills/` : `issue-workflow`, `api-module`, `mobile-screen`, `mqtt-message`, `db-change`, `decision-record`.
-- **`.claude/settings.json`** partagé : commandes de vérification autorisées sans confirmation ; lecture des `.env` et `secrets.h`, push forcé et push direct sur `main` interdits.
-- **Flux Git** : une issue = une branche `<type>/<numéro>-<sujet>` = une pull request relue par l'autre membre, fusionnée en **squash merge**. Commits et titres de pull request en conventional commit sur une ligne, type et scope en anglais, description en français, sans `Co-Authored-By`.
+- **`.claude/settings.json`** partagé : commandes de vérification autorisées sans confirmation ; lecture des `.env` et `secrets.h`, push forcé et `--no-verify` interdits.
+- **Flux Git** :
+  - `develop` est la branche d'intégration et la branche par défaut du dépôt. Chaque issue a sa branche `<type>/<numéro>-<sujet>`, créée depuis `develop`, et une pull request vers `develop` relue par l'autre membre, fusionnée en **squash merge**. La documentation seule peut être poussée directement sur `develop`.
+  - `main` ne reçoit que des pull requests venant de `develop`, fusionnées par **merge commit**. Une vérification de la CI (« Source de la pull request ») bloque toute autre source, GitHub ne sachant pas l'imposer nativement.
+  - Commits et titres de pull request en conventional commit sur une ligne, type et scope en anglais, description en français, sans `Co-Authored-By`.
 
 ## Justification
 
@@ -41,6 +45,6 @@ Les règles sont appliquées de la même façon par les deux membres et leurs as
 
 ## Conséquences
 
-- La protection de la branche `main` (relecture et CI obligatoires) est activée avec l'issue #17.
+- Protections GitHub (issue #17) : sur `main`, pull request, CI verte (dont la vérification de la source) et approbation obligatoires, push forcé et suppression interdits ; sur `develop`, push forcé et suppression interdits, push direct autorisé. `develop` devient la branche par défaut, et Dependabot la cible.
 - Toute nouvelle règle passe par une modification de `CLAUDE.md` en pull request.
 - Les commandes citées dans `CLAUDE.md` deviennent réelles avec les issues du socle (#5 à #18).

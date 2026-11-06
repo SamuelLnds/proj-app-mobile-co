@@ -26,7 +26,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 |---|---|
 | 1 ESP32 simulé : mesures + pilotage batterie / réseau | Plusieurs boîtiers, anémomètre |
 | Script simulant une vingtaine de panneaux pour peupler la carte | Flotte de centaines de panneaux |
-| Broker MQTT hébergé (HiveMQ Cloud) | Broker auto-hébergé, TLS mutuel, ACL avancées |
+| Broker MQTT Mosquitto auto-hébergé (TLS, identifiants, droits par client) | TLS mutuel |
 | Une API REST qui reçoit les mesures et envoie les consignes | Microservices, GraphQL |
 | PostgreSQL avec TimescaleDB | PostGIS, agrégats et rétention avancés |
 | App de 5 écrans, dont un écran de pilotage | Mode hors ligne complet, ordres de travail |
@@ -53,7 +53,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 | Framework | React Native (Expo) | JavaScript déjà connu du groupe |
 | Protocole | MQTT | Publication des mesures et réception des consignes sur un même canal, messages conservés (retained) pour les consignes |
 | Objet | Wokwi (ESP32) | Pas de matériel à acheter |
-| Broker | HiveMQ Cloud | Offre gratuite, TLS inclus, rien à administrer, joignable depuis Wokwi |
+| Broker | Mosquitto | Auto-hébergé dans Docker Compose ; l'ESP32 de Wokwi s'y connecte par un tunnel TCP ([D023](journal/decisions/D023-broker-mosquitto-auto-heberge.md)) |
 | Rétention | TimescaleDB | PostgreSQL classique, avec une table optimisée pour les mesures |
 | Banc | Téléphone | Notifications push et conditions réelles |
 | Distribution | Device de test | APK installé via EAS |
@@ -115,7 +115,7 @@ La consigne est publiée en **retained** : un ESP32 qui se reconnecte reçoit im
 
 ```mermaid
 flowchart LR
-  ESP["ESP32 (Wokwi)"] -- "mesures, état appliqué" --> B["HiveMQ Cloud<br/>(broker MQTT)"]
+  ESP["ESP32 (Wokwi)"] -- "mesures, état appliqué" --> B["Mosquitto<br/>(broker MQTT)"]
   SIM["Script de simulation<br/>(~20 panneaux)"] -- "mesures" --> B
   B -- "mesures, état" --> API["API Node.js<br/>(REST)"]
   API -- "consignes" --> B
@@ -128,7 +128,7 @@ flowchart LR
 | Brique | Technologie | Rôle |
 |---|---|---|
 | Objet | ESP32 sous Wokwi, PlatformIO, framework Arduino | Lire les capteurs, calculer le niveau de la batterie, appliquer les consignes avec leurs limites, publier |
-| Broker | HiveMQ Cloud | Transporter les messages MQTT |
+| Broker | Mosquitto (Docker Compose) | Transporter les messages MQTT |
 | API | Node.js + TypeScript (Express ou Fastify) | S'abonner au broker, écrire en base, exposer les données, valider et publier les consignes, envoyer les notifications |
 | Base | PostgreSQL + TimescaleDB (Docker) | Sites, panneaux, mesures, consignes, alertes, utilisateurs |
 | App | Expo, React Native, `react-native-maps`, TanStack Query, `expo-notifications` | Supervision, carte, détail, pilotage, alertes |
@@ -229,7 +229,7 @@ Au-delà du budget, on s'arrête là où on en est. Les bonus n'apportent aucune
 
 ## 9. Sécurité
 
-- Connexion au broker en TLS (fourni par HiveMQ Cloud), un identifiant par appareil.
+- Broker sans accès anonyme : un identifiant et des droits par client ; TLS (autorité de certification du projet) pour les connexions venant de l'extérieur.
 - Connexion à l'app par identifiant et mot de passe, puis JWT. Mots de passe hachés.
 - **Envoi de consignes réservé au rôle exploitant**, vérifié par l'API.
 - **Double validation des consignes** : par l'API (droits, bornes), puis par l'objet (limites de sécurité de la batterie).
@@ -271,7 +271,7 @@ Au-delà du budget, on s'arrête là où on en est. Les bonus n'apportent aucune
 
 | Risque | Parade |
 |---|---|
-| Wokwi ne joint pas un broker local | Broker hébergé (HiveMQ Cloud) |
+| Wokwi ne joint pas un broker local | Tunnel TCP vers Mosquitto, passerelle privée Wokwi en secours ; le simulateur joue l'objet en attendant le firmware |
 | Consigne perdue si l'objet est hors ligne | Consigne publiée en retained, statut « sans réponse » affiché dans l'app |
 | Incohérence entre la consigne et ce que fait l'objet | L'objet publie toujours ce qu'il applique réellement ; l'app affiche l'état appliqué, pas la consigne |
 | Les bonus débordent sur le socle | Commencés seulement après le socle, budget fixé |
@@ -282,7 +282,8 @@ Au-delà du budget, on s'arrête là où on en est. Les bonus n'apportent aucune
 
 - [ ] Accord du groupe sur le sujet, sur le pilotage batterie / réseau et sur l'ordre des bonus.
 - [ ] Taille définitive du groupe (binôme ou trinôme).
-- [ ] Création du compte HiveMQ Cloud et premier message publié depuis Wokwi.
+- [x] Broker Mosquitto auto-hébergé en place.
+- [ ] Premier message publié depuis Wokwi via le tunnel TCP.
 - [ ] Hébergement de l'API et de la base (en local pour le développement, hébergement à choisir pour la démo).
 - [ ] Mise à jour du prototype Wokwi (`firmware/boitier-panneau`) : deux relais, barre de LED, batterie simulée, consignes.
 
@@ -291,7 +292,7 @@ Au-delà du budget, on s'arrête là où on en est. Les bonus n'apportent aucune
 - Wokwi : <https://docs.wokwi.com>
 - Réseau WiFi dans Wokwi : <https://docs.wokwi.com/guides/esp32-wifi>
 - Composants supportés par Wokwi : <https://docs.wokwi.com/getting-started/supported-hardware>
-- HiveMQ Cloud : <https://www.hivemq.com/products/mqtt-cloud-broker/>
+- Eclipse Mosquitto : <https://mosquitto.org>
 - Expo : <https://docs.expo.dev>
 - TimescaleDB : <https://github.com/timescale/timescaledb>
 - React Three Fiber : <https://r3f.docs.pmnd.rs>

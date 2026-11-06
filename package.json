@@ -1,0 +1,35 @@
+{
+  "name": "proj-app-mobile-co",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Supervision et pilotage d'un petit parc solaire (app mobile, API, simulateur, firmware)",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm db:up && pnpm mqtt:up && concurrently --names api,simulator --prefix-colors cyan,magenta --kill-others-on-fail \"pnpm --filter api dev\" \"pnpm --filter simulator dev\"",
+    "build": "pnpm -r --if-present build",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d db",
+    "mqtt:setup": "node infra/mosquitto/setup.mjs",
+    "mqtt:up": "docker compose -f infra/docker-compose.yml up -d mqtt",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "lint": "pnpm -r --if-present lint && eslint .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "format": "pnpm -r --if-present format && prettier --write .",
+    "format:check": "pnpm -r --if-present format:check && prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}
