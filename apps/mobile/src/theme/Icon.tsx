@@ -1,3 +1,4 @@
+import type { ColorValue } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { ICON_PATHS, type IconName } from "./icon-paths";
@@ -5,7 +6,7 @@ import { sizes } from "./tokens";
 
 type IconProps = {
   name: IconName;
-  color: string;
+  color: ColorValue;
   size?: number;
 };
 
