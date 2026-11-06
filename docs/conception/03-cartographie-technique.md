@@ -70,12 +70,13 @@ Monorepo géré avec **pnpm workspaces** ([D011](../journal/decisions/D011-monor
 
 ```
 proj-app-mobile-co/
-├── apps/
+├── apps/                    # Ce qui est livré : utilisé par l'utilisateur ou déployé
 │   ├── mobile/              # App Expo (React Native, TypeScript, Expo Router)
-│   ├── api/                 # API Fastify (TypeScript)
-│   └── simulator/           # Simulateur des 20 panneaux (TypeScript)
-├── packages/
+│   └── api/                 # API Fastify (TypeScript)
+├── packages/                # Bibliothèques partagées
 │   └── contracts/           # Schémas Zod partagés : messages MQTT, API, enums, constantes
+├── tools/                   # Outillage de développement et de démo, jamais déployé
+│   └── simulator/           # Simulateur des 20 panneaux (TypeScript)
 ├── firmware/
 │   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi (plus tard)
 ├── infra/
@@ -101,13 +102,14 @@ flowchart BT
   contracts["packages/contracts"]
   api["apps/api"] --> contracts
   mobile["apps/mobile"] --> contracts
-  simulator["apps/simulator"] --> contracts
+  simulator["tools/simulator"] --> contracts
   firmware["firmware/site-device"] -. "reproduit les formats à la main" .-> contracts
 ```
 
 **Règles :**
 - `packages/contracts` ne dépend d'aucun autre paquet du dépôt et ne contient **aucune logique métier** : uniquement des schémas, des types, des enums, des constantes et des fonctions de construction de topics.
-- Les applications ne s'importent **jamais** entre elles.
+- Les applications et les outils ne s'importent **jamais** entre eux.
+- `apps/` ne contient que ce qui est livré (app, API) ; `tools/` contient ce qui sert au développement et à la démo ([D015](../journal/decisions/D015-emplacement-simulateur.md)). La CI teste les deux, mais ne construit ni ne déploie `tools/`.
 - Le firmware (C++) ne peut pas importer les schémas TypeScript : il reproduit les formats décrits en section 6, et ses messages sont validés par l'API avec ces mêmes schémas.
 
 ## 4. Choix technologiques
@@ -261,7 +263,7 @@ apps/mobile/
 
 **Rôle de chaque outil côté app :** TanStack Query interroge l'API et gère le rafraîchissement ; chaque réponse reçue est enregistrée dans SQLite ; à l'ouverture de l'app ou sans réseau, l'écran affiche d'abord les données de SQLite avec leur ancienneté.
 
-### 5.4 `apps/simulator`
+### 5.4 `tools/simulator`
 
 | Dépendance | Rôle |
 |---|---|

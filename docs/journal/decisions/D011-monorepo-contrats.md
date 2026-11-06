@@ -24,7 +24,7 @@ Gestionnaire de paquets : pnpm (workspaces natifs, rapide) préféré à npm wor
 
 ## Décision
 
-**Monorepo pnpm** avec `apps/mobile`, `apps/api`, `apps/simulator`, et un paquet **`packages/contracts`** contenant les schémas Zod, les énumérations, les constantes et la construction des topics.
+**Monorepo pnpm** avec `apps/mobile`, `apps/api`, `apps/simulator` (déplacé ensuite dans `tools/simulator`, voir [D015](D015-emplacement-simulateur.md)), et un paquet **`packages/contracts`** contenant les schémas Zod, les énumérations, les constantes et la construction des topics.
 
 ## Justification
 

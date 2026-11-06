@@ -44,4 +44,5 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D012](decisions/D012-langue-du-code.md) | Code en anglais ; commentaires, documentation et textes affichés en français | 2026-11-06 | Acceptée |
 | [D013](decisions/D013-vue-3d-bonus.md) | Vue 3D en bonus, avec React Three Fiber | 2026-11-06 | Acceptée |
 | [D014](decisions/D014-stockage-local-sqlite.md) | Stockage local de l'app : SQLite, avec TanStack Query pour le réseau | 2026-11-06 | Acceptée |
+| [D015](decisions/D015-emplacement-simulateur.md) | Le simulateur de panneaux est placé dans `tools/` | 2026-11-06 | Acceptée |
 
