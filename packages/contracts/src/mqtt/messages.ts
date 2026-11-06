@@ -3,29 +3,19 @@
 // récepteur, qui le journalise en avertissement.
 import { z } from "zod";
 import { ControlModeSchema, RejectionReasonSchema } from "../enums";
+import {
+  BatteryShareSchema,
+  checkBatteryShareForMode,
+  Iso8601UtcSchema,
+  PercentSchema,
+  TemperatureSchema,
+} from "../primitives";
 
 /** Version actuelle du format des messages. */
 export const MESSAGE_VERSION = 1;
 
 /** Version du format : seule la valeur `1` est acceptée. */
 const VersionSchema = z.literal(MESSAGE_VERSION);
-
-/** Date ISO 8601 en UTC (suffixe `Z`). */
-const Iso8601UtcSchema = z.iso.datetime();
-
-/** Pourcentage de 0 à 100. */
-const PercentSchema = z.number().min(0).max(100);
-
-/** Température en °C, bornée comme en base. */
-const TemperatureSchema = z.number().min(-40).max(125);
-
-/** Part de la production envoyée vers la batterie : entier de 0 à 100, multiple de 10. */
-export const BatteryShareSchema = z
-  .number()
-  .int()
-  .min(0)
-  .max(100)
-  .refine((value) => value % 10 === 0, { message: "Doit être un multiple de 10" });
 
 /** `solar/{siteCode}/measurements` : mesures du site, publiées par l'objet. */
 export const SiteMeasurementSchema = z.object({
@@ -75,22 +65,7 @@ export const SetpointSchema = z
     /** Date de création de la consigne. */
     issuedAt: Iso8601UtcSchema,
   })
-  .superRefine((setpoint, ctx) => {
-    if (setpoint.mode === "manual" && setpoint.batteryShare === null) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["batteryShare"],
-        message: "batteryShare est obligatoire en mode manual",
-      });
-    }
-    if (setpoint.mode !== "manual" && setpoint.batteryShare !== null) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["batteryShare"],
-        message: "batteryShare doit valoir null hors du mode manual",
-      });
-    }
-  });
+  .superRefine(checkBatteryShareForMode);
 export type Setpoint = z.infer<typeof SetpointSchema>;
 
 /** Résultat de l'application d'une consigne par l'objet. */
