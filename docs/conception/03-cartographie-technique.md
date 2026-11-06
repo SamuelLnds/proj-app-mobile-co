@@ -224,9 +224,8 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push |
-| `react-native-svg` | Plan du parc, courbes, icônes Phosphor |
+| `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
 | `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
-| `phosphor-react-native` | Icônes (choix confirmé à l'étape 3) |
 | `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
 | `@solar/contracts` (interne) | Schémas et types partagés |
 
