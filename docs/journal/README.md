@@ -54,4 +54,5 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D022](decisions/D022-socle-par-agents.md) | Socle réalisé par des agents, sur une seule branche | 2026-11-06 | Acceptée |
 | [D023](decisions/D023-broker-mosquitto-auto-heberge.md) | Broker : Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel | 2026-11-06 | Acceptée |
 | [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
+| [D025](decisions/D025-integration-interface.md) | Intégration de l'interface sur données d'exemple, couche de données remplaçable | 2026-11-06 | Acceptée |
 

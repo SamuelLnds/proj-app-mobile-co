@@ -63,6 +63,7 @@ Une issue n'est fermée que si **tous** ces points sont vrais :
 | **M0 · Conception** | Terminer les étapes 3 et 4 de la conception | Maquettes validées, `CLAUDE.md` et `.claude/` en place |
 | **M1 · Socle technique** | Dépôt prêt pour le développement (étape 5) | `pnpm install` puis `pnpm dev` démarrent la base et l'API ; CI verte |
 | **M2 · Fil de bout en bout** | Une mesure part de l'ESP32 et s'affiche dans l'app | Démo : tourner le potentiomètre dans Wokwi change la valeur dans l'app |
+| **M8 · Intégration de l'interface** | Toute l'app conforme aux maquettes, sur des données d'exemple | L'app complète est consultable sur le téléphone, dans les deux thèmes et tous ses états, sans API |
 | **M3 · Supervision** | Toutes les fonctions de consultation | Connexion, supervision, carte, détail, historiques, affichage sans réseau |
 | **M4 · Pilotage** | Communication bidirectionnelle complète | Une consigne envoyée depuis l'app est appliquée ou refusée par l'objet, et l'app l'affiche |
 | **M5 · Alertes et notifications** | Règles d'alerte et notifications push | Panne injectée → notification sur le téléphone |
@@ -79,15 +80,18 @@ Sur GitHub, les milestones portent uniquement leur intitulé (« Conception », 
 flowchart LR
   M0["M0 Conception"] --> M1["M1 Socle technique"]
   M1 --> M2["M2 Fil de bout en bout"]
+  M1 --> M8["M8 Intégration de l'interface"]
   M2 --> M3["M3 Supervision"]
   M2 --> M4["M4 Pilotage"]
+  M8 --> M3
+  M8 --> M4
   M3 --> M5["M5 Alertes et notifications"]
   M4 --> M5
   M5 --> M6["M6 Livraison"]
   M6 --> M7["M7 Bonus"]
 ```
 
-M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une milestone, les issues sans dépendance entre elles peuvent être prises par des personnes différentes.
+M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M4 branchent les écrans de M8 sur les données réelles et peuvent elles-mêmes avancer en parallèle. Au sein d'une milestone, les issues sans dépendance entre elles peuvent être prises par des personnes différentes.
 
 ### 1.7 Récapitulatif
 
@@ -117,18 +121,18 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #22 | API : client MQTT | M2 | api |
 | #23 | API : enregistrement des mesures du site | M2 | api |
 | #24 | API : routes de consultation des sites | M2 | api |
-| #25 | Mobile : client API, TanStack Query et base SQLite locale | M2 | mobile |
-| #26 | Mobile : écran Supervision, version minimale | M2 | mobile |
+| #25 | Mobile : source de données API et stockage SQLite | M2 | mobile |
+| #26 | Mobile : brancher l'écran Supervision (dernière mesure) | M2 | mobile |
 | #27 | API : authentification | M3 | api |
-| #28 | Mobile : connexion et déconnexion | M3 | mobile |
+| #28 | Mobile : brancher la connexion et la déconnexion | M3 | mobile |
 | #29 | API : suivi du statut des objets | M3 | api |
 | #30 | Simulateur : publication des mesures des panneaux | M3 | simulator |
 | #31 | API : enregistrement des mesures des panneaux | M3 | api |
 | #32 | API : routes de consultation des panneaux | M3 | api |
 | #33 | API : historiques agrégés | M3 | api |
-| #34 | Mobile : écran Supervision complet | M3 | mobile |
-| #35 | Mobile : écran Carte | M3 | mobile |
-| #36 | Mobile : écran Détail d'un panneau | M3 | mobile |
+| #34 | Mobile : brancher l'écran Supervision complet | M3 | mobile |
+| #35 | Mobile : brancher l'écran Carte | M3 | mobile |
+| #36 | Mobile : brancher l'écran Détail d'un panneau | M3 | mobile |
 | #37 | Mobile : affichage sans réseau | M3 | mobile |
 | #38 | Firmware : batterie simulée, relais et barre de LED | M4 | firmware |
 | #39 | Firmware : algorithme de pilotage | M4 | firmware |
@@ -137,12 +141,12 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #42 | API : traitement de l'état appliqué | M4 | api |
 | #43 | API : délai de réponse aux consignes | M4 | api |
 | #44 | API : historique des consignes | M4 | api |
-| #45 | Mobile : écran Pilotage | M4 | mobile |
-| #46 | Mobile : historique des consignes | M4 | mobile |
+| #45 | Mobile : brancher l'écran Pilotage | M4 | mobile |
+| #46 | Mobile : brancher l'historique des consignes | M4 | mobile |
 | #47 | API : moteur de règles d'alerte | M5 | api |
 | #48 | API : route de consultation des alertes | M5 | api |
 | #49 | API : jetons et envoi des notifications push | M5 | api |
-| #50 | Mobile : notifications et écran Alertes | M5 | mobile |
+| #50 | Mobile : notifications et branchement de l'écran Alertes | M5 | mobile |
 | #51 | Revue de sécurité et dossier sécurité | M6 | docs |
 | #52 | Compléter les tests | M6 | test |
 | #53 | Construire et distribuer l'APK | M6 | mobile |
@@ -154,10 +158,19 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #59 | Bonus : rotation des panneaux | M7 | firmware, api, mobile |
 | #60 | Bonus : flux temps réel poussé (SSE) | M7 | api, mobile |
 | #61 | API : positionnement, modification et suppression d'un panneau | M3 | api |
-| #62 | Mobile : panneaux à positionner | M3 | mobile |
+| #62 | Mobile : brancher les panneaux à positionner | M3 | mobile |
 | #63 | Bonus : ajout d'un panneau sur le terrain par QR code | M7 | api, mobile |
 | #64 | Simulateur : mode objet du site | M2 | simulator |
 | #65 | Infra : connexion de l'ESP32 de Wokwi au broker | M2 | infra |
+| #68 | Mobile : thème, polices et icônes | M8 | mobile |
+| #69 | Mobile : navigation et composants communs | M8 | mobile |
+| #70 | Mobile : couche de données remplaçable et jeu de données d'exemple | M8 | mobile |
+| #71 | Mobile : intégration de l'écran Connexion | M8 | mobile |
+| #72 | Mobile : intégration de l'écran Supervision | M8 | mobile |
+| #73 | Mobile : intégration de l'écran Carte et de la vue liste | M8 | mobile |
+| #74 | Mobile : intégration de l'écran Détail d'un panneau | M8 | mobile |
+| #75 | Mobile : intégration de l'écran Pilotage | M8 | mobile |
+| #76 | Mobile : intégration de l'écran Alertes | M8 | mobile |
 
 ---
 
@@ -540,9 +553,11 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #23 · **Références :** [Cartographie, section 7](03-cartographie-technique.md)
 
-### #25 · Mobile : client API, TanStack Query et base SQLite locale
+### #25 · Mobile : source de données API et stockage SQLite
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #70 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :**
 - `src/api/` : client HTTP (URL de base, en-tête JWT, conversion des erreurs au format de l'API), hooks TanStack Query par ressource.
@@ -554,11 +569,13 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Au démarrage sans réseau, le hook renvoie la dernière valeur enregistrée.
 - [ ] Le JWT n'est jamais écrit dans SQLite.
 
-**Dépend de :** #15 · **Références :** [D014](../journal/decisions/D014-stockage-local-sqlite.md), [Cartographie, section 5.3](03-cartographie-technique.md)
+**Dépend de :** #15, #70 · **Références :** [D014](../journal/decisions/D014-stockage-local-sqlite.md), [Cartographie, section 5.3](03-cartographie-technique.md)
 
-### #26 · Mobile : écran Supervision, version minimale
+### #26 · Mobile : brancher l'écran Supervision (dernière mesure)
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #72 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** afficher la dernière mesure du site (production, ensoleillement, température, batterie), rafraîchie toutes les 5 s tant que l'écran est visible.
 
@@ -566,7 +583,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Tourner le potentiomètre dans Wokwi modifie la production affichée en moins de 10 s.
 - [ ] États de chargement et d'erreur gérés.
 
-**Dépend de :** #21, #24, #25 · **Références :** maquettes (#2)
+**Dépend de :** #21, #24, #25, #72 · **Références :** maquettes (#2)
 
 ---
 
@@ -590,9 +607,11 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #14 · **Références :** [UML, séquence 4.1](02-uml.md), [Cartographie, section 7](03-cartographie-technique.md)
 
-### #28 · Mobile : connexion et déconnexion
+### #28 · Mobile : brancher la connexion et la déconnexion
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #71 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :**
 - Écran de connexion ; jeton stocké dans `expo-secure-store` ; redirection vers la supervision.
@@ -605,7 +624,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] L'utilisateur reste connecté après redémarrage de l'app, jusqu'à l'expiration du jeton.
 - [ ] Le rôle est disponible pour masquer le pilotage aux `viewer`.
 
-**Dépend de :** #25, #27 · **Références :** [UML, séquence 4.1](02-uml.md)
+**Dépend de :** #25, #27, #71 · **Références :** [UML, séquence 4.1](02-uml.md)
 
 ### #29 · API : suivi du statut des objets
 
@@ -670,9 +689,11 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #23, #31 · **Références :** [Modèle de données, section 5](01-modele-donnees.md)
 
-### #34 · Mobile : écran Supervision complet
+### #34 · Mobile : brancher l'écran Supervision complet
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #72 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** compléter l'écran : production réelle et attendue, jauge de batterie, répartition batterie / réseau, mode en vigueur, statut de l'objet, nombre d'alertes actives, graphique d'historique (choix de la période : 1 h, 24 h, 7 jours).
 
@@ -681,11 +702,13 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Les valeurs ont leur unité et sont lisibles par le lecteur d'écran (libellés d'accessibilité).
 - [ ] Test de rendu du composant principal.
 
-**Dépend de :** #26, #28, #29, #33 · **Références :** maquettes (#2)
+**Dépend de :** #26, #28, #29, #33, #72 · **Références :** maquettes (#2)
 
-### #35 · Mobile : écran Carte
+### #35 · Mobile : brancher l'écran Carte
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #73 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** carte centrée sur le site, un marqueur par panneau coloré et iconé selon son statut, légende, appui sur un marqueur → Détail du panneau ; liste des panneaux en alternative accessible.
 
@@ -694,21 +717,25 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Chaque statut a une couleur **et** une icône.
 - [ ] La liste alternative donne accès aux mêmes informations.
 
-**Dépend de :** #28, #32 · **Références :** [UML, section 6](02-uml.md)
+**Dépend de :** #28, #32, #73 · **Références :** [UML, section 6](02-uml.md)
 
-### #36 · Mobile : écran Détail d'un panneau
+### #36 · Mobile : brancher l'écran Détail d'un panneau
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #74 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **Critères d'acceptation :**
 - [ ] Affiche production, production attendue, température, statut, alertes actives et historique.
 - [ ] Conforme aux maquettes.
 
-**Dépend de :** #35
+**Dépend de :** #35, #74 
 
 ### #37 · Mobile : affichage sans réseau
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #70 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** détection de la connexion (`netinfo`) ; bandeau « Hors ligne · données du {date} » ; écrans alimentés par SQLite ; pas d'erreur bloquante.
 
@@ -716,7 +743,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] En mode avion, chaque écran affiche les dernières données reçues et leur ancienneté.
 - [ ] Le retour du réseau relance le rafraîchissement sans action de l'utilisateur.
 
-**Dépend de :** #34, #35 · **Références :** [Étude, section 8](../etude-faisabilite-parc-solaire.md)
+**Dépend de :** #34, #35, #70 · **Références :** [Étude, section 8](../etude-faisabilite-parc-solaire.md)
 
 ---
 
@@ -805,9 +832,11 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #41 · **Références :** [Cartographie, section 7.1](03-cartographie-technique.md)
 
-### #45 · Mobile : écran Pilotage
+### #45 · Mobile : brancher l'écran Pilotage
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #75 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** choix du mode, curseur de part batterie (pas de 10 %), schéma des flux, jauge de batterie, bouton « Appliquer », dialogue de confirmation, suivi du statut (interrogation toutes les 2 s, 60 s au plus), affichage du résultat et de la raison ; pilotage désactivé pour un `viewer`, sans réseau ou si l'objet est hors ligne, avec un message expliquant pourquoi.
 
@@ -816,16 +845,18 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] Chaque raison de refus a un libellé français compréhensible.
 - [ ] Les trois cas de désactivation affichent leur message.
 
-**Dépend de :** #28, #37, #42 · **Références :** [UML, UC07](02-uml.md), maquettes (#2)
+**Dépend de :** #28, #37, #42, #75 · **Références :** [UML, UC07](02-uml.md), maquettes (#2)
 
-### #46 · Mobile : historique des consignes
+### #46 · Mobile : brancher l'historique des consignes
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #75 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **Critères d'acceptation :**
 - [ ] Liste sur l'écran Pilotage : date, auteur, demande, résultat ; chargement de la page suivante au défilement.
 
-**Dépend de :** #44, #45
+**Dépend de :** #44, #45, #75 
 
 ---
 
@@ -865,9 +896,11 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #27, #47 · **Références :** [UML, séquence 4.5](02-uml.md)
 
-### #50 · Mobile : notifications et écran Alertes
+### #50 · Mobile : notifications et branchement de l'écran Alertes
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #76 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** demande d'autorisation et enregistrement du jeton après connexion, suppression à la déconnexion ; écran Alertes (actives puis résolues, gravité par couleur et icône) ; appui sur une notification → écran Alertes.
 
@@ -875,7 +908,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] La notification arrive app fermée et app ouverte.
 - [ ] Après déconnexion, le téléphone ne reçoit plus de notification.
 
-**Dépend de :** #28, #48, #49
+**Dépend de :** #28, #48, #49, #76 
 
 ---
 
@@ -1029,9 +1062,11 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 
 **Dépend de :** #27, #31, #32 · **Références :** [Cartographie, section 7](03-cartographie-technique.md), [UML, séquence 4.6](02-uml.md)
 
-### #62 · Mobile : panneaux à positionner
+### #62 · Mobile : brancher les panneaux à positionner
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Interface :** réalisée avec des données d'exemple dans #73 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :** dans la vue Liste de l'écran Carte, section « Panneaux à positionner » (code, date de détection, dernière production) ; bouton « Placer ici » qui demande l'autorisation de localisation (`expo-location`), affiche la position et sa précision, puis envoie le `PATCH` ; formulaire pour corriger le nom et la puissance ; suppression avec confirmation. Actions masquées pour un `viewer`.
 
@@ -1040,7 +1075,7 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - [ ] Refus de la localisation : message expliquant comment l'autoriser, aucune erreur bloquante.
 - [ ] Conforme à la maquette « Carte · liste et panneaux à positionner ».
 
-**Dépend de :** #35, #61 · **Références :** [UML, UC17](02-uml.md), maquettes (#2)
+**Dépend de :** #35, #61, #73 · **Références :** [UML, UC17](02-uml.md), maquettes (#2)
 
 ## 11. Ajouts suite au changement de broker
 
@@ -1083,3 +1118,122 @@ Issues ajoutées le 6 novembre 2026 ([D023](../journal/decisions/D023-broker-mos
 - [ ] La solution retenue est tracée dans une fiche de décision.
 
 **Dépend de :** #11 · **Références :** [D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md), [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)
+
+## 12. M8 · Intégration de l'interface
+
+Milestone ajoutée le 6 novembre 2026 ([D025](../journal/decisions/D025-integration-interface.md)). Elle ne dépend que du socle et avance en parallèle de « Fil de bout en bout » : l'app est construite entièrement sur des données d'exemple, puis chaque issue « brancher » remplace la source `mock` par la source `api`.
+
+**Règles communes à ces issues :** respecter les maquettes et la charte (`05-charte-graphique.md`), aucune couleur en dur, accessibilité du skill `mobile-screen`. Les écrans lisent leurs données uniquement par les hooks de `src/api/`, alimentés par la couche `src/data/` ; aucune donnée d'exemple n'est écrite dans un écran.
+
+### #68 · Mobile : thème, polices et icônes
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** `src/theme/` : jetons de couleur clair et sombre repris de la charte (mêmes noms), styles de texte (`title`, `heading`, `body`, `label`, `caption`, `metric-xl`, `metric`), espacements et rayons ; chargement des polices Red Hat (Display, Text, Mono) avant l'affichage ; icônes Phosphor ; thème choisi selon le réglage du téléphone.
+
+**Critères d'acceptation :**
+- [ ] Les valeurs des jetons sont identiques à celles de la charte.
+- [ ] Changer le thème du téléphone change le thème de l'app sans redémarrage.
+- [ ] Aucune couleur n'est écrite en dur hors de `src/theme/`.
+
+**Dépend de :** #15 · **Références :** [Charte](05-charte-graphique.md), [D016](../journal/decisions/D016-typographie-red-hat.md), [D017](../journal/decisions/D017-icones-phosphor.md), [D018](../journal/decisions/D018-palette-et-themes.md)
+
+### #69 · Mobile : navigation et composants communs
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** barre d'onglets (Supervision, Carte, Pilotage, Alertes, avec le nombre d'alertes actives), en-têtes d'écran, cartes, pastilles d'état (fond clair bordé de sa couleur), jauges, bandeaux, boutons, champs, sélecteurs segmentés, feuille du bas avec confirmation, graphique de courbe, formatage des nombres et des dates en français.
+
+**Critères d'acceptation :**
+- [ ] Chaque composant est utilisable dans les deux thèmes.
+- [ ] Zones tactiles d'au moins 48 px, libellés d'accessibilité sur les éléments sans texte.
+- [ ] Un test de rendu par composant principal.
+
+**Dépend de :** #68 · **Références :** [Maquettes](05-charte-graphique.md)
+
+### #70 · Mobile : couche de données remplaçable et jeu de données d'exemple
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :**
+- `src/data/` : une interface `DataSource` (une méthode par route de la section 7.2 de la cartographie utilisée par l'app), typée avec `@solar/contracts`.
+- Une implémentation `mock` : données d'exemple (site de démonstration, 20 panneaux et un panneau à positionner, historiques, consignes, alertes), mesures qui évoluent dans le temps, application des consignes selon l'algorithme de la section 7 de l'UML, scénarios (normal, objet hors ligne, batterie pleine, aucune alerte).
+- Choix de la source par `EXPO_PUBLIC_DATA_SOURCE` (`mock` par défaut tant que la source `api` n'existe pas) ; scénario par `EXPO_PUBLIC_MOCK_SCENARIO`.
+- `src/api/` : hooks TanStack Query qui appellent la source active ; rafraîchissement de 5 s, de 2 s pendant l'attente d'une consigne.
+
+**Critères d'acceptation :**
+- [ ] Les données d'exemple sont validées par les schémas Zod de `@solar/contracts` (test).
+- [ ] Ajouter la source `api` ne demandera de modifier aucun écran ni hook : seulement d'écrire une implémentation de `DataSource` et de changer la variable.
+- [ ] L'algorithme de pilotage du mock suit le tableau « statut renvoyé » de la section 7 de l'UML (test).
+
+**Dépend de :** #9, #15 · **Références :** [Cartographie, sections 5.3 et 7](03-cartographie-technique.md), [UML, section 7](02-uml.md)
+
+### #71 · Mobile : intégration de l'écran Connexion
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** écran et état d'erreur des maquettes ; connexion simulée par la source `mock` (comptes exploitant et lecteur) ; garde de navigation vers la connexion ; déconnexion.
+
+**Critères d'acceptation :**
+- [ ] Conforme aux maquettes (normal et erreur, clair et sombre).
+- [ ] Le rôle connecté est disponible pour tous les écrans.
+
+**Dépend de :** #69, #70
+
+### #72 · Mobile : intégration de l'écran Supervision
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** écran de la maquette : statut de l'objet, fraîcheur, production réelle et attendue, batterie, réseau, mode en vigueur, alertes actives, graphique avec choix de période ; états chargement et hors ligne.
+
+**Critères d'acceptation :**
+- [ ] Conforme aux maquettes dans tous ses états, clair et sombre.
+- [ ] Les valeurs changent en direct avec la source `mock`.
+
+**Dépend de :** #69, #70
+
+### #73 · Mobile : intégration de l'écran Carte et de la vue liste
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** plan du parc dessiné à partir des positions des panneaux ([D025](../journal/decisions/D025-integration-interface.md)), statut de chaque panneau (couleur, icône, mot), légende ; vue liste avec la section « Panneaux à positionner » et la feuille de placement.
+
+**Critères d'acceptation :**
+- [ ] Conforme aux maquettes (carte, liste, placement), clair et sombre.
+- [ ] La vue liste donne accès aux mêmes informations que la carte.
+
+**Dépend de :** #69, #70
+
+### #74 · Mobile : intégration de l'écran Détail d'un panneau
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** écran de la maquette : statut, production réelle et attendue, température, alerte active, historique.
+
+**Critères d'acceptation :**
+- [ ] Conforme à la maquette, clair et sombre.
+
+**Dépend de :** #69, #70
+
+### #75 · Mobile : intégration de l'écran Pilotage
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** état appliqué, répartition et batterie, nouvelle consigne (mode, part batterie par pas de 10 %), confirmation, attente, résultat (appliquée, partielle, refusée), objet hors ligne, rôle lecteur, historique des consignes.
+
+**Critères d'acceptation :**
+- [ ] Les huit états des maquettes sont atteignables avec la source `mock`.
+- [ ] Conforme aux maquettes, clair et sombre.
+
+**Dépend de :** #69, #70
+
+### #76 · Mobile : intégration de l'écran Alertes
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**À faire :** alertes actives et résolues, gravité (couleur, icône, mot), lien vers le panneau, état « aucune alerte ».
+
+**Critères d'acceptation :**
+- [ ] Conforme aux maquettes, clair et sombre.
+
+**Dépend de :** #69, #70

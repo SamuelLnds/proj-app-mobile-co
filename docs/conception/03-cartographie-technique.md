@@ -125,8 +125,8 @@ flowchart BT
 | Navigation mobile | **Expo Router** | Navigation par fichiers, standard actuel d'Expo | React Navigation configurée à la main |
 | Appels réseau côté app | **TanStack Query** | Rafraîchissement périodique, états de chargement et d'erreur, nouvelle tentative automatique | `fetch` et `setInterval` écrits à la main |
 | Stockage local côté app | **SQLite** (`expo-sqlite`) | Dernières données disponibles sans réseau, historique local consultable ([D014](../journal/decisions/D014-stockage-local-sqlite.md)) | AsyncStorage (clé-valeur, moins adapté à des listes) |
-| Carte | **react-native-maps** | Simple, fonctionne avec Expo, suffisant pour 20 marqueurs | MapLibre (utile seulement pour des cartes hors ligne, hors socle) |
-| Graphiques | **react-native-gifted-charts** | Courbes et jauges simples, s'appuie sur `react-native-svg` | Victory Native (plus lourd : Skia, Reanimated) |
+| Carte | **Plan du parc dessiné avec `react-native-svg`** | Fidèle à la maquette, aucune clé Google, fonctionne hors ligne ([D025](../journal/decisions/D025-integration-interface.md)) | react-native-maps (clé Google Maps sur Android), MapLibre |
+| Graphiques | **Courbes dessinées avec `react-native-svg`** | Simples, sous contrôle, mêmes jetons que la charte ([D025](../journal/decisions/D025-integration-interface.md)) | react-native-gifted-charts, Victory Native |
 | API | **Fastify** | Rapide, validation de schémas intégrée, injection de requêtes pour les tests | Express, NestJS, GraphQL ([D010](../journal/decisions/D010-api-rest-fastify.md)) |
 | Validation | **Zod** (+ `fastify-type-provider-zod`) | Un schéma décrit un format une seule fois : il vérifie les données à l'exécution et fournit le type TypeScript | JSON Schema écrit à la main, class-validator |
 | Accès à la base | **Drizzle ORM** + `pg` | Schéma en TypeScript proche du SQL, migrations générées, SQL brut possible pour TimescaleDB | Prisma (moins à l'aise avec TimescaleDB), requêtes SQL sans outil |
@@ -224,8 +224,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push |
-| `react-native-maps` | Carte |
-| `react-native-gifted-charts`, `react-native-svg`, `expo-linear-gradient` | Graphiques |
+| `react-native-svg` | Plan du parc, courbes, icônes Phosphor |
 | `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
 | `phosphor-react-native` | Icônes (choix confirmé à l'étape 3) |
 | `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
@@ -244,7 +243,8 @@ apps/mobile/
 │   │   └── alerts.tsx
 │   └── panel/[id].tsx            # Détail d'un panneau
 ├── src/
-│   ├── api/                      # Client HTTP et hooks TanStack Query par ressource
+│   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE
+│   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active
 │   ├── auth/                     # Contexte d'authentification, stockage du jeton
 │   ├── storage/                  # Base SQLite locale : schéma, lecture, écriture
 │   ├── components/               # Composants réutilisables
@@ -530,6 +530,8 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` | `5432` / `1883` / `8883` | non |
 | simulator | `EXTRA_PANELS` | `P21` | non |
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
+| mobile | `EXPO_PUBLIC_DATA_SOURCE` | `mock` ou `api` | non |
+| mobile | `EXPO_PUBLIC_MOCK_SCENARIO` | `normal`, `device_offline`, `battery_full`, `no_alerts` | non |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
 Côté firmware, les identifiants WiFi et MQTT sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné.
