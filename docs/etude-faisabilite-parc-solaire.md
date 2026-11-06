@@ -89,6 +89,7 @@ Production solaire ──┬──▶ Batterie (charge)
 |---|---|
 | **Manuel** | L'utilisateur règle depuis l'app la part de la production envoyée vers la batterie (de 0 à 100 %), le reste part vers le réseau |
 | **Automatique** | L'ESP32 applique une règle locale : charger la batterie jusqu'à 80 %, puis envoyer tout le surplus vers le réseau |
+| **Restitution** | La batterie se décharge vers le réseau (par exemple pendant une pointe de consommation), jusqu'à 20 % |
 
 ### Limites de sécurité appliquées par l'objet
 
@@ -136,25 +137,28 @@ flowchart LR
 ### Topics MQTT
 
 ```
-parc/{site}/mesures    # ESP32 → API : ensoleillement, production, température,
-                       #               niveau batterie, puissance vers batterie, puissance vers réseau
-parc/{site}/consigne   # API → ESP32 : { id, mode, part_batterie }            (retained)
-parc/{site}/etat       # ESP32 → API : { id_consigne, mode, part_appliquee,
-                       #               refus, raison }                        (retained)
-parc/{site}/statut     # ESP32 → API : online / offline (Last Will)           (retained)
+solar/{site}/measurements               # ESP32 → API : production, batterie, flux
+solar/{site}/panels/{panel}/measurements # simulateur → API : production d'un panneau
+solar/{site}/setpoint                   # API → ESP32 : mode et part batterie       (retained)
+solar/{site}/state                      # ESP32 → API : ce qui est appliqué, refus  (retained)
+solar/{site}/status                     # ESP32 → API : en ligne / hors ligne (Last Will, retained)
 ```
+
+Le format exact de chaque message est défini dans [conception/03-cartographie-technique.md](conception/03-cartographie-technique.md).
 
 ### API REST
 
 | Méthode | Route | Rôle |
 |---|---|---|
-| POST | `/auth/login` | Connexion, renvoie un JWT |
-| GET | `/sites/:id` | Dernières mesures, état de la batterie, consigne en cours et état appliqué |
-| GET | `/sites/:id/mesures?depuis=…` | Historique |
-| POST | `/sites/:id/consigne` | Nouvelle consigne (rôle exploitant uniquement) |
-| GET | `/sites/:id/consignes` | Historique des consignes et de leur application |
-| GET | `/panneaux` | Liste des panneaux avec statut (pour la carte) |
-| GET | `/alertes` | Alertes en cours et passées |
+| POST | `/v1/auth/login` | Connexion, renvoie un JWT |
+| GET | `/v1/sites/{id}` | Dernières mesures, état de la batterie, consigne en vigueur et état appliqué |
+| GET | `/v1/sites/{id}/measurements` | Historique |
+| POST | `/v1/sites/{id}/setpoints` | Nouvelle consigne (rôle exploitant uniquement) |
+| GET | `/v1/sites/{id}/setpoints` | Historique des consignes et de leur application |
+| GET | `/v1/sites/{id}/panels` | Panneaux avec statut (pour la carte) |
+| GET | `/v1/alerts` | Alertes en cours et passées |
+
+La liste complète des routes est dans [conception/03-cartographie-technique.md](conception/03-cartographie-technique.md).
 
 Le « temps réel » passe par un rafraîchissement automatique toutes les quelques secondes côté app. Un flux poussé (SSE) est un bonus.
 
@@ -180,12 +184,14 @@ Les autres panneaux de la carte sont simulés par un script qui publie des mesur
 
 | Table | Contenu |
 |---|---|
-| `site` | id, nom, latitude, longitude, capacité de la batterie |
-| `panneau` | id, site, nom, latitude, longitude, puissance nominale |
-| `mesure` | horodatage, site, ensoleillement, production, température, niveau batterie, puissance vers batterie, puissance vers réseau (table TimescaleDB) |
-| `consigne` | id, site, auteur, date, mode, part demandée, part appliquée, statut (envoyée, appliquée, partielle, refusée), raison |
-| `alerte` | site ou panneau, type, début, fin, statut |
-| `utilisateur` | identifiant, mot de passe haché, rôle (exploitant, lecteur) |
+| `sites` | Site : nom, position, capacité de la batterie |
+| `panels` | Panneaux : site, nom, position, puissance nominale |
+| `site_measurements`, `panel_measurements` | Mesures (tables TimescaleDB) : ensoleillement, production, température, niveau de batterie, flux |
+| `setpoints` | Consignes : auteur, date, mode, part demandée, part appliquée, statut, raison |
+| `alerts` | Alertes : site ou panneau, type, début, fin, statut |
+| `users` | Utilisateurs : identifiant, mot de passe haché, rôle (exploitant, lecteur) |
+
+Le modèle complet (colonnes, types, contraintes) est dans [conception/01-modele-donnees.md](conception/01-modele-donnees.md). Les noms techniques sont en anglais.
 
 **Règles d'alerte** (volontairement simples) :
 
