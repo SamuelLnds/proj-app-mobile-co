@@ -120,4 +120,4 @@ L'app suit le réglage clair ou sombre du téléphone. Les couleurs sont défini
 ## 7. Écarts et points ouverts
 
 - Le design system ne contient pas encore de composants réutilisables (boutons, pastilles, cartes) : ils seront écrits directement en React Native à partir des jetons.
-- Les maquettes n'ont pas encore été relues par le groupe (critère de l'issue #2).
+- Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).

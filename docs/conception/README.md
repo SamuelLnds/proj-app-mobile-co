@@ -6,8 +6,8 @@ Documents de référence du projet. En cas de contradiction entre un document et
 |---|---|---|
 | 1. Modélisation | [01-modele-donnees.md](01-modele-donnees.md) · [02-uml.md](02-uml.md) · [03-cartographie-technique.md](03-cartographie-technique.md) | À relire par le groupe |
 | 2. Besoins fonctionnels | [04-besoins-fonctionnels.md](04-besoins-fonctionnels.md) · [issues GitHub](https://github.com/SamuelLnds/proj-app-mobile-co/issues) | Terminé |
-| 3. Maquettage | [05-charte-graphique.md](05-charte-graphique.md) · design system et maquettes (liens dans le document) | À relire par le groupe |
-| 4. Règles de travail | `CLAUDE.md`, dossier `.claude/` | À faire |
+| 3. Maquettage | [05-charte-graphique.md](05-charte-graphique.md) · design system et maquettes (liens dans le document) | Validé par le binôme |
+| 4. Règles de travail | [`CLAUDE.md`](../../CLAUDE.md), dossier `.claude/` (réglages partagés et skills) | À relire par le binôme |
 | 5. Socle | Dépendances, découpage du dépôt, Dependabot, CI/CD | À faire |
 
 Contexte et périmètre : [../etude-faisabilite-parc-solaire.md](../etude-faisabilite-parc-solaire.md).
