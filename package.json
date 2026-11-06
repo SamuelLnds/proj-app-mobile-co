@@ -6,7 +6,7 @@
   "description": "Supervision et pilotage d'un petit parc solaire (app mobile, API, simulateur, firmware)",
   "packageManager": "pnpm@10.34.9",
   "engines": {
-    "node": ">=22",
+    "node": ">=22.13.0",
     "pnpm": ">=10"
   },
   "scripts": {

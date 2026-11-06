@@ -32,7 +32,11 @@ const config: ExpoConfig = {
       },
     ],
   ],
-  extra: { apiUrl },
+  extra: {
+    apiUrl,
+    // Projet EAS du binôme (expo.dev), utilisé par eas build et eas update
+    eas: { projectId: "fb8b2b42-bc7f-476d-a96c-528db6e36d6a" },
+  },
 };
 
 export default config;
