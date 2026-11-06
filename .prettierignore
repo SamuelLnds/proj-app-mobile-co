@@ -9,3 +9,4 @@ supports-cours
 CLAUDE.md
 .claude
 firmware
+apps/api/src/db/migrations
