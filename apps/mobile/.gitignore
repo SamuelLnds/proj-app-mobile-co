@@ -1,0 +1,16 @@
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+
+# Dossiers natifs générés (build géré par EAS)
+/ios
+/android
+
+# Signature et métadonnées locales
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
