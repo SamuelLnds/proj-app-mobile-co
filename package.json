@@ -12,13 +12,19 @@
   "scripts": {
     "dev": "echo \"Aucun service à lancer pour l'instant : sera complété avec la base, l'API et le simulateur.\"",
     "build": "pnpm -r --if-present build",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "pnpm -r --if-present lint && eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "format": "pnpm -r --if-present format",
-    "format:check": "pnpm -r --if-present format:check"
+    "format": "pnpm -r --if-present format && prettier --write .",
+    "format:check": "pnpm -r --if-present format:check && prettier --check ."
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
   }
 }
