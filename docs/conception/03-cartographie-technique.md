@@ -16,7 +16,7 @@ flowchart LR
   end
 
   subgraph external["Services externes"]
-    MQ["HiveMQ Cloud<br/>broker MQTT · TLS"]
+    TUN["Tunnel TCP<br/>(ou passerelle privée Wokwi)"]
     EXPO["Service de notifications Expo"]
     EAS["EAS Build<br/>(construction de l'APK)"]
   end
@@ -24,6 +24,7 @@ flowchart LR
   subgraph server["Serveur (Docker Compose)"]
     API["API<br/>Node.js · Fastify · TypeScript"]
     DB[("PostgreSQL<br/>+ TimescaleDB")]
+    MQ["Mosquitto<br/>broker MQTT"]
   end
 
   subgraph phone["Téléphone"]
@@ -31,10 +32,12 @@ flowchart LR
     LOCAL[("SQLite local<br/>expo-sqlite")]
   end
 
-  ESP -- "MQTT 8883 TLS<br/>mesures, état, statut" --> MQ
-  MQ -- "consignes" --> ESP
-  SIM -- "MQTT 8883 TLS<br/>mesures panneaux" --> MQ
-  MQ <-- "MQTT 8883 TLS" --> API
+  ESP -- "MQTT 8883 TLS<br/>mesures, état, statut" --> TUN
+  TUN --> MQ
+  MQ -- "consignes" --> TUN
+  TUN --> ESP
+  SIM -- "MQTT 1883 local<br/>panneaux, objet simulé" --> MQ
+  MQ <-- "MQTT 1883 local" --> API
   API <-- "SQL 5432" --> DB
   APP <-- "HTTPS REST + JWT" --> API
   APP <--> LOCAL
@@ -45,9 +48,9 @@ flowchart LR
 
 | Flux | Protocole | Sens | Sécurité |
 |---|---|---|---|
-| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883 | Deux sens | TLS, identifiant et mot de passe propres à l'objet |
-| Simulateur → broker | MQTT 3.1.1 sur TLS, port 8883 | Montant | TLS, identifiant propre au simulateur |
-| API ↔ broker | MQTT 3.1.1 sur TLS, port 8883 | Deux sens | TLS, identifiant propre à l'API |
+| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883, via un tunnel TCP ou la passerelle privée de Wokwi | Deux sens | TLS (autorité de certification du projet), identifiant et mot de passe propres à l'objet, droits limités à ses topics |
+| Simulateur ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens (mode objet du site) | Identifiant propre au simulateur, droits limités ; port publié sur 127.0.0.1 uniquement |
+| API ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens | Identifiant propre à l'API ; port publié sur 127.0.0.1 uniquement |
 | App ↔ API | HTTPS, JSON | Deux sens | JWT dans l'en-tête `Authorization: Bearer` |
 | App ↔ SQLite local | Appels locaux | Deux sens | Données non sensibles uniquement (le JWT est dans `expo-secure-store`) |
 | API → Expo | HTTPS | Montant | Jeton d'accès Expo (optionnel en développement) |
@@ -59,10 +62,10 @@ flowchart LR
 
 | Environnement | Où tourne quoi | Usage |
 |---|---|---|
-| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker HiveMQ Cloud (cluster de développement) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
-| **Démonstration** | API et base dans Docker Compose sur un serveur accessible en HTTPS ; même broker ; APK installé sur le téléphone de test | Soutenance |
+| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
+| **Démonstration** | API, base et broker dans Docker Compose sur un serveur accessible en HTTPS ; APK installé sur le téléphone de test | Soutenance |
 
-L'hébergement de démonstration reste à choisir (section 11). Wokwi gratuit ne joignant que des services sur Internet, **le broker est toujours hébergé**, y compris en développement ([D008](../journal/decisions/D008-broker-hivemq-cloud.md)).
+L'hébergement de démonstration reste à choisir (section 11). Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
 
 ## 3. Organisation du dépôt
 
@@ -128,7 +131,7 @@ flowchart BT
 | Validation | **Zod** (+ `fastify-type-provider-zod`) | Un schéma décrit un format une seule fois : il vérifie les données à l'exécution et fournit le type TypeScript | JSON Schema écrit à la main, class-validator |
 | Accès à la base | **Drizzle ORM** + `pg` | Schéma en TypeScript proche du SQL, migrations générées, SQL brut possible pour TimescaleDB | Prisma (moins à l'aise avec TimescaleDB), requêtes SQL sans outil |
 | Base | **PostgreSQL + TimescaleDB** | Relationnel et séries temporelles dans une seule base | InfluxDB, QuestDB ([D009](../journal/decisions/D009-base-timescaledb.md)) |
-| Broker | **HiveMQ Cloud** (offre gratuite) | TLS inclus, rien à administrer, joignable depuis Wokwi | Mosquitto auto-hébergé, AWS IoT ([D008](../journal/decisions/D008-broker-hivemq-cloud.md)) |
+| Broker | **Mosquitto auto-hébergé** (Docker Compose) | Gratuit, sans service externe, droits par client et TLS configurés par le projet | HiveMQ Cloud (offre gratuite fermée), EMQX Cloud, AWS IoT ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)) |
 | Client MQTT (Node) | **mqtt.js** (`mqtt`) | Référence en Node.js, reconnexion automatique | — |
 | Mots de passe | **argon2** (argon2id) | Recommandé par l'OWASP | bcrypt |
 | Authentification | **JWT** via `@fastify/jwt` | Sans état, simple à vérifier | Sessions (état côté serveur) |
@@ -272,7 +275,9 @@ apps/mobile/
 | `tsx` | Exécution |
 | `@solar/contracts` (interne) | Format des messages et topics |
 
-Comportement : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo. La variable `EXTRA_PANELS` (par exemple `P21`) ajoute des panneaux absents du seed : l'API les détecte et les crée à l'état « non positionné », ce qui permet de démontrer l'inventaire ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)).
+**Mode objet du site** (`SIMULATE_DEVICE=true`, [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) : le simulateur joue aussi l'ESP32. Il publie les mesures du site toutes les 5 s (ensoleillement suivant une courbe de journée accélérée), son statut et son Last Will, et applique les consignes avec l'algorithme de la section 7 de `02-uml.md`, qui sert d'implémentation de référence testée pour le firmware.
+
+Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo. La variable `EXTRA_PANELS` (par exemple `P21`) ajoute des panneaux absents du seed : l'API les détecte et les crée à l'état « non positionné », ce qui permet de démontrer l'inventaire ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)).
 
 ### 5.5 `firmware/site-device` (plus tard)
 
@@ -289,7 +294,8 @@ Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de
 
 | Service Docker Compose | Image | Port exposé | Rôle |
 |---|---|---|---|
-| `db` | `timescale/timescaledb` (étiquette PostgreSQL 16 ou plus) | 5432 (développement seulement) | Base de données |
+| `db` | `timescale/timescaledb` (étiquette PostgreSQL 16 ou plus) | `DB_PORT`, 5432 par défaut (développement seulement) | Base de données |
+| `mqtt` | `eclipse-mosquitto:2` | `MQTT_PORT` (1883, sur 127.0.0.1 uniquement) et `MQTTS_PORT` (8883, TLS) | Broker MQTT ; configuration dans `infra/mosquitto/config/` (`mosquitto.conf`, `acl`), mots de passe hachés et certificats générés par `pnpm mqtt:setup` dans `infra/mosquitto/generated/` (ignoré par Git) |
 | `api` | Construite depuis `apps/api` | 3000 | API (démo ; en développement l'API tourne avec `tsx`) |
 
 ## 6. Contrat MQTT
@@ -401,10 +407,10 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 
 ### 6.3 Identifiants sur le broker
 
-| Client | Identifiant MQTT | Droits souhaités (si l'offre HiveMQ Cloud le permet) |
+| Client | Identifiant MQTT | Droits (fichier `infra/mosquitto/config/acl`) |
 |---|---|---|
 | Objet | `device-site01` | Publier sur `solar/SITE01/measurements`, `state`, `status` ; s'abonner à `solar/SITE01/setpoint` |
-| Simulateur | `simulator` | Publier sur `solar/SITE01/panels/+/measurements` ; s'abonner à `solar/SITE01/measurements` |
+| Simulateur | `simulator` | Publier sur `solar/SITE01/panels/+/measurements` ; lire et publier `solar/SITE01/measurements` ; en mode objet du site, publier `status` et `state`, lire `setpoint` |
 | API | `api` | Tous les topics `solar/#` |
 
 ## 7. Contrat de l'API REST
@@ -510,7 +516,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | api | `PORT` | `3000` | non |
 | api | `DATABASE_URL` | `postgres://solar:***@localhost:5432/solar` | **oui** |
 | api | `JWT_SECRET` | 64 caractères aléatoires | **oui** |
-| api | `MQTT_URL` | `mqtts://xxxx.s1.eu.hivemq.cloud:8883` | non |
+| api | `MQTT_URL` | `mqtt://127.0.0.1:1883` (`127.0.0.1` plutôt que `localhost`, qui désigne d'abord `::1` sous Windows) | non |
 | api | `MQTT_USERNAME` / `MQTT_PASSWORD` | `api` / `***` | **oui** (mot de passe) |
 | api | `EXPO_ACCESS_TOKEN` | facultatif | **oui** |
 | api | `LOG_LEVEL` | `info` | non |
@@ -518,6 +524,10 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` | | **oui** (mot de passe) |
 | simulator | `SITE_CODE` | `SITE01` | non |
 | simulator | `FAULTY_PANELS` | `P07,P12` | non |
+| simulator | `SIMULATE_DEVICE` | `true` (le simulateur joue l'objet du site) | non |
+| infra | `MQTT_API_PASSWORD` / `MQTT_SIMULATOR_PASSWORD` / `MQTT_DEVICE_PASSWORD` | `***` | **oui** |
+| infra | `MQTT_TLS_HOSTS` | `localhost,bore.pub` | non |
+| infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` | `5432` / `1883` / `8883` | non |
 | simulator | `EXTRA_PANELS` | `P21` | non |
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
@@ -535,7 +545,8 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D010](../journal/decisions/D010-api-rest-fastify.md) | REST + interrogation périodique, pas de WebSocket ni de GraphQL dans le socle |
 | [D003](../journal/decisions/D003-pilotage-batterie-reseau.md) | L'objet a toujours le dernier mot sur la batterie ; l'API valide aussi les bornes |
 | [D006](../journal/decisions/D006-protocole-mqtt.md) | MQTT 3.1.1, consigne publiée en retained |
-| [D008](../journal/decisions/D008-broker-hivemq-cloud.md) | Broker hébergé (HiveMQ Cloud) même en développement |
+| [D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md) | Broker Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel TCP |
+| [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur peut jouer l'objet du site ; connexion de Wokwi repoussée au firmware |
 | [D009](../journal/decisions/D009-base-timescaledb.md) | Historique agrégé à la volée avec `time_bucket()` |
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
 
@@ -546,6 +557,6 @@ Les versions sont fixées à l'installation et tenues à jour par Dependabot : a
 | Sujet | Options | À trancher |
 |---|---|---|
 | Hébergement de démonstration (API + base) | Petit serveur avec Docker Compose et HTTPS (Caddy) ; offre gérée avec TimescaleDB | Avant la fin du socle |
-| Droits par client sur HiveMQ Cloud | Selon ce que permet l'offre gratuite | À la création du compte |
+| Connexion de l'ESP32 de Wokwi au broker | Tunnel TCP gratuit (bore ou équivalent) ; passerelle privée Wokwi (payante) ; vrai ESP32 | Avant le travail sur le firmware (issue #65) |
 | Polices, icônes, couleurs | Red Hat, Phosphor, palette accessible | Étape 3 (maquettage) |
 | Bibliothèque de test de bout en bout mobile | Maestro, ou rien dans le socle | Étape 5 |

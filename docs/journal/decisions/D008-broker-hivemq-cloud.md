@@ -3,9 +3,11 @@
 | | |
 |---|---|
 | **Date** | 2026-11-06 |
-| **Statut** | Acceptée |
+| **Statut** | Remplacée par [D023](D023-broker-mosquitto-auto-heberge.md) |
 | **Décideurs** | À compléter |
 | **Liens** | [Cartographie technique](../../conception/03-cartographie-technique.md), sections 1 et 6 |
+
+> Remplacée par [D023](D023-broker-mosquitto-auto-heberge.md) le 6 novembre 2026 : HiveMQ n'accepte plus de nouveau cluster Serverless gratuit (fin de l'offre le 31 décembre 2026).
 
 ## Contexte
 

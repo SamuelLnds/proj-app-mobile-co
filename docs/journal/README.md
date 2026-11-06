@@ -37,7 +37,7 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D005](decisions/D005-framework-mobile.md) | Framework mobile : Expo / React Native | 2026-11-06 | Acceptée |
 | [D006](decisions/D006-protocole-mqtt.md) | Protocole objet : MQTT 3.1.1 | 2026-11-06 | Acceptée |
 | [D007](decisions/D007-objet-wokwi.md) | Objet : un seul ESP32 simulé dans Wokwi | 2026-11-06 | Acceptée |
-| [D008](decisions/D008-broker-hivemq-cloud.md) | Broker : HiveMQ Cloud | 2026-11-06 | Acceptée |
+| [D008](decisions/D008-broker-hivemq-cloud.md) | Broker : HiveMQ Cloud | 2026-11-06 | Remplacée par D023 |
 | [D009](decisions/D009-base-timescaledb.md) | Base : PostgreSQL + TimescaleDB | 2026-11-06 | Acceptée |
 | [D010](decisions/D010-api-rest-fastify.md) | API : REST avec Fastify, sans GraphQL | 2026-11-06 | Acceptée |
 | [D011](decisions/D011-monorepo-contrats.md) | Monorepo pnpm et contrats Zod partagés | 2026-11-06 | Acceptée |
@@ -52,4 +52,6 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D020](decisions/D020-inventaire-des-panneaux.md) | Inventaire des panneaux : fichier de seed et rattachement automatique | 2026-11-06 | Acceptée |
 | [D021](decisions/D021-regles-de-travail.md) | Règles de travail communes : CLAUDE.md, skills et flux Git (`develop` et `main`) | 2026-11-06 | Proposée |
 | [D022](decisions/D022-socle-par-agents.md) | Socle réalisé par des agents, sur une seule branche | 2026-11-06 | Acceptée |
+| [D023](decisions/D023-broker-mosquitto-auto-heberge.md) | Broker : Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel | 2026-11-06 | Acceptée |
+| [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
 

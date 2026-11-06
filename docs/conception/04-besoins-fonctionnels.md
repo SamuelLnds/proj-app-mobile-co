@@ -103,7 +103,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #8 | Contracts : schémas des messages MQTT et topics | M1 | contracts |
 | #9 | Contracts : schémas de l'API REST | M1 | contracts |
 | #10 | Infra : base PostgreSQL + TimescaleDB avec Docker Compose | M1 | infra |
-| #11 | Créer le broker HiveMQ Cloud et les identifiants | M1 | infra |
+| #11 | Infra : broker Mosquitto auto-hébergé | M1 | infra |
 | #12 | API : squelette Fastify | M1 | api |
 | #13 | API : schéma Drizzle et migrations | M1 | api |
 | #14 | API : données de démonstration (seed) | M1 | api |
@@ -156,6 +156,8 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 | #61 | API : positionnement, modification et suppression d'un panneau | M3 | api |
 | #62 | Mobile : panneaux à positionner | M3 | mobile |
 | #63 | Bonus : ajout d'un panneau sur le terrain par QR code | M7 | api, mobile |
+| #64 | Simulateur : mode objet du site | M2 | simulator |
+| #65 | Infra : connexion de l'ESP32 de Wokwi au broker | M2 | infra |
 
 ---
 
@@ -328,20 +330,25 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **Dépend de :** #5 · **Références :** [Cartographie, sections 5.6 et 9](03-cartographie-technique.md)
 
-### #11 · Créer le broker HiveMQ Cloud et les identifiants
+### #11 · Infra : broker Mosquitto auto-hébergé
 
 **Labels :** `type:chore`, `area:infra`, `priority:core`
 
+**Contexte :** l'offre gratuite de HiveMQ Cloud n'accepte plus de nouveau cluster ; le broker est auto-hébergé ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)).
+
 **À faire :**
-- Créer le cluster gratuit, puis trois identifiants : `api`, `simulator`, `device-site01`.
-- Configurer les droits par client si l'offre le permet (section 6.3) ; sinon, le noter dans le journal.
-- Partager l'URL et les identifiants au groupe par un canal privé (jamais dans le dépôt).
+- Service `mqtt` (`eclipse-mosquitto:2`) dans `infra/docker-compose.yml` : port 1883 publié sur `127.0.0.1` uniquement, port 8883 en TLS.
+- Configuration versionnée dans `infra/mosquitto/config/` : `mosquitto.conf` (aucun accès anonyme) et `acl` (droits de la section 6.3).
+- Script `pnpm mqtt:setup` : fichier de mots de passe haché et certificats TLS (autorité du projet, certificat du serveur pour les noms de `MQTT_TLS_HOSTS`), générés dans `infra/mosquitto/generated/`, ignoré par Git.
+- Variables `MQTT_*` dans `infra/.env.example` ; `MQTT_URL=mqtt://127.0.0.1:1883` dans les `.env.example` de l'API et du simulateur.
 
 **Critères d'acceptation :**
-- [ ] Un client MQTT de test se connecte en TLS avec chacun des trois identifiants.
-- [ ] Les limites de l'offre gratuite (connexions, messages) sont notées dans le journal.
+- [x] Une connexion anonyme ou avec un mauvais mot de passe est refusée.
+- [x] Chacun des trois identifiants se connecte ; une publication hors de ses droits n'est pas distribuée.
+- [x] Une connexion TLS sur le port 8883, avec le certificat de l'autorité du projet, fonctionne.
+- [x] Aucun mot de passe ni clé privée n'est versionné.
 
-**Dépend de :** — · **Références :** [D008](../journal/decisions/D008-broker-hivemq-cloud.md)
+**Dépend de :** #10 · **Références :** [D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md), [Cartographie, sections 5.6 et 6.3](03-cartographie-technique.md)
 
 ### #12 · API : squelette Fastify
 
@@ -469,7 +476,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 
 **À faire :**
 - Connexion au réseau `Wokwi-GUEST`, synchronisation de l'heure par NTP.
-- Connexion MQTT en TLS au broker HiveMQ Cloud avec l'identifiant `device-site01`.
+- Connexion MQTT en TLS (port 8883, certificat de l'autorité du projet embarqué) au broker Mosquitto, par le moyen retenu dans #65, avec l'identifiant `device-site01`.
 - Last Will `{ "v": 1, "status": "offline" }` sur `solar/SITE01/status` (retained, QoS 1), puis publication de `online` avec la version du firmware.
 - Reconnexion automatique (WiFi et MQTT).
 
@@ -478,7 +485,7 @@ M3 et M4 peuvent avancer en parallèle une fois M2 terminé. Au sein d'une miles
 - [ ] L'arrêt brutal de la simulation fait apparaître `offline`.
 - [ ] Une coupure puis un retour du réseau rétablissent la connexion sans redémarrage.
 
-**Dépend de :** #11, #19 · **Références :** [Cartographie, section 6](03-cartographie-technique.md)
+**Dépend de :** #11, #19, #65 · **Références :** [Cartographie, section 6](03-cartographie-technique.md)
 
 ### #21 · Firmware : lecture des capteurs et publication des mesures
 
@@ -1034,3 +1041,45 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - [ ] Conforme à la maquette « Carte · liste et panneaux à positionner ».
 
 **Dépend de :** #35, #61 · **Références :** [UML, UC17](02-uml.md), maquettes (#2)
+
+## 11. Ajouts suite au changement de broker
+
+Issues ajoutées le 6 novembre 2026 ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md), [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)). Elles appartiennent à la milestone **M2 · Fil de bout en bout**.
+
+### #64 · Simulateur : mode objet du site
+
+**Labels :** `type:feature`, `area:simulator`, `priority:core`
+
+**Contexte :** tant que l'ESP32 de Wokwi n'est pas relié au broker, le simulateur joue l'objet du site pour que l'API et l'app puissent être testées de bout en bout ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
+
+**À faire :** avec `SIMULATE_DEVICE=true` :
+- connexion avec un Last Will `{ "v": 1, "status": "offline" }` sur `solar/SITE01/status` (retained, QoS 1), puis publication de `online` ;
+- publication d'un `SiteMeasurement` toutes les 5 s : ensoleillement suivant une courbe de journée accélérée, production proportionnelle, température, batterie et flux calculés ;
+- abonnement à `solar/SITE01/setpoint`, application de l'algorithme de la section 7 de l'UML (modes, limites, facteur de temps de la batterie), publication d'un `ControlState` (retained, QoS 1) à la réception et à chaque changement ;
+- l'algorithme est une fonction pure, séparée des entrées-sorties.
+
+**Critères d'acceptation :**
+- [ ] Tous les messages respectent les schémas de `@solar/contracts`.
+- [ ] Un test par ligne du tableau « statut renvoyé » de la section 7 de l'UML.
+- [ ] Un arrêt brutal du simulateur fait apparaître `offline` sur le broker.
+- [ ] Sans `SIMULATE_DEVICE`, le simulateur ne publie que les mesures des panneaux.
+
+**Dépend de :** #8, #11, #16 · **Références :** [UML, section 7](02-uml.md), [Cartographie, sections 5.4 et 6](03-cartographie-technique.md)
+
+### #65 · Infra : connexion de l'ESP32 de Wokwi au broker
+
+**Labels :** `type:chore`, `area:infra`, `priority:core`
+
+**Contexte :** en offre gratuite, Wokwi n'atteint que des services joignables depuis Internet ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)).
+
+**À faire :**
+- Tester un tunnel TCP gratuit vers le port 8883 (bore ou équivalent) ; en cas d'échec ou d'instabilité, retenir la passerelle privée de Wokwi (abonnement Hobby) ou un vrai ESP32, et le tracer dans le journal.
+- Ajouter le nom d'hôte du tunnel à `MQTT_TLS_HOSTS`, relancer `pnpm mqtt:setup`.
+- Documenter la procédure de lancement dans le README de `infra/`.
+
+**Critères d'acceptation :**
+- [ ] Un client MQTT extérieur à la machine se connecte en TLS avec l'identifiant `device-site01` et publie sur `solar/SITE01/status`.
+- [ ] La procédure est documentée et testée par l'autre membre du binôme.
+- [ ] La solution retenue est tracée dans une fiche de décision.
+
+**Dépend de :** #11 · **Références :** [D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md), [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)

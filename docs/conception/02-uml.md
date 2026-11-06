@@ -244,7 +244,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant D as Objet ESP32
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   participant App as App mobile
@@ -279,7 +279,7 @@ sequenceDiagram
   participant App as App mobile
   participant API as API
   participant DB as Base
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant D as Objet ESP32
 
   E->>App: Mode manuel, 70 % vers la batterie, « Appliquer »
@@ -317,7 +317,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant D as Objet ESP32
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   participant X as Service Expo
@@ -374,7 +374,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant S as Simulateur
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   actor E as Exploitant
