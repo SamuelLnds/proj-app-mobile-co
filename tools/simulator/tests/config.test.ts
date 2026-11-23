@@ -53,4 +53,14 @@ describe("loadConfig", () => {
       /FAULTY_PANELS/,
     );
   });
+
+  it("SIMULATE_DEVICE vaut false par défaut et accepte true ou false", () => {
+    expect(loadConfig({ ...validEnv }).SIMULATE_DEVICE).toBe(false);
+    expect(loadConfig({ ...validEnv, SIMULATE_DEVICE: "true" }).SIMULATE_DEVICE).toBe(true);
+    expect(loadConfig({ ...validEnv, SIMULATE_DEVICE: "false" }).SIMULATE_DEVICE).toBe(false);
+  });
+
+  it("refuse une valeur de SIMULATE_DEVICE autre que true ou false", () => {
+    expect(() => loadConfig({ ...validEnv, SIMULATE_DEVICE: "oui" })).toThrow(/SIMULATE_DEVICE/);
+  });
 });

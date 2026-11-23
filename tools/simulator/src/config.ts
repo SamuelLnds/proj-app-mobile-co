@@ -35,6 +35,11 @@ const ConfigSchema = z.object({
   SITE_CODE: z
     .string({ error: "obligatoire" })
     .regex(SITE_CODE_PATTERN, "code de site attendu : 3 à 16 majuscules ou chiffres (ex. SITE01)"),
+  /** Le simulateur joue l'objet du site (D024) ; seules les valeurs `true` et `false` sont acceptées. */
+  SIMULATE_DEVICE: z
+    .enum(["true", "false"], { error: "attendu : true ou false" })
+    .default("false")
+    .transform((value) => value === "true"),
   FAULTY_PANELS: panelListSchema,
   EXTRA_PANELS: panelListSchema,
 });
