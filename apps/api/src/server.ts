@@ -10,6 +10,8 @@ import { HealthResponseSchema } from "@solar/contracts";
 import type { ErrorDetail, HealthResponse } from "@solar/contracts";
 import type { Config } from "./config";
 import { AppError, errorBody } from "./errors";
+import { sitesRoutes } from "./modules/sites/routes";
+import type { SitesService } from "./modules/sites/service";
 
 export interface ServerDependencies {
   config: Pick<Config, "LOG_LEVEL" | "NODE_ENV">;
@@ -17,9 +19,11 @@ export interface ServerDependencies {
   checkDatabase: () => Promise<boolean>;
   /** Renvoie true si le client MQTT est connecté ; absent tant que le client n'existe pas. */
   checkBroker?: () => boolean;
+  /** Services métier ; un module absent n'expose pas ses routes. */
+  sites?: SitesService;
 }
 
-export function buildServer({ config, checkDatabase, checkBroker }: ServerDependencies) {
+export function buildServer({ config, checkDatabase, checkBroker, sites }: ServerDependencies) {
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -76,6 +80,8 @@ export function buildServer({ config, checkDatabase, checkBroker }: ServerDepend
         };
         return body;
       });
+
+      if (sites) sitesRoutes(v1, { service: sites });
     },
     { prefix: "/v1" },
   );

@@ -1,10 +1,20 @@
-// Point d'entrée : valide la configuration puis démarre le serveur.
+// Point d'entrée : valide la configuration, démarre le serveur puis le client MQTT.
 import { loadConfig } from "./config";
 import { createDb } from "./db/client";
+import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
+import { createMessageHandler } from "./mqtt/handlers";
+import { createMeasurementsRepository } from "./modules/measurements/repository";
+import { createMeasurementsService } from "./modules/measurements/service";
+import { createControlStateStore } from "./modules/sites/control-states";
+import { createSitesRepository } from "./modules/sites/repository";
+import { createSitesService } from "./modules/sites/service";
 import { buildServer } from "./server";
 
 const config = loadConfig();
-const { pool } = createDb(config.DATABASE_URL);
+const database = createDb(config.DATABASE_URL);
+const { pool } = database;
+let mqttClient: ApiMqttClient | null = null;
+const controlStates = createControlStateStore();
 
 const app = buildServer({
   config,
@@ -12,9 +22,27 @@ const app = buildServer({
     await pool.query("SELECT 1");
     return true;
   },
+  checkBroker: () => mqttClient?.isConnected() ?? false,
+  sites: createSitesService(createSitesRepository(database), controlStates),
 });
 
+const measurements = createMeasurementsService(createMeasurementsRepository(database), app.log);
+
+const handleMessage = createMessageHandler(
+  {
+    siteMeasurement: measurements.recordSiteMeasurement,
+    controlState: async (siteCode, state) => controlStates.set(siteCode, state),
+  },
+  app.log,
+);
+mqttClient = createMqttClient(
+  { url: config.MQTT_URL, username: config.MQTT_USERNAME, password: config.MQTT_PASSWORD },
+  (topic, payload) => void handleMessage(topic, payload),
+  app.log,
+);
+
 app.addHook("onClose", async () => {
+  await mqttClient?.close();
   await pool.end();
 });
 
