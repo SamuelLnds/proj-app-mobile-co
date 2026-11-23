@@ -203,7 +203,11 @@ export default function SupervisionScreen() {
           <Link href="/control" asChild>
             <Pressable
               accessibilityRole="link"
-              style={[styles.linkCard, { backgroundColor: colors.surfaceRaised }]}
+              // Expo Router refuse un tableau de styles sur l'enfant d'un Link asChild.
+              style={StyleSheet.flatten([
+                styles.linkCard,
+                { backgroundColor: colors.surfaceRaised },
+              ])}
             >
               <View style={styles.flex}>
                 <Text style={[typography.label, { color: colors.inkMuted }]}>Mode en vigueur</Text>
@@ -220,14 +224,14 @@ export default function SupervisionScreen() {
             <Link href="/alerts" asChild>
               <Pressable
                 accessibilityRole="link"
-                style={[
+                style={StyleSheet.flatten([
                   styles.linkCard,
                   {
                     backgroundColor: colors.statusWarningSoft,
                     borderColor: colors.statusWarning,
                     borderWidth: 1,
                   },
-                ]}
+                ])}
               >
                 <Icon name="Warning" color={colors.statusWarning} />
                 <View style={styles.flex}>
