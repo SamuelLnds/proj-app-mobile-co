@@ -1,12 +1,23 @@
-import { render, screen } from "@testing-library/react-native";
 import { ROUTES } from "@solar/contracts";
+import { render, screen } from "@testing-library/react-native";
 
 import SupervisionScreen from "../app/(tabs)/index";
+import { QueryProvider } from "../src/api";
+import { AuthProvider } from "../src/auth/AuthProvider";
+import { ThemeProvider } from "../src/theme";
 
 describe("app mobile", () => {
-  it("affiche le titre de l'écran de supervision", async () => {
-    await render(<SupervisionScreen />);
-    expect(screen.getByText("Supervision")).toBeTruthy();
+  it("affiche l'écran de supervision", async () => {
+    await render(
+      <QueryProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <SupervisionScreen />
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryProvider>,
+    );
+    expect(screen.getByRole("header", { name: "Supervision" })).toBeTruthy();
   });
 
   it("importe le paquet partagé @solar/contracts", () => {
