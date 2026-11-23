@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-23 |
-| **Statut** | Proposée |
+| **Statut** | Acceptée |
 | **Décideurs** | À compléter |
 | **Liens** | Milestone « Sécurité de l'objet » (#80 à #84) · [D023](D023-broker-mosquitto-auto-heberge.md) · [D024](D024-objet-simule-et-connexion-wokwi.md) · [D028](D028-hebergement-vps.md) · [UML, section 4.7](../../conception/02-uml.md) · [Cartographie, sections 1, 6.3 et 8](../../conception/03-cartographie-technique.md) |
 

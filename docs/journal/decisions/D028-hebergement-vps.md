@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-23 |
-| **Statut** | Proposée |
+| **Statut** | Acceptée |
 | **Décideurs** | À compléter |
 | **Liens** | Issues #54 et #65 · [D023](D023-broker-mosquitto-auto-heberge.md) · [D027](D027-certificat-objet-et-enrolement.md) · [Cartographie, sections 2 et 11](../../conception/03-cartographie-technique.md) |
 
