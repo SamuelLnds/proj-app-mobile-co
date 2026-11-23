@@ -1,6 +1,7 @@
 // Point d'entrée du simulateur : valide la configuration puis se connecte au broker MQTT.
 import { loadConfig } from "./config";
 import { connectToBroker } from "./mqtt-client";
+import { startSimulator } from "./simulator";
 
 function main(): void {
   let config;
@@ -12,9 +13,11 @@ function main(): void {
   }
 
   const client = connectToBroker(config);
+  const stopSimulator = startSimulator(client, config);
 
-  // Arrêt propre : fermer la connexion MQTT avant de quitter le processus.
+  // Arrêt propre : arrêter les minuteries puis fermer la connexion MQTT avant de quitter le processus.
   const shutdown = (): void => {
+    stopSimulator();
     client.end(true, () => process.exit(0));
   };
   process.on("SIGINT", shutdown);
