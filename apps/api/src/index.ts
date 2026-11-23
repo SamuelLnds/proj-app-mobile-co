@@ -5,12 +5,16 @@ import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
+import { createControlStateStore } from "./modules/sites/control-states";
+import { createSitesRepository } from "./modules/sites/repository";
+import { createSitesService } from "./modules/sites/service";
 import { buildServer } from "./server";
 
 const config = loadConfig();
 const database = createDb(config.DATABASE_URL);
 const { pool } = database;
 let mqttClient: ApiMqttClient | null = null;
+const controlStates = createControlStateStore();
 
 const app = buildServer({
   config,
@@ -19,12 +23,16 @@ const app = buildServer({
     return true;
   },
   checkBroker: () => mqttClient?.isConnected() ?? false,
+  sites: createSitesService(createSitesRepository(database), controlStates),
 });
 
 const measurements = createMeasurementsService(createMeasurementsRepository(database), app.log);
 
 const handleMessage = createMessageHandler(
-  { siteMeasurement: measurements.recordSiteMeasurement },
+  {
+    siteMeasurement: measurements.recordSiteMeasurement,
+    controlState: async (siteCode, state) => controlStates.set(siteCode, state),
+  },
   app.log,
 );
 mqttClient = createMqttClient(
