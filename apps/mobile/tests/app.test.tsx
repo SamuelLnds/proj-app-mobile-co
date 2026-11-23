@@ -17,7 +17,7 @@ describe("app mobile", () => {
         </AuthProvider>
       </QueryProvider>,
     );
-    expect(screen.getByRole("header", { name: "Supervision" })).toBeTruthy();
+    expect(await screen.findByRole("header", { name: "Supervision" })).toBeTruthy();
   });
 
   it("importe le paquet partagé @solar/contracts", () => {

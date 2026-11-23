@@ -32,6 +32,9 @@ export interface DataSource {
   /** Jeton JWT à joindre aux requêtes (`null` après déconnexion). */
   setToken(token: string | null): void;
 
+  /** Fonction appelée quand la source refuse le jeton (session expirée). */
+  onUnauthorized(listener: (() => void) | null): void;
+
   /** `POST /v1/auth/login` */
   login(body: LoginRequest): Promise<LoginResponse>;
 
@@ -63,7 +66,8 @@ export interface DataSource {
 /** Erreur renvoyée par une source, au format des erreurs de l'API (section 7.1). */
 export class DataSourceError extends Error {
   constructor(
-    readonly code: ErrorCode,
+    /** Code de l'API, ou `NETWORK_ERROR` quand le serveur est injoignable. */
+    readonly code: ErrorCode | "NETWORK_ERROR",
     message: string,
   ) {
     super(message);
