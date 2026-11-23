@@ -48,7 +48,7 @@ flowchart LR
 
 | Flux | Protocole | Sens | Sécurité |
 |---|---|---|---|
-| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883, via un tunnel TCP ou la passerelle privée de Wokwi | Deux sens | TLS (autorité de certification du projet), identifiant et mot de passe propres à l'objet, droits limités à ses topics. Cible (milestone « Sécurité de l'objet ») : certificat client délivré par enrôlement, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
+| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883, via un tunnel TCP ou la passerelle privée de Wokwi | Deux sens | TLS (autorité de certification du projet), identifiant et mot de passe propres à l'objet, droits limités à ses topics. Cible (milestone « Sécurité de l'objet ») : certificat client délivré par enrôlement après comparaison de l'empreinte de la clé, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | Simulateur ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens (mode objet du site) | Identifiant propre au simulateur, droits limités ; port publié sur 127.0.0.1 uniquement |
 | API ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens | Identifiant propre à l'API ; port publié sur 127.0.0.1 uniquement |
 | App ↔ API | HTTPS, JSON | Deux sens | JWT dans l'en-tête `Authorization: Bearer` |
@@ -63,9 +63,9 @@ flowchart LR
 | Environnement | Où tourne quoi | Usage |
 |---|---|---|
 | **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
-| **Démonstration** | API, base et broker dans Docker Compose sur un serveur accessible en HTTPS ; APK installé sur le téléphone de test | Soutenance |
+| **Démonstration** | API, base et broker dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
 
-L'hébergement de démonstration reste à choisir (section 11). Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
+L'hébergement final est un VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) : seuls les ports 443 (API) et 8883 (MQTT en TLS mutuel) sont ouverts sur Internet. Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; une fois le VPS en place, l'ESP32 joint directement son broker et le tunnel n'est plus utile ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
 
 ## 3. Organisation du dépôt
 
@@ -507,6 +507,9 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `BATTERY_SHARE_STEP_PCT` | 10 | App, API |
 | `DEFAULT_PANEL_RATED_POWER_W` | 200 | API (panneau détecté) |
 | `MAX_PANELS_PER_SITE` | 200 | API (limite de la création automatique) |
+| `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
+| `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
+| `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 48 | API, app (durée du certificat d'un objet) |
 | Paramètres du site de démo | crête 4 000 W, batterie 10 000 Wh, charge max 3 000 W, facteur 4.0 | Seed, objet |
 
 ## 9. Variables d'environnement
@@ -553,6 +556,7 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur peut jouer l'objet du site ; connexion de Wokwi repoussée au firmware |
 | [D009](../journal/decisions/D009-base-timescaledb.md) | Historique agrégé à la volée avec `time_bucket()` |
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
+| [D028](../journal/decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS : API, base, broker et Caddy ; Wokwi joint directement le broker |
 | [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
@@ -561,7 +565,7 @@ Les versions sont fixées à l'installation et tenues à jour par Dependabot : a
 
 | Sujet | Options | À trancher |
 |---|---|---|
-| Hébergement de démonstration (API + base) | Petit serveur avec Docker Compose et HTTPS (Caddy) ; offre gérée avec TimescaleDB | Avant la fin du socle |
+| Fournisseur du VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) | À comparer : prix, localisation des données, IPv4 publique | Avant l'issue #54 |
 | Connexion de l'ESP32 de Wokwi au broker | Tunnel TCP gratuit (bore ou équivalent) ; passerelle privée Wokwi (payante) ; vrai ESP32 | Avant le travail sur le firmware (issue #65) |
 | Polices, icônes, couleurs | Red Hat, Phosphor, palette accessible | Étape 3 (maquettage) |
 | Bibliothèque de test de bout en bout mobile | Maestro, ou rien dans le socle | Étape 5 |
