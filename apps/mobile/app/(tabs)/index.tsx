@@ -286,8 +286,14 @@ export default function SupervisionScreen() {
                   Math.max(...history.data.map((p) => p.production)),
                 )}, actuelle ${formatPower(m.production)}`}
               />
+            ) : history.isError ? (
+              <View style={styles.chartEmpty}>
+                <Text style={[typography.label, { color: colors.inkMuted }]}>
+                  Historique indisponible pour le moment.
+                </Text>
+              </View>
             ) : (
-              <View style={{ height: 150 }} />
+              <View style={styles.chartEmpty} />
             )}
           </Card>
         </>
@@ -297,6 +303,7 @@ export default function SupervisionScreen() {
 }
 
 const styles = StyleSheet.create({
+  chartEmpty: { height: 150, alignItems: "center", justifyContent: "center" },
   row: { flexDirection: "row", alignItems: "center", gap: spacing[2] },
   between: { justifyContent: "space-between", flexWrap: "wrap" },
   flex: { flex: 1 },
