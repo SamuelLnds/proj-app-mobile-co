@@ -3,6 +3,8 @@ import { loadConfig } from "./config";
 import { createDb } from "./db/client";
 import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
+import { createAuthRepository } from "./modules/auth/repository";
+import { createAuthService } from "./modules/auth/service";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
 import { createControlStateStore } from "./modules/sites/control-states";
@@ -23,6 +25,10 @@ const app = buildServer({
     return true;
   },
   checkBroker: () => mqttClient?.isConnected() ?? false,
+  auth: {
+    service: createAuthService(createAuthRepository(database)),
+    jwtSecret: config.JWT_SECRET,
+  },
   sites: createSitesService(createSitesRepository(database), controlStates),
 });
 
