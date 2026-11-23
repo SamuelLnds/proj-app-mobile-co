@@ -7,7 +7,7 @@
     "@expo-google-fonts/red-hat-mono": "^0.4.1",
     "@expo-google-fonts/red-hat-text": "^0.4.1",
     "@solar/contracts": "workspace:*",
-    "@tanstack/react-query": "^5.106.1",
+    "@tanstack/react-query": "^5.108.2",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
     "expo-dev-client": "~58.0.18",
