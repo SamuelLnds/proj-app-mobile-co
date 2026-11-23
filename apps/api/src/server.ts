@@ -1,4 +1,5 @@
 // Création de l'instance Fastify : validation Zod, gestionnaire d'erreurs unique, routes sous /v1.
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import {
   hasZodFastifySchemaValidationErrors,
@@ -10,6 +11,9 @@ import { HealthResponseSchema } from "@solar/contracts";
 import type { ErrorDetail, HealthResponse } from "@solar/contracts";
 import type { Config } from "./config";
 import { AppError, errorBody } from "./errors";
+import { registerJwt, requireRole } from "./modules/auth/plugin";
+import { authRoutes } from "./modules/auth/routes";
+import type { AuthService } from "./modules/auth/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import type { SitesService } from "./modules/sites/service";
 
@@ -19,11 +23,22 @@ export interface ServerDependencies {
   checkDatabase: () => Promise<boolean>;
   /** Renvoie true si le client MQTT est connecté ; absent tant que le client n'existe pas. */
   checkBroker?: () => boolean;
+  /**
+   * Authentification : sans elle (tests de modules isolés), les routes ne sont pas protégées.
+   * Le point d'entrée de l'API la fournit toujours.
+   */
+  auth?: { service: AuthService; jwtSecret: string };
   /** Services métier ; un module absent n'expose pas ses routes. */
   sites?: SitesService;
 }
 
-export function buildServer({ config, checkDatabase, checkBroker, sites }: ServerDependencies) {
+export function buildServer({
+  config,
+  checkDatabase,
+  checkBroker,
+  auth,
+  sites,
+}: ServerDependencies) {
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -36,6 +51,10 @@ export function buildServer({ config, checkDatabase, checkBroker, sites }: Serve
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  // Limitation de débit activée route par route (connexion uniquement).
+  void app.register(rateLimit, { global: false });
+  if (auth) void registerJwt(app, auth.jwtSecret);
 
   app.setNotFoundHandler((_request, reply) => {
     return reply.status(404).send(errorBody("NOT_FOUND", "La route demandée n'existe pas."));
@@ -81,7 +100,9 @@ export function buildServer({ config, checkDatabase, checkBroker, sites }: Serve
         return body;
       });
 
-      if (sites) sitesRoutes(v1, { service: sites });
+      if (auth) authRoutes(v1, auth.service);
+      const viewer = auth ? requireRole("viewer") : undefined;
+      if (sites) sitesRoutes(v1, { service: sites, authenticate: viewer });
     },
     { prefix: "/v1" },
   );
