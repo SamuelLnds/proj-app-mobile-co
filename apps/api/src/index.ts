@@ -3,10 +3,13 @@ import { loadConfig } from "./config";
 import { createDb } from "./db/client";
 import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
+import { createMeasurementsRepository } from "./modules/measurements/repository";
+import { createMeasurementsService } from "./modules/measurements/service";
 import { buildServer } from "./server";
 
 const config = loadConfig();
-const { pool } = createDb(config.DATABASE_URL);
+const database = createDb(config.DATABASE_URL);
+const { pool } = database;
 let mqttClient: ApiMqttClient | null = null;
 
 const app = buildServer({
@@ -18,7 +21,12 @@ const app = buildServer({
   checkBroker: () => mqttClient?.isConnected() ?? false,
 });
 
-const handleMessage = createMessageHandler({}, app.log);
+const measurements = createMeasurementsService(createMeasurementsRepository(database), app.log);
+
+const handleMessage = createMessageHandler(
+  { siteMeasurement: measurements.recordSiteMeasurement },
+  app.log,
+);
 mqttClient = createMqttClient(
   { url: config.MQTT_URL, username: config.MQTT_USERNAME, password: config.MQTT_PASSWORD },
   (topic, payload) => void handleMessage(topic, payload),
