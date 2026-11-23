@@ -55,4 +55,5 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D023](decisions/D023-broker-mosquitto-auto-heberge.md) | Broker : Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel | 2026-11-06 | Acceptée |
 | [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
 | [D025](decisions/D025-integration-interface.md) | Intégration de l'interface sur données d'exemple, couche de données remplaçable | 2026-11-06 | Acceptée |
+| [D027](decisions/D027-certificat-objet-et-enrolement.md) | Authentification de l'objet par certificat client, délivré à l'exécution par enrôlement | 2026-11-23 | Proposée |
 

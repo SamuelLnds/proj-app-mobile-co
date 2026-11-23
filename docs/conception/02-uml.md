@@ -73,6 +73,8 @@ flowchart LR
 | UC16 | Piloter l'orientation des panneaux | Exploitant | Mode automatique ou position de sécurité du tracker | Bonus |
 | UC17 | Positionner ou corriger un panneau | Exploitant | Placer un panneau détecté à la position GPS du téléphone, corriger son nom ou sa puissance, le supprimer | Socle |
 | UC18 | Ajouter un panneau sur le terrain | Exploitant | Scanner le QR code d'un panneau, capter la position, enregistrer | Bonus |
+| UC19 | S'enrôler | Objet | Demander un certificat client au démarrage, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) | Bonus |
+| UC20 | Accepter ou révoquer un objet | Exploitant | Valider une demande d'enrôlement, révoquer le certificat d'un objet volé | Bonus |
 
 ### Description détaillée de UC07 « Envoyer une consigne »
 
@@ -403,6 +405,52 @@ sequenceDiagram
 ```
 
 Un panneau supprimé par erreur réapparaît comme « détecté » à sa prochaine mesure : c'est voulu, la suppression sert à retirer un panneau qui ne publie plus.
+
+### 4.7 Enrôlement puis révocation de l'objet (UC19, UC20, bonus)
+
+Cible de sécurité décrite par [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) : l'objet n'a aucun secret dans son code, il obtient son certificat client à l'exécution après validation de l'exploitant.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as Objet ESP32
+  participant API as API (module enrollment)
+  participant DB as Base
+  actor E as Exploitant
+  participant App as App mobile
+  participant B as Broker Mosquitto
+
+  D->>D: Démarrage sans certificat valide : génère sa paire de clés (la clé privée ne quitte pas l'objet)
+  D->>API: HTTPS, demande d'enrôlement (identifiant matériel, demande de certificat avec la clé publique)
+  API->>DB: Demande enregistrée « en attente »
+  API-->>D: 202 demande en attente
+  loop Tant que la demande est en attente
+    D->>API: HTTPS, suivi de la demande
+    API-->>D: En attente
+  end
+
+  E->>App: Section « Objets », demande en attente
+  App->>API: Acceptation (JWT, rôle operator vérifié)
+  API->>API: Signature du certificat par l'autorité des objets (nom commun device-site01, courte durée)
+  API->>DB: Objet actif, empreinte du certificat
+  D->>API: HTTPS, suivi de la demande
+  API-->>D: Certificat signé (public)
+
+  D->>B: Connexion TLS mutuelle sur 8883 avec son certificat
+  B->>B: Certificat signé par l'autorité des objets et absent de la liste de révocation ?
+  B-->>D: CONNACK, identifiant MQTT = nom commun, droits de l'ACL
+  D->>B: PUBLISH status online, puis mesures (section 4.2)
+
+  Note over E,B: Objet volé
+  E->>App: Révoquer l'objet
+  App->>API: Révocation (rôle operator)
+  API->>DB: Objet révoqué
+  API->>B: Nouvelle liste de révocation, rechargement, coupure de la connexion de l'objet
+  D->>B: Nouvelle tentative de connexion avec l'ancien certificat
+  B-->>D: Refus pendant la négociation TLS
+```
+
+La demande d'enrôlement ne contient que des données publiques (identifiant, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. C'est la validation par l'exploitant qui empêche un tiers connaissant l'identifiant d'obtenir un certificat.
 
 ## 5. Diagrammes d'états
 
