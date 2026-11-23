@@ -85,8 +85,7 @@ export default function AlertsScreen() {
           ]}
         />
       }
-      refreshing={alerts.isRefetching}
-      onRefresh={() => void alerts.refetch()}
+      onRefresh={() => alerts.refetch()}
     >
       {alerts.isError ? <Banner tone="critical" title="Alertes indisponibles" /> : null}
       {alerts.isLoading ? (

@@ -112,8 +112,7 @@ export default function SupervisionScreen() {
           />
         ) : null
       }
-      refreshing={site.isRefetching}
-      onRefresh={() => void site.refetch()}
+      onRefresh={() => site.refetch()}
     >
       {!data || !m ? (
         site.isError ? (

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -13,8 +13,11 @@ type ScreenProps = {
   headerBelow?: ReactNode;
   children: ReactNode;
   scroll?: boolean;
-  refreshing?: boolean;
-  onRefresh?: () => void;
+  /**
+   * Rafraîchissement demandé en tirant l'écran. L'indicateur ne s'affiche que pendant ce geste,
+   * jamais pendant les rafraîchissements automatiques en arrière-plan.
+   */
+  onRefresh?: () => Promise<unknown>;
   /** Élément superposé (feuille du bas, dialogue). */
   overlay?: ReactNode;
 };
@@ -27,11 +30,16 @@ export function Screen({
   headerBelow,
   children,
   scroll = true,
-  refreshing,
   onRefresh,
   overlay,
 }: ScreenProps) {
   const { colors } = useTheme();
+  const [pulling, setPulling] = useState(false);
+  const refresh = () => {
+    if (!onRefresh) return;
+    setPulling(true);
+    void onRefresh().finally(() => setPulling(false));
+  };
   const content = <View style={styles.content}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} style={[styles.root, { backgroundColor: colors.surface }]}>
@@ -52,11 +60,7 @@ export function Screen({
           contentContainerStyle={styles.scroll}
           refreshControl={
             onRefresh ? (
-              <RefreshControl
-                refreshing={!!refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.primary}
-              />
+              <RefreshControl refreshing={pulling} onRefresh={refresh} tintColor={colors.primary} />
             ) : undefined
           }
         >

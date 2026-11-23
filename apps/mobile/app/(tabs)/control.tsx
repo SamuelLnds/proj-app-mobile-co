@@ -341,8 +341,7 @@ export default function ControlScreen() {
     <Screen
       title="Pilotage"
       subtitle={data?.name ?? "Parc solaire"}
-      refreshing={site.isRefetching}
-      onRefresh={() => void site.refetch()}
+      onRefresh={() => site.refetch()}
       overlay={
         <BottomSheet
           visible={confirming}

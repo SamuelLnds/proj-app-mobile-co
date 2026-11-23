@@ -51,8 +51,7 @@ export default function PanelScreen() {
           ) : null}
         </View>
       }
-      refreshing={panel.isRefetching}
-      onRefresh={() => void panel.refetch()}
+      onRefresh={() => panel.refetch()}
     >
       {!p ? (
         panel.isError ? (
