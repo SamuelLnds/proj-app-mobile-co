@@ -56,4 +56,6 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
 | [D025](decisions/D025-integration-interface.md) | Intégration de l'interface sur données d'exemple, couche de données remplaçable | 2026-11-06 | Acceptée |
 | [D026](decisions/D026-icones-phosphor-embarquees.md) | Icônes Phosphor embarquées dans le code de l'app | 2026-11-06 | Acceptée |
+| [D027](decisions/D027-certificat-objet-et-enrolement.md) | Authentification de l'objet par certificat client, délivré à l'exécution par enrôlement | 2026-11-23 | Proposée |
+| [D028](decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS | 2026-11-23 | Proposée |
 

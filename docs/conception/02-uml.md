@@ -43,12 +43,14 @@ flowchart LR
     UC13["UC13 Signaler sa présence"]
     UC14["UC14 Publier les mesures des panneaux"]
     UC17["UC17 Positionner ou corriger un panneau"]
+    UC19["UC19 S'enrôler"]
+    UC20["UC20 Accepter ou révoquer un objet"]
   end
 
   viewer --- UC01 & UC02 & UC03 & UC04 & UC05 & UC06 & UC08 & UC09 & UC10
   operator -. hérite de .-> viewer
-  operator --- UC07 & UC17
-  device --- UC11 & UC12 & UC13
+  operator --- UC07 & UC17 & UC20
+  device --- UC11 & UC12 & UC13 & UC19
   simulator --- UC14
   UC10 --- expo
 ```
@@ -73,6 +75,8 @@ flowchart LR
 | UC16 | Piloter l'orientation des panneaux | Exploitant | Mode automatique ou position de sécurité du tracker | Bonus |
 | UC17 | Positionner ou corriger un panneau | Exploitant | Placer un panneau détecté à la position GPS du téléphone, corriger son nom ou sa puissance, le supprimer | Socle |
 | UC18 | Ajouter un panneau sur le terrain | Exploitant | Scanner le QR code d'un panneau, capter la position, enregistrer | Bonus |
+| UC19 | S'enrôler | Objet | Demander un certificat client au démarrage, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) | Socle |
+| UC20 | Accepter ou révoquer un objet | Exploitant | Comparer l'empreinte d'une demande d'enrôlement et l'accepter, révoquer le certificat d'un objet volé | Socle |
 
 ### Description détaillée de UC07 « Envoyer une consigne »
 
@@ -403,6 +407,60 @@ sequenceDiagram
 ```
 
 Un panneau supprimé par erreur réapparaît comme « détecté » à sa prochaine mesure : c'est voulu, la suppression sert à retirer un panneau qui ne publie plus.
+
+### 4.7 Enrôlement puis révocation de l'objet (UC19, UC20)
+
+Sécurité de l'objet décrite par [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) : l'objet n'a aucun secret dans son code, il obtient son certificat client à l'exécution après que l'exploitant a comparé l'empreinte de sa clé.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as Objet ESP32
+  participant API as API (module enrollment)
+  participant DB as Base
+  actor E as Exploitant
+  participant App as App mobile
+  participant B as Broker Mosquitto
+
+  D->>D: Heure NTP, puis clé P-256 en mémoire et demande de certificat (CSR)
+  D->>D: Moniteur série : nom device-site01 et empreinte de la clé publique
+  D->>API: HTTPS POST, nom demandé et CSR (aucune clé privée)
+  API->>DB: Demande « en attente », empreinte, expiration dans 30 min
+  API-->>D: 202 pending et empreinte
+  loop Toutes les 3 s tant que la demande est en attente
+    D->>API: HTTPS GET, suivi par l'empreinte
+    API-->>D: pending
+  end
+
+  E->>App: Section « Objets », demande en attente
+  App-->>E: Nom, empreinte, date
+  E->>E: Compare l'empreinte avec celle du moniteur série
+  E->>App: Accepter (durée du certificat)
+  App->>API: Acceptation (JWT, rôle operator vérifié)
+  API->>API: Signature du CSR, nom commun imposé device-site01, 8 h par défaut (48 h au plus)
+  API->>DB: Certificat actif, numéro de série, expiration
+  API->>B: Objet ajouté à l'ACL, rechargement
+  D->>API: HTTPS GET, suivi par l'empreinte
+  API-->>D: approved, certificat signé et expiration
+  D->>D: Nom commun et clé publique du certificat identiques aux siens ?
+
+  D->>B: Connexion TLS mutuelle sur 8883 avec son certificat
+  B->>B: Signé par l'autorité des objets, non expiré, absent de la liste de révocation ?
+  B-->>D: CONNACK, identifiant MQTT = nom commun, droits de l'ACL
+  D->>B: PUBLISH status online, puis mesures (section 4.2)
+
+  Note over E,B: Objet volé
+  E->>App: Révoquer l'objet (confirmation)
+  App->>API: Révocation (rôle operator)
+  API->>DB: Certificat révoqué
+  API->>B: Retrait de l'ACL, certificat ajouté à la liste de révocation, rechargement
+  D->>B: PUBLISH mesures
+  B-->>D: Refusé (plus de droits)
+  D->>B: Nouvelle connexion avec l'ancien certificat
+  B-->>D: Refus pendant la négociation TLS
+```
+
+La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas.
 
 ## 5. Diagrammes d'états
 
