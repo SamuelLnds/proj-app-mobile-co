@@ -5,7 +5,7 @@
 | **Date** | 2026-11-23 |
 | **Statut** | Proposée |
 | **Décideurs** | À compléter |
-| **Liens** | [D023](D023-broker-mosquitto-auto-heberge.md) · [D024](D024-objet-simule-et-connexion-wokwi.md) · Issue #65 · [UML, section 4.7](../../conception/02-uml.md) · [Cartographie, sections 1 et 6.3](../../conception/03-cartographie-technique.md) |
+| **Liens** | Milestone « Sécurité de l'objet » (#80 à #84) · [D023](D023-broker-mosquitto-auto-heberge.md) · [D024](D024-objet-simule-et-connexion-wokwi.md) · Issue #65 · [UML, section 4.7](../../conception/02-uml.md) · [Cartographie, sections 1 et 6.3](../../conception/03-cartographie-technique.md) |
 
 ## Contexte
 
@@ -14,7 +14,7 @@ Aujourd'hui ([D023](D023-broker-mosquitto-auto-heberge.md)), l'objet se connecte
 - **Wokwi est public.** Un projet partagé sur wokwi.com expose tous ses fichiers : un secret écrit dans le firmware (mot de passe, clé privée) devient lisible par tous.
 - **Un objet volé ne se retire pas proprement.** Il faut changer le mot de passe à la main, sans trace de quel objet a été retiré ni pourquoi.
 
-Le binôme veut consigner une cible de sécurité : chaque objet est authentifié par **son propre certificat client** (comme une clé SSH, sans mot de passe), le broker n'accepte que les certificats émis par le projet et non révoqués, et aucun secret ne figure dans le code de l'objet.
+La sécurité n'est pas un bonus : c'est une **condition pour considérer le projet comme réalisé**. Le binôme fixe la cible suivante : chaque objet est authentifié par **son propre certificat client** (comme une clé SSH, sans mot de passe), le broker n'accepte que les certificats émis par le projet et non révoqués, et aucun secret ne figure dans le code de l'objet.
 
 ## Options étudiées
 
@@ -29,7 +29,7 @@ Le binôme veut consigner une cible de sécurité : chaque objet est authentifi�
 
 ## Décision
 
-Cible retenue, en **bonus après le socle** : chaque objet obtient **à l'exécution** un certificat client signé par l'autorité des objets du projet, par un **enrôlement** que l'exploitant valide dans l'app ; le broker exige ce certificat (TLS mutuel) et refuse les certificats révoqués. L'identifiant et le mot de passe de D023 restent en place jusque-là.
+Retenu, **dans le socle** (milestone « Sécurité de l'objet ») : chaque objet obtient **à l'exécution** un certificat client signé par l'autorité des objets du projet, par un **enrôlement** que l'exploitant valide dans l'app ; le broker exige ce certificat (TLS mutuel) et refuse les certificats révoqués. L'identifiant et le mot de passe de D023 ne servent que pendant le fil de bout en bout, le temps que l'objet publie ses premières mesures.
 
 ### Précisions sur le schéma initial
 
@@ -45,20 +45,21 @@ Le schéma de départ (« objet → broker MQTTS → historisation et mobile ; c
 | « Historisation / mobile en pub/sub WebSocket » | Seuls **l'objet, l'API et le simulateur** parlent au broker. Le **mobile n'y accède jamais** : il passe par l'API REST avec son JWT ([D010](D010-api-rest-fastify.md)), le temps réel éventuel venant de l'API (SSE, bonus). Les droits par rôle restent vérifiés à un seul endroit. |
 | « = SSH » | Même principe d'authentification par clé, avec une différence : le broker ne tient pas une liste de clés autorisées comme `authorized_keys`, il fait confiance à une **autorité** qui signe les certificats, et une liste de révocation retire un objet. |
 | Authentification du serveur | L'objet vérifie le certificat du broker **et** celui du service d'enrôlement avec le certificat de l'autorité du projet, embarqué dans le firmware (public, ce n'est pas un secret). |
-| API et simulateur | Ils restent sur l'écoute locale 1883 (127.0.0.1) avec identifiant et mot de passe ; seule l'écoute TLS 8883, exposée par le tunnel, exige un certificat client. |
+| API et simulateur | Ils restent sur l'écoute locale 1883 (127.0.0.1) avec identifiant et mot de passe ; seule l'écoute TLS 8883, exposée par le tunnel, exige un certificat client. En mode objet du site, le simulateur suit le même enrôlement que l'objet, sur 8883, pour tester le parcours sans Wokwi. |
 
 ## Justification
 
-C'est la seule option qui ne laisse **aucun secret** dans un projet Wokwi public : ce qui figure dans le code (certificat de l'autorité, identifiant de l'objet, adresse du service) est public par nature. La validation par l'exploitant compense le fait que l'identifiant ne prouve rien. La révocation donne une réponse précise au vol d'un objet. Le mécanisme réutilise ce qui existe déjà : TLS et ACL de Mosquitto, rôles de l'API, logique « en attente puis validé » des panneaux. Sa complexité justifie de le garder en bonus, après un socle qui fonctionne.
+C'est la seule option qui ne laisse **aucun secret** dans un projet Wokwi public : ce qui figure dans le code (certificat de l'autorité, identifiant de l'objet, adresse du service) est public par nature. La validation par l'exploitant compense le fait que l'identifiant ne prouve rien. La révocation donne une réponse précise au vol d'un objet. Le mécanisme réutilise ce qui existe déjà : TLS et ACL de Mosquitto, rôles de l'API, logique « en attente puis validé » des panneaux. Sa complexité est assumée puisque la sécurité de l'objet conditionne la réussite du projet ; elle est planifiée après le fil de bout en bout, qui la rend testable, et avant la livraison.
 
 ## Conséquences
 
-- **Rien ne change dans le socle** : D023 s'applique jusqu'à la mise en œuvre de cette fiche, qui la remplacera alors pour l'objet.
-- À la mise en œuvre (issue à créer dans `04-besoins-fonctionnels.md`, milestone bonus) :
+- D023 s'applique pendant le fil de bout en bout ; à la fin de la milestone « Sécurité de l'objet », cette fiche la remplace pour l'objet et le mot de passe de `device-site01` est supprimé.
+- Mise en œuvre (issues #80 à #84 de `04-besoins-fonctionnels.md`) :
   - modèle de données : une table des objets enrôlés (identifiant matériel, statut `pending` / `active` / `revoked`, empreinte et numéro de série du certificat, dates), via le skill `db-change` ;
   - API : module `enrollment` et ses routes, ajoutées à la section 7 de la cartographie ; génération de la liste de révocation et rechargement de Mosquitto ;
   - broker : écoute 8883 avec `require_certificate true`, `use_identity_as_username true`, `crlfile` ; autorité des objets générée par `pnpm mqtt:setup` ;
   - app : écran ou section « Objets » pour accepter, refuser et révoquer, réservé à l'exploitant ;
+  - simulateur : même parcours en mode objet du site ;
   - firmware : génération de la clé et de la demande de certificat (mbedTLS), enrôlement au démarrage s'il n'a pas de certificat valide, puis connexion MQTT avec le certificat.
 - **Wokwi** : si la simulation ne conserve pas la mémoire flash d'un lancement à l'autre (à vérifier), l'objet régénère sa clé à chaque lancement et doit être validé de nouveau. C'est acceptable pour la démonstration (le parcours d'enrôlement est montré à chaque fois) ; pour limiter les certificats orphelins, ils sont de **courte durée** et un nouvel enrôlement révoque le précédent.
 - Risques : la clé de l'autorité des objets devient le secret le plus sensible du projet ; un objet compromis avant sa révocation garde ses droits jusqu'à la coupure de sa connexion.

@@ -67,10 +67,11 @@ Une issue n'est fermée que si **tous** ces points sont vrais :
 | **M3 · Supervision** | Toutes les fonctions de consultation | Connexion, supervision, carte, détail, historiques, affichage sans réseau |
 | **M4 · Pilotage** | Communication bidirectionnelle complète | Une consigne envoyée depuis l'app est appliquée ou refusée par l'objet, et l'app l'affiche |
 | **M5 · Alertes et notifications** | Règles d'alerte et notifications push | Panne injectée → notification sur le téléphone |
+| **M9 · Sécurité de l'objet** | L'objet s'authentifie par certificat, sans secret dans son code | Un objet accepté dans l'app se connecte ; un objet révoqué est refusé par le broker |
 | **M6 · Livraison** | Projet prêt pour la soutenance | APK installé, démo hébergée, dossier et documentation complets |
 | **M7 · Bonus** | Améliorations facultatives | Vue 3D, rotation des panneaux, flux temps réel |
 
-Les milestones M0 à M6 constituent le socle ; M7 regroupe les bonus, traités uniquement une fois le socle terminé.
+Les milestones M0 à M6, M8 et M9 constituent le socle (la sécurité de l'objet n'est pas un bonus) ; M7 regroupe les bonus, traités uniquement une fois le socle terminé.
 
 Sur GitHub, les milestones portent uniquement leur intitulé (« Conception », « Socle technique »…) et les issues uniquement leur titre : les codes `Mx` ne servent que dans ce document. Aucune estimation de durée n'est indiquée.
 
@@ -87,7 +88,10 @@ flowchart LR
   M8 --> M4
   M3 --> M5["M5 Alertes et notifications"]
   M4 --> M5
-  M5 --> M6["M6 Livraison"]
+  M2 --> M9["M9 Sécurité de l'objet"]
+  M3 --> M9
+  M9 --> M6["M6 Livraison"]
+  M5 --> M6
   M6 --> M7["M7 Bonus"]
 ```
 
@@ -171,6 +175,11 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #74 | Mobile : intégration de l'écran Détail d'un panneau | M8 | mobile |
 | #75 | Mobile : intégration de l'écran Pilotage | M8 | mobile |
 | #76 | Mobile : intégration de l'écran Alertes | M8 | mobile |
+| #80 | Infra : autorité des objets et TLS mutuel sur le broker | M9 | infra |
+| #81 | API : enrôlement et révocation des objets | M9 | api, contracts |
+| #82 | Mobile : gestion des objets (accepter, refuser, révoquer) | M9 | mobile |
+| #83 | Firmware : enrôlement et connexion par certificat | M9 | firmware |
+| #84 | Simulateur : enrôlement en mode objet du site | M9 | simulator |
 
 ---
 
@@ -489,7 +498,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **À faire :**
 - Connexion au réseau `Wokwi-GUEST`, synchronisation de l'heure par NTP.
-- Connexion MQTT en TLS (port 8883, certificat de l'autorité du projet embarqué) au broker Mosquitto, par le moyen retenu dans #65, avec l'identifiant `device-site01`.
+- Connexion MQTT en TLS (port 8883, certificat de l'autorité du projet embarqué) au broker Mosquitto, par le moyen retenu dans #65, avec l'identifiant `device-site01` (identifiant et mot de passe, remplacés par un certificat client dans #83).
 - Last Will `{ "v": 1, "status": "offline" }` sur `solar/SITE01/status` (retained, QoS 1), puis publication de `online` avec la version du firmware.
 - Reconnexion automatique (WiFi et MQTT).
 
@@ -923,8 +932,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **Critères d'acceptation :**
 - [ ] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
 - [ ] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
+- [ ] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
 
-**Dépend de :** M5 terminé · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md)
+**Dépend de :** M5 et M9 terminés · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md)
 
 ### #52 · Compléter les tests
 
@@ -1237,3 +1247,96 @@ Milestone ajoutée le 6 novembre 2026 ([D025](../journal/decisions/D025-integrat
 - [ ] Conforme aux maquettes, clair et sombre.
 
 **Dépend de :** #69, #70
+
+## 13. M9 · Sécurité de l'objet
+
+La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sans elle ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)). L'objet s'authentifie par un certificat client obtenu à l'exécution, après validation de l'exploitant, sans aucun secret dans son code ; un objet volé est révoqué depuis l'app.
+
+### #80 · Infra : autorité des objets et TLS mutuel sur le broker
+
+**Labels :** `type:chore`, `area:infra`, `priority:core`
+
+**Contexte :** le broker doit n'accepter, sur l'écoute exposée, que les objets porteurs d'un certificat émis par le projet et non révoqué ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
+
+**À faire :**
+- `pnpm mqtt:setup` génère une **autorité des objets**, distincte de celle du certificat serveur, et une liste de révocation vide ; la clé de l'autorité n'est jamais versionnée et n'est accessible qu'à l'API.
+- Écoute 8883 : `require_certificate true`, `use_identity_as_username true`, `cafile` de l'autorité des objets, `crlfile`.
+- L'écoute locale 1883 (127.0.0.1) garde identifiant et mot de passe pour l'API et le simulateur des panneaux ; le mot de passe de `device-site01` est supprimé.
+- Mécanisme de rechargement après mise à jour de la liste de révocation, avec coupure de la connexion d'un objet révoqué.
+
+**Critères d'acceptation :**
+- [ ] Une connexion sur 8883 sans certificat client est refusée.
+- [ ] Un certificat signé par l'autorité des objets, de nom commun `device-site01`, se connecte et n'a que les droits de l'objet (section 6.3 de la cartographie).
+- [ ] Un certificat révoqué est refusé après rechargement, et une connexion déjà ouverte avec ce certificat est coupée.
+
+**Dépend de :** #11, #65 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Cartographie, sections 5.6 et 6.3](03-cartographie-technique.md)
+
+### #81 · API : enrôlement et révocation des objets
+
+**Labels :** `type:feature`, `area:api`, `area:contracts`, `priority:core`
+
+**Contexte :** le module `enrollment` délivre les certificats des objets après validation de l'exploitant et tient la liste de révocation ([UML, section 4.7](02-uml.md)).
+
+**À faire :**
+- Modèle de données (skill `db-change`) : demandes d'enrôlement et certificats des objets (identifiant matériel, statut `pending` / `active` / `rejected` / `revoked`, empreinte et numéro de série du certificat, dates).
+- Schémas dans `@solar/contracts` et routes ajoutées à la section 7 de la cartographie : demande et suivi (publics, en HTTPS) ; liste, acceptation, refus et révocation (rôle `operator`).
+- Signature de la demande de certificat (CSR) par l'autorité des objets : certificat de courte durée, nom commun égal à l'identifiant MQTT de l'objet ; dépendance de signature ajoutée à la cartographie.
+- Révocation : mise à jour de la liste et rechargement du broker (#80) ; un nouvel enrôlement accepté révoque le certificat précédent.
+- Limitation du nombre de demandes en attente et du débit des routes publiques.
+
+**Critères d'acceptation :**
+- [ ] Aucun certificat n'est délivré avant l'acceptation par un exploitant ; un lecteur reçoit `403 FORBIDDEN` sur les routes d'administration.
+- [ ] La clé de l'autorité des objets n'apparaît ni dans le dépôt ni dans les logs.
+- [ ] Tests : demande, acceptation, refus, révocation, demande de certificat invalide.
+
+**Dépend de :** #13, #27, #80 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md), [Cartographie, section 7](03-cartographie-technique.md)
+
+### #82 · Mobile : gestion des objets (accepter, refuser, révoquer)
+
+**Labels :** `type:feature`, `type:design`, `area:mobile`, `priority:core`
+
+**Contexte :** l'exploitant valide chaque objet qui se présente et révoque un objet volé depuis l'app.
+
+**À faire :**
+- Maquette de la section « Objets » ajoutée au canevas et validée par le binôme.
+- Section réservée à l'exploitant : demandes en attente (identifiant matériel, date), objets actifs (expiration du certificat), acceptation, refus, révocation avec confirmation.
+- Données par la couche `DataSource` : source `mock` d'abord, puis source `api` (#81).
+
+**Critères d'acceptation :**
+- [ ] Conforme à la maquette, clair et sombre.
+- [ ] La révocation demande une confirmation explicite.
+- [ ] Un lecteur ne voit aucune action.
+
+**Dépend de :** #69, #70 ; #81 pour le branchement · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Charte graphique](05-charte-graphique.md)
+
+### #83 · Firmware : enrôlement et connexion par certificat
+
+**Labels :** `type:feature`, `area:firmware`, `priority:core`
+
+**Contexte :** le projet Wokwi est public : l'objet ne doit contenir aucun secret ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
+
+**À faire :**
+- Au démarrage sans certificat valide : génération de la paire de clés et de la demande de certificat (mbedTLS), envoi au service d'enrôlement en HTTPS (certificat serveur vérifié avec l'autorité du projet embarquée), suivi jusqu'à l'acceptation, avec un message sur le moniteur série.
+- Connexion MQTT sur 8883 avec le certificat et la clé privée (`setCertificate`, `setPrivateKey`), à la place de l'identifiant et du mot de passe de #20.
+- Nouvelle demande après un refus de connexion (certificat révoqué ou expiré).
+
+**Critères d'acceptation :**
+- [ ] Le projet Wokwi ne contient ni mot de passe MQTT ni clé privée.
+- [ ] Après acceptation dans l'app, l'objet publie `online` puis ses mesures.
+- [ ] Après révocation, l'objet est refusé par le broker et refait une demande.
+
+**Dépend de :** #20, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)
+
+### #84 · Simulateur : enrôlement en mode objet du site
+
+**Labels :** `type:feature`, `area:simulator`, `priority:core`
+
+**Contexte :** comme pour le pilotage ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)), le simulateur sert de référence pour tester l'enrôlement sans Wokwi.
+
+**À faire :** en mode objet du site, le simulateur génère sa clé, fait sa demande, attend l'acceptation, puis se connecte sur 8883 avec son certificat ; son identifiant matériel est fixé par une variable d'environnement.
+
+**Critères d'acceptation :**
+- [ ] Le parcours complet (demande, acceptation dans l'app, connexion, révocation, refus) fonctionne en local.
+- [ ] Aucun mot de passe MQTT n'est utilisé en mode objet du site.
+
+**Dépend de :** #64, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)

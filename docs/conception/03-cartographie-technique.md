@@ -48,7 +48,7 @@ flowchart LR
 
 | Flux | Protocole | Sens | Sécurité |
 |---|---|---|---|
-| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883, via un tunnel TCP ou la passerelle privée de Wokwi | Deux sens | TLS (autorité de certification du projet), identifiant et mot de passe propres à l'objet, droits limités à ses topics. Cible bonus : certificat client délivré par enrôlement, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
+| Objet ↔ broker | MQTT 3.1.1 sur TLS, port 8883, via un tunnel TCP ou la passerelle privée de Wokwi | Deux sens | TLS (autorité de certification du projet), identifiant et mot de passe propres à l'objet, droits limités à ses topics. Cible (milestone « Sécurité de l'objet ») : certificat client délivré par enrôlement, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | Simulateur ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens (mode objet du site) | Identifiant propre au simulateur, droits limités ; port publié sur 127.0.0.1 uniquement |
 | API ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens | Identifiant propre à l'API ; port publié sur 127.0.0.1 uniquement |
 | App ↔ API | HTTPS, JSON | Deux sens | JWT dans l'en-tête `Authorization: Bearer` |
@@ -413,7 +413,7 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 | Simulateur | `simulator` | Publier sur `solar/SITE01/panels/+/measurements` ; lire et publier `solar/SITE01/measurements` ; en mode objet du site, publier `status` et `state`, lire `setpoint` |
 | API | `api` | Tous les topics `solar/#` |
 
-L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'API. Cible bonus ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) : sur l'écoute TLS 8883, l'objet s'authentifie par un certificat client dont le nom commun (`device-site01`) sert d'identifiant MQTT ; les droits ci-dessus ne changent pas.
+L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'API. Cible (milestone « Sécurité de l'objet », [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) : sur l'écoute TLS 8883, l'objet s'authentifie par un certificat client dont le nom commun (`device-site01`) sert d'identifiant MQTT ; les droits ci-dessus ne changent pas.
 
 ## 7. Contrat de l'API REST
 
@@ -553,7 +553,7 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur peut jouer l'objet du site ; connexion de Wokwi repoussée au firmware |
 | [D009](../journal/decisions/D009-base-timescaledb.md) | Historique agrégé à la volée avec `time_bucket()` |
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
-| [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Cible bonus : objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
+| [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
 

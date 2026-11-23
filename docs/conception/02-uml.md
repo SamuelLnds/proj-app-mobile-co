@@ -43,12 +43,14 @@ flowchart LR
     UC13["UC13 Signaler sa présence"]
     UC14["UC14 Publier les mesures des panneaux"]
     UC17["UC17 Positionner ou corriger un panneau"]
+    UC19["UC19 S'enrôler"]
+    UC20["UC20 Accepter ou révoquer un objet"]
   end
 
   viewer --- UC01 & UC02 & UC03 & UC04 & UC05 & UC06 & UC08 & UC09 & UC10
   operator -. hérite de .-> viewer
-  operator --- UC07 & UC17
-  device --- UC11 & UC12 & UC13
+  operator --- UC07 & UC17 & UC20
+  device --- UC11 & UC12 & UC13 & UC19
   simulator --- UC14
   UC10 --- expo
 ```
@@ -73,8 +75,8 @@ flowchart LR
 | UC16 | Piloter l'orientation des panneaux | Exploitant | Mode automatique ou position de sécurité du tracker | Bonus |
 | UC17 | Positionner ou corriger un panneau | Exploitant | Placer un panneau détecté à la position GPS du téléphone, corriger son nom ou sa puissance, le supprimer | Socle |
 | UC18 | Ajouter un panneau sur le terrain | Exploitant | Scanner le QR code d'un panneau, capter la position, enregistrer | Bonus |
-| UC19 | S'enrôler | Objet | Demander un certificat client au démarrage, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) | Bonus |
-| UC20 | Accepter ou révoquer un objet | Exploitant | Valider une demande d'enrôlement, révoquer le certificat d'un objet volé | Bonus |
+| UC19 | S'enrôler | Objet | Demander un certificat client au démarrage, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) | Socle |
+| UC20 | Accepter ou révoquer un objet | Exploitant | Valider une demande d'enrôlement, révoquer le certificat d'un objet volé | Socle |
 
 ### Description détaillée de UC07 « Envoyer une consigne »
 
@@ -406,9 +408,9 @@ sequenceDiagram
 
 Un panneau supprimé par erreur réapparaît comme « détecté » à sa prochaine mesure : c'est voulu, la suppression sert à retirer un panneau qui ne publie plus.
 
-### 4.7 Enrôlement puis révocation de l'objet (UC19, UC20, bonus)
+### 4.7 Enrôlement puis révocation de l'objet (UC19, UC20)
 
-Cible de sécurité décrite par [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) : l'objet n'a aucun secret dans son code, il obtient son certificat client à l'exécution après validation de l'exploitant.
+Sécurité de l'objet décrite par [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) : l'objet n'a aucun secret dans son code, il obtient son certificat client à l'exécution après validation de l'exploitant.
 
 ```mermaid
 sequenceDiagram
