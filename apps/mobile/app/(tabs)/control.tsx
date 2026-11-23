@@ -247,6 +247,17 @@ function ShareStepper({
   );
 }
 
+/** Ligne du récapitulatif de confirmation : libellé à gauche, valeur à droite. */
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={[typography.body, { color: colors.inkMuted }]}>{label}</Text>
+      <Text style={[typography.bodyBold, styles.summaryValue, { color: colors.ink }]}>{value}</Text>
+    </View>
+  );
+}
+
 function History({ items }: { items: SetpointRecord[] }) {
   const { colors } = useTheme();
   return (
@@ -348,21 +359,22 @@ export default function ControlScreen() {
           title="Appliquer cette consigne ?"
           onClose={() => setConfirming(false)}
         >
-          <View style={styles.summary}>
-            <Text style={[typography.body, { color: colors.inkMuted }]}>Mode</Text>
-            <Text style={[typography.bodyBold, { color: colors.ink }]}>{MODE_LABEL[mode]}</Text>
+          <View style={[styles.summary, { borderColor: colors.line }]}>
+            <SummaryRow label="Mode" value={MODE_LABEL[mode]} />
             {mode === "manual" ? (
               <>
-                <Text style={[typography.body, { color: colors.inkMuted }]}>Batterie</Text>
-                <Text style={[typography.bodyBold, { color: colors.ink }]}>
-                  {formatPercent(share)} de la production
-                </Text>
-                <Text style={[typography.body, { color: colors.inkMuted }]}>Réseau</Text>
-                <Text style={[typography.bodyBold, { color: colors.ink }]}>
-                  {formatPercent(100 - share)} de la production
-                </Text>
+                <SummaryRow label="Batterie" value={`${formatPercent(share)} de la production`} />
+                <SummaryRow
+                  label="Réseau"
+                  value={`${formatPercent(100 - share)} de la production`}
+                />
               </>
-            ) : null}
+            ) : (
+              <SummaryRow
+                label="Effet"
+                value={mode === "automatic" ? "Charge jusqu'à 80 %" : "Décharge jusqu'à 20 %"}
+              />
+            )}
           </View>
           <Text style={[typography.label, { color: colors.inkMuted }]}>
             L'objet applique la consigne dans la limite de ses règles de sécurité (batterie pleine,
@@ -455,7 +467,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  summary: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing[2] },
+  summary: { borderTopWidth: 1, borderBottomWidth: 1 },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  summaryValue: { flexShrink: 1, textAlign: "right" },
   list: { borderRadius: radius.md, overflow: "hidden" },
   listRow: {
     flexDirection: "row",

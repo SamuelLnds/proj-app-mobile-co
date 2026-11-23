@@ -220,7 +220,9 @@ export default function MapScreen() {
         </BottomSheet>
       }
     >
-      {panels.isError ? <Banner tone="critical" title="Panneaux indisponibles" /> : null}
+      {panels.isError ? (
+        <Banner tone="critical" title="Panneaux indisponibles" text={panels.error?.message} />
+      ) : null}
       {view === "map" ? (
         <>
           {placed.length ? (

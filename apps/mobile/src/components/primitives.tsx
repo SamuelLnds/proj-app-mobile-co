@@ -191,7 +191,13 @@ export function Segmented<T extends string>({
               index > 0 && { borderLeftWidth: 1, borderLeftColor: colors.lineStrong },
             ]}
           >
-            <Text style={[selected ? typography.labelBold : typography.label, { color: fg }]}>
+            {/* Une seule ligne : le texte se réduit légèrement plutôt que de se couper. */}
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              style={[selected ? typography.labelBold : typography.label, { color: fg }]}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -250,6 +256,6 @@ const styles = StyleSheet.create({
     minHeight: sizes.touchTarget,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing[2],
+    paddingHorizontal: spacing[1],
   },
 });

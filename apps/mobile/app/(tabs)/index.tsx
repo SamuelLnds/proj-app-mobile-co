@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   useConnectivity,
   useCurrentSiteId,
+  useSites,
   useSite,
   useSiteMeasurements,
   type Period,
@@ -90,6 +91,7 @@ export default function SupervisionScreen() {
   const { colors } = useTheme();
   const now = useNow();
   const { online } = useConnectivity();
+  const sites = useSites();
   const siteId = useCurrentSiteId();
   const site = useSite(siteId);
   const [period, setPeriod] = useState<Period>("24h");
@@ -112,14 +114,26 @@ export default function SupervisionScreen() {
           />
         ) : null
       }
-      onRefresh={() => site.refetch()}
+      onRefresh={() => (siteId ? site.refetch() : sites.refetch())}
     >
       {!data || !m ? (
-        site.isError ? (
+        site.isError || sites.isError ? (
           <Banner
             tone="critical"
             title="Données indisponibles"
-            text="Tirez vers le bas pour réessayer."
+            text={`${(site.error ?? sites.error)?.message ?? ""} Tirez vers le bas pour réessayer.`.trim()}
+          />
+        ) : sites.isSuccess && !siteId ? (
+          <Banner
+            tone="neutral"
+            title="Aucun site"
+            text="Aucun parc n'est associé à votre compte."
+          />
+        ) : data && !m ? (
+          <Banner
+            tone="nodata"
+            title="En attente de la première mesure"
+            text="L'objet du site n'a encore envoyé aucune mesure. L'écran se mettra à jour tout seul."
           />
         ) : (
           <LoadingState />
@@ -272,8 +286,14 @@ export default function SupervisionScreen() {
                   Math.max(...history.data.map((p) => p.production)),
                 )}, actuelle ${formatPower(m.production)}`}
               />
+            ) : history.isError ? (
+              <View style={styles.chartEmpty}>
+                <Text style={[typography.label, { color: colors.inkMuted }]}>
+                  Historique indisponible pour le moment.
+                </Text>
+              </View>
             ) : (
-              <View style={{ height: 150 }} />
+              <View style={styles.chartEmpty} />
             )}
           </Card>
         </>
@@ -283,6 +303,7 @@ export default function SupervisionScreen() {
 }
 
 const styles = StyleSheet.create({
+  chartEmpty: { height: 150, alignItems: "center", justifyContent: "center" },
   row: { flexDirection: "row", alignItems: "center", gap: spacing[2] },
   between: { justifyContent: "space-between", flexWrap: "wrap" },
   flex: { flex: 1 },

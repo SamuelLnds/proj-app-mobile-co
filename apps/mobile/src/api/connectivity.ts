@@ -1,10 +1,15 @@
+import { useNetInfo } from "@react-native-community/netinfo";
+
 import { dataSource, MockDataSource } from "../data";
 
 /**
- * Connexion réseau du téléphone. Avec la source `mock`, elle suit le scénario « Téléphone hors ligne » ;
- * l'issue #37 la remplacera par la détection réelle (@react-native-community/netinfo).
+ * Connexion réseau du téléphone (@react-native-community/netinfo). Avec la source `mock`, le
+ * scénario « Téléphone hors ligne » la simule. Tant que l'état est inconnu, le téléphone est
+ * considéré comme connecté.
  */
 export function useConnectivity(): { online: boolean } {
-  const offline = dataSource instanceof MockDataSource && dataSource.scenario === "phone_offline";
-  return { online: !offline };
+  const { isConnected } = useNetInfo();
+  const simulatedOffline =
+    dataSource instanceof MockDataSource && dataSource.scenario === "phone_offline";
+  return { online: !simulatedOffline && isConnected !== false };
 }

@@ -7,7 +7,8 @@ import {
 } from "@solar/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { dataSource } from "../data";
+import { dataSource, DataSourceError } from "../data";
+import { readResponse, saveResponse } from "../storage";
 
 /** Rafraîchissement des écrans visibles : au rythme des mesures du site. */
 const REFRESH_MS = SITE_MEASUREMENT_PERIOD_S * 1000;
@@ -42,16 +43,44 @@ export const queryKeys = {
   alerts: (status?: AlertStatus) => ["alerts", status ?? "all"] as const,
 };
 
+/**
+ * Appel de la source avec copie locale (D014) : chaque réponse est enregistrée dans SQLite ;
+ * si le serveur est injoignable, la dernière réponse enregistrée est renvoyée à la place.
+ */
+export async function withLocalCopy<T>(
+  key: readonly unknown[],
+  fetcher: () => Promise<T>,
+): Promise<T> {
+  const storageKey = JSON.stringify(key);
+  try {
+    const value = await fetcher();
+    await saveResponse(storageKey, value);
+    return value;
+  } catch (error) {
+    if (error instanceof DataSourceError && error.code === "NETWORK_ERROR") {
+      const stored = await readResponse<T>(storageKey);
+      if (stored) return stored.value;
+    }
+    throw error;
+  }
+}
+
 /** Site supervisé : le premier site visible par l'utilisateur (un seul dans le socle). */
+export function useSites() {
+  return useQuery({
+    queryKey: queryKeys.sites,
+    queryFn: () => withLocalCopy(queryKeys.sites, () => dataSource.listSites()),
+  });
+}
+
 export function useCurrentSiteId(): string | undefined {
-  const sites = useQuery({ queryKey: queryKeys.sites, queryFn: () => dataSource.listSites() });
-  return sites.data?.[0]?.id;
+  return useSites().data?.[0]?.id;
 }
 
 export function useSite(siteId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.site(siteId ?? ""),
-    queryFn: () => dataSource.getSite(siteId!),
+    queryFn: () => withLocalCopy(queryKeys.site(siteId ?? ""), () => dataSource.getSite(siteId!)),
     enabled: !!siteId,
     refetchInterval: (query) =>
       query.state.data?.currentSetpoint?.status === "sent" ? PENDING_REFRESH_MS : REFRESH_MS,
@@ -61,7 +90,10 @@ export function useSite(siteId: string | undefined) {
 export function useSiteMeasurements(siteId: string | undefined, period: Period) {
   return useQuery({
     queryKey: queryKeys.siteMeasurements(siteId ?? "", period),
-    queryFn: () => dataSource.getSiteMeasurements(siteId!, measurementQuery(period)),
+    queryFn: () =>
+      withLocalCopy(queryKeys.siteMeasurements(siteId ?? "", period), () =>
+        dataSource.getSiteMeasurements(siteId!, measurementQuery(period)),
+      ),
     enabled: !!siteId,
     refetchInterval: REFRESH_MS * 6,
   });
@@ -70,7 +102,8 @@ export function useSiteMeasurements(siteId: string | undefined, period: Period) 
 export function usePanels(siteId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.panels(siteId ?? ""),
-    queryFn: () => dataSource.listPanels(siteId!),
+    queryFn: () =>
+      withLocalCopy(queryKeys.panels(siteId ?? ""), () => dataSource.listPanels(siteId!)),
     enabled: !!siteId,
     refetchInterval: REFRESH_MS * 2,
   });
@@ -79,7 +112,7 @@ export function usePanels(siteId: string | undefined) {
 export function usePanel(panelId: string) {
   return useQuery({
     queryKey: queryKeys.panel(panelId),
-    queryFn: () => dataSource.getPanel(panelId),
+    queryFn: () => withLocalCopy(queryKeys.panel(panelId), () => dataSource.getPanel(panelId)),
     refetchInterval: REFRESH_MS * 2,
   });
 }
@@ -87,14 +120,18 @@ export function usePanel(panelId: string) {
 export function usePanelMeasurements(panelId: string, period: Period) {
   return useQuery({
     queryKey: queryKeys.panelMeasurements(panelId, period),
-    queryFn: () => dataSource.getPanelMeasurements(panelId, measurementQuery(period)),
+    queryFn: () =>
+      withLocalCopy(queryKeys.panelMeasurements(panelId, period), () =>
+        dataSource.getPanelMeasurements(panelId, measurementQuery(period)),
+      ),
   });
 }
 
 export function useSetpoints(siteId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.setpoints(siteId ?? ""),
-    queryFn: () => dataSource.listSetpoints(siteId!),
+    queryFn: () =>
+      withLocalCopy(queryKeys.setpoints(siteId ?? ""), () => dataSource.listSetpoints(siteId!)),
     enabled: !!siteId,
     refetchInterval: REFRESH_MS,
   });
@@ -103,7 +140,10 @@ export function useSetpoints(siteId: string | undefined) {
 export function useAlerts(status?: AlertStatus) {
   return useQuery({
     queryKey: queryKeys.alerts(status),
-    queryFn: () => dataSource.listAlerts(status ? { status, limit: 50 } : { limit: 50 }),
+    queryFn: () =>
+      withLocalCopy(queryKeys.alerts(status), () =>
+        dataSource.listAlerts(status ? { status, limit: 50 } : { limit: 50 }),
+      ),
     refetchInterval: REFRESH_MS,
   });
 }

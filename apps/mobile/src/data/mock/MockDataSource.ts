@@ -113,6 +113,10 @@ export class MockDataSource implements DataSource {
     this.state.user = USERS.find((u) => token === `mock-${u.role}`) ?? null;
   }
 
+  onUnauthorized(): void {
+    // Les jetons d'exemple n'expirent pas.
+  }
+
   async login(body: LoginRequest): Promise<LoginResponse> {
     await wait(this.latencyMs * 2);
     const user = USERS.find((u) => u.email === body.email.trim().toLowerCase());
