@@ -1,0 +1,5 @@
+# Configuration de l'extension Wokwi pour VS Code : firmware compilé par « pio run ».
+[wokwi]
+version = 1
+firmware = ".pio/build/esp32dev/firmware.bin"
+elf = ".pio/build/esp32dev/firmware.elf"

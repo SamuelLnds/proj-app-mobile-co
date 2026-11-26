@@ -84,7 +84,7 @@ proj-app-mobile-co/
 ├── tools/                   # Outillage de développement et de démo, jamais déployé
 │   └── simulator/           # Simulateur des 20 panneaux (TypeScript)
 ├── firmware/
-│   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi (plus tard)
+│   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi
 ├── infra/
 │   └── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto (+ API pour la démo)
 ├── docs/
@@ -281,7 +281,7 @@ apps/mobile/
 
 Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. Ce mode tourne toujours, avec ou sans `SIMULATE_DEVICE` (en mode objet du site, le simulateur lit ses propres mesures sur le broker) ; tant qu'aucune mesure du site n'a été reçue, aucune mesure de panneau n'est publiée. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo. La variable `EXTRA_PANELS` (par exemple `P21`) ajoute des panneaux absents du seed : l'API les détecte et les crée à l'état « non positionné », ce qui permet de démontrer l'inventaire ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)).
 
-### 5.5 `firmware/site-device` (plus tard)
+### 5.5 `firmware/site-device`
 
 | Bibliothèque | Rôle |
 |---|---|
@@ -290,7 +290,21 @@ Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publie
 | `ArduinoJson` | Lecture et écriture des messages JSON |
 | `OneWire`, `DallasTemperature` | Sonde DS18B20 |
 
-Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de LED, bouton (voir l'étude de faisabilité, section 6).
+`ArduinoJson` ne sert qu'à lire les consignes (#39) : les messages publiés sont construits sans bibliothèque (`include/messages.h`), ce qui permet de les compiler aussi sur le poste et de les valider par les schémas Zod (`tools/simulator/tests/firmware-format.test.ts`).
+
+Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de LED, bouton (voir l'étude de faisabilité, section 6). La simulation tourne dans l'extension Wokwi pour VS Code (`wokwi.toml`, `diagram.json`), avec le binaire compilé par `pio run`.
+
+```
+firmware/site-device/
+├── platformio.ini · wokwi.toml · diagram.json
+├── include/   config.h (constantes partagées), pins.h, readings.h et messages.h (logique pure, sans Arduino),
+│              secrets.example.h (modèle versionné) et secrets.h (ignoré par Git)
+├── src/       main.cpp, network.cpp (WiFi, NTP, MQTT TLS), sensors.cpp (capteurs, bouton, sorties)
+├── test/      format/dump_messages.cpp (messages produits sur le poste, validés par le simulateur)
+└── README.md  Tableau des broches et procédure de test
+```
+
+Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, mot de passe, certificat de l'autorité) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` est donc publié en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1) ; l'état appliqué de #40 aura la même limite.
 
 ### 5.6 `infra`
 
@@ -564,7 +578,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
-Côté firmware, les identifiants WiFi et MQTT sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné.
+Côté firmware, les identifiants WiFi et MQTT, l'hôte et le port du broker et le certificat de l'autorité sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné ; `pnpm firmware:secrets --host <hôte> --port <port>` le génère à partir de `infra/.env` (variables `MQTT_DEVICE_PASSWORD` et `MQTT_TLS_HOSTS`).
 
 ## 10. Décisions structurantes
 
