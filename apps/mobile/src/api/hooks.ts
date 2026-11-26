@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { dataSource, DataSourceError } from "../data";
 import { readResponse, saveResponse } from "../storage";
+import { setLastSync } from "./last-sync";
 
 /** Rafraîchissement des écrans visibles : au rythme des mesures du site. */
 const REFRESH_MS = SITE_MEASUREMENT_PERIOD_S * 1000;
@@ -55,11 +56,15 @@ export async function withLocalCopy<T>(
   try {
     const value = await fetcher();
     await saveResponse(storageKey, value);
+    setLastSync(new Date().toISOString());
     return value;
   } catch (error) {
     if (error instanceof DataSourceError && error.code === "NETWORK_ERROR") {
       const stored = await readResponse<T>(storageKey);
-      if (stored) return stored.value;
+      if (stored) {
+        setLastSync(stored.savedAt);
+        return stored.value;
+      }
     }
     throw error;
   }
@@ -160,6 +165,16 @@ export function useCreateSetpoint(siteId: string | undefined) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ["sites"] });
       void client.invalidateQueries({ queryKey: ["alerts"] });
+    },
+  });
+}
+
+export function useDeletePanel(siteId: string | undefined) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (panelId: string) => dataSource.deletePanel(panelId),
+    onSuccess: () => {
+      if (siteId) void client.invalidateQueries({ queryKey: queryKeys.panels(siteId) });
     },
   });
 }

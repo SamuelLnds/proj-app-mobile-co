@@ -2,7 +2,15 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { usePanel, usePanelMeasurements } from "../../src/api";
-import { Banner, Card, LineChart, Screen, SectionTitle, StatusChip } from "../../src/components";
+import {
+  Banner,
+  Card,
+  LineChart,
+  OfflineBanner,
+  Screen,
+  SectionTitle,
+  StatusChip,
+} from "../../src/components";
 import { PANEL_STATUS } from "../../src/components/ParkPlan";
 import { Icon, sizes, spacing, typography, useTheme } from "../../src/theme";
 import { formatPercent, formatPower, formatTemperature, formatTime } from "../../src/utils/format";
@@ -53,6 +61,7 @@ export default function PanelScreen() {
       }
       onRefresh={() => panel.refetch()}
     >
+      <OfflineBanner />
       {!p ? (
         panel.isError ? (
           <Banner tone="critical" title="Panneau introuvable" />

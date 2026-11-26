@@ -1,15 +1,23 @@
 import type { PanelSummary } from "@solar/contracts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import type * as ExpoLocation from "expo-location";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useCurrentSiteId, usePanels, useSite, useUpdatePanel } from "../../src/api";
+import {
+  useCurrentSiteId,
+  useDeletePanel,
+  usePanels,
+  useSite,
+  useUpdatePanel,
+} from "../../src/api";
 import { useAuth } from "../../src/auth/AuthProvider";
 import {
   Banner,
   BottomSheet,
   Button,
   Card,
+  OfflineBanner,
   Screen,
   SectionTitle,
   Segmented,
@@ -18,16 +26,43 @@ import {
   toneColors,
 } from "../../src/components";
 import { PANEL_STATUS, ParkPlan } from "../../src/components/ParkPlan";
-import { DataSourceError } from "../../src/data";
+import { dataSource, DataSourceError } from "../../src/data";
 import { Icon, radius, sizes, spacing, typography, useTheme } from "../../src/theme";
 import { formatPower } from "../../src/utils/format";
 
 type View_ = "map" | "list";
 
-/** Position du téléphone : simulée près du site tant que la localisation réelle n'est pas branchée (#62). */
-function usePhonePosition(site: { latitude: number; longitude: number } | undefined) {
-  if (!site) return null;
-  return { latitude: site.latitude - 0.00006, longitude: site.longitude + 0.0004, accuracy: 4 };
+type Position = { latitude: number; longitude: number; accuracy: number };
+
+/**
+ * Position du téléphone pour placer un panneau (#62, D020). Avec les données d'exemple, elle
+ * est simulée près du site ; avec l'API, c'est la vraie position GPS (expo-location).
+ */
+async function locatePhone(site: { latitude: number; longitude: number }): Promise<Position> {
+  if (dataSource.kind === "mock") {
+    return { latitude: site.latitude - 0.00006, longitude: site.longitude + 0.0004, accuracy: 4 };
+  }
+  let Location: typeof ExpoLocation;
+  try {
+    // Chargé à la demande : une version de l'app sans ce module ne plante pas au démarrage.
+    Location = await import("expo-location");
+  } catch {
+    throw new Error("La localisation n'est pas disponible dans cette version de l'app.");
+  }
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== "granted") {
+    throw new Error(
+      "La localisation est refusée. Autorisez-la dans Réglages › Applications › Solar › Autorisations, puis réessayez.",
+    );
+  }
+  const { coords } = await Location.getCurrentPositionAsync({
+    accuracy: Location.Accuracy.Highest,
+  });
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    accuracy: Math.round(coords.accuracy ?? 0),
+  };
 }
 
 function Legend({ panels }: { panels: PanelSummary[] }) {
@@ -108,7 +143,9 @@ export default function MapScreen() {
   const site = useSite(siteId);
   const panels = usePanels(siteId);
   const update = useUpdatePanel(siteId);
-  const position = usePhonePosition(site.data);
+  const remove = useDeletePanel(siteId);
+  const [position, setPosition] = useState<Position | null>(null);
+  const [locating, setLocating] = useState(false);
   const [view, setView] = useState<View_>("map");
   const [selected, setSelected] = useState<PanelSummary | null>(null);
   const [placing, setPlacing] = useState<PanelSummary | null>(null);
@@ -122,11 +159,46 @@ export default function MapScreen() {
   const operator = user?.role === "operator";
   const selectedPanel = selected ? (list.find((p) => p.id === selected.id) ?? null) : null;
 
+  const locate = () => {
+    if (!site.data) return;
+    setLocating(true);
+    setPosition(null);
+    setPlaceError(null);
+    locatePhone(site.data)
+      .then(setPosition)
+      .catch((e: unknown) =>
+        setPlaceError(e instanceof Error ? e.message : "Position introuvable, réessayez."),
+      )
+      .finally(() => setLocating(false));
+  };
+
   const openPlacement = (panel: PanelSummary) => {
     setPlacing(panel);
     setName(panel.name === panel.code ? "" : panel.name);
     setPower("200");
-    setPlaceError(null);
+    locate();
+  };
+
+  const confirmDelete = (panel: PanelSummary) => {
+    Alert.alert(
+      `Supprimer ${panel.code} ?`,
+      "Ses mesures et ses alertes sont supprimées. S'il publie de nouveau, il réapparaîtra comme détecté.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: () =>
+            remove.mutate(panel.id, {
+              onError: (e) =>
+                Alert.alert(
+                  "Suppression impossible",
+                  e instanceof DataSourceError ? e.message : "Réessayez plus tard.",
+                ),
+            }),
+        },
+      ],
+    );
   };
 
   const confirmPlacement = () => {
@@ -181,17 +253,25 @@ export default function MapScreen() {
           title={`Placer ${placing?.code ?? ""} ici ?`}
           onClose={() => setPlacing(null)}
         >
-          {position ? (
-            <View style={{ gap: spacing[1] }}>
-              <Text style={[typography.label, { color: colors.inkMuted }]}>
-                Position du téléphone (simulée en démonstration)
-              </Text>
-              <Text style={[typography.value, { color: colors.ink }]}>
-                {position.latitude.toFixed(5).replace(".", ",")} ·{" "}
-                {position.longitude.toFixed(5).replace(".", ",")} (± {position.accuracy} m)
-              </Text>
-            </View>
-          ) : null}
+          <View style={{ gap: spacing[1] }}>
+            <Text style={[typography.label, { color: colors.inkMuted }]}>
+              {dataSource.kind === "mock"
+                ? "Position du téléphone (simulée en démonstration)"
+                : "Position du téléphone"}
+            </Text>
+            <Text style={[typography.value, { color: colors.ink }]}>
+              {position
+                ? `${position.latitude.toFixed(5).replace(".", ",")} · ${position.longitude
+                    .toFixed(5)
+                    .replace(".", ",")} (± ${position.accuracy} m)`
+                : locating
+                  ? "Recherche de la position…"
+                  : "Position indisponible"}
+            </Text>
+            {!position && !locating ? (
+              <Button label="Réessayer" variant="secondary" icon="MapPin" onPress={locate} />
+            ) : null}
+          </View>
           {placeError ? <Banner tone="critical" title={placeError} /> : null}
           <TextField
             label="Nom"
@@ -212,7 +292,7 @@ export default function MapScreen() {
             <View style={styles.flex}>
               <Button
                 label={update.isPending ? "Placement…" : "Placer"}
-                disabled={update.isPending}
+                disabled={update.isPending || !position}
                 onPress={confirmPlacement}
               />
             </View>
@@ -220,6 +300,7 @@ export default function MapScreen() {
         </BottomSheet>
       }
     >
+      <OfflineBanner />
       {panels.isError ? (
         <Banner tone="critical" title="Panneaux indisponibles" text={panels.error?.message} />
       ) : null}
@@ -269,11 +350,22 @@ export default function MapScreen() {
                       <Text style={[typography.label, { color: colors.ink }]}>
                         Placez-vous devant le panneau : sa position sera celle du téléphone.
                       </Text>
-                      <Button
-                        label="Placer ici"
-                        icon="MapPin"
-                        onPress={() => openPlacement(panel)}
-                      />
+                      <View style={styles.row}>
+                        <View style={styles.flex}>
+                          <Button
+                            label="Supprimer"
+                            variant="secondary"
+                            onPress={() => confirmDelete(panel)}
+                          />
+                        </View>
+                        <View style={styles.flex}>
+                          <Button
+                            label="Placer ici"
+                            icon="MapPin"
+                            onPress={() => openPlacement(panel)}
+                          />
+                        </View>
+                      </View>
                     </>
                   ) : (
                     <Text style={[typography.label, { color: colors.inkMuted }]}>

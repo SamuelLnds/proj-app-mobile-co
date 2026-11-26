@@ -35,10 +35,25 @@ export function toneColors(colors: ColorTokens, tone: Tone) {
 }
 
 /** Carte : surface surélevée, sans ombre (charte). */
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Card({
+  children,
+  style,
+  accessibilityLabel,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  /** Résumé lu par le lecteur d'écran : la carte est alors lue d'un seul bloc. */
+  accessibilityLabel?: string;
+}) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.card, { backgroundColor: colors.surfaceRaised }, style]}>{children}</View>
+    <View
+      accessible={!!accessibilityLabel}
+      accessibilityLabel={accessibilityLabel}
+      style={[styles.card, { backgroundColor: colors.surfaceRaised }, style]}
+    >
+      {children}
+    </View>
   );
 }
 

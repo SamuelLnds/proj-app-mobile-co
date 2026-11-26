@@ -26,6 +26,13 @@ const config: ExpoConfig = {
     "expo-secure-store",
     "expo-sqlite",
     [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "Solar utilise votre position pour placer un panneau sur la carte du parc.",
+      },
+    ],
+    [
       "expo-splash-screen",
       {
         backgroundColor: "#208AEF",

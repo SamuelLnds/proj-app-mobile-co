@@ -30,6 +30,7 @@ import {
   formatIrradiance,
   formatPercent,
   formatPower,
+  speakPower,
 } from "../../src/utils/format";
 import { modeDescription, useNow } from "../../src/utils/labels";
 
@@ -156,7 +157,11 @@ export default function SupervisionScreen() {
             </View>
           </View>
 
-          <Card>
+          <Card
+            accessibilityLabel={`Production ${speakPower(m.production)}, attendue ${speakPower(
+              m.expectedProduction,
+            )}, ensoleillement ${Math.round(m.irradiance)} watts par mètre carré`}
+          >
             <LabelWithIcon icon="Sun" label="Production" />
             <Text style={[typography.metricXl, { color: colors.ink }]}>
               {formatPower(m.production)}
@@ -180,7 +185,16 @@ export default function SupervisionScreen() {
           </Card>
 
           <View style={styles.row}>
-            <Card style={styles.flex}>
+            <Card
+              style={styles.flex}
+              accessibilityLabel={`Batterie ${Math.round(m.batteryLevel)} pour cent, ${
+                m.batteryPower > 0
+                  ? `en charge à ${speakPower(m.batteryPower)}`
+                  : m.batteryPower < 0
+                    ? `en décharge à ${speakPower(-m.batteryPower)}`
+                    : "au repos"
+              }`}
+            >
               <LabelWithIcon
                 icon={m.batteryPower > 0 ? "BatteryCharging" : "BatteryHigh"}
                 label="Batterie"
@@ -197,7 +211,10 @@ export default function SupervisionScreen() {
                     : "Au repos"}
               </Text>
             </Card>
-            <Card style={styles.flex}>
+            <Card
+              style={styles.flex}
+              accessibilityLabel={`Réseau : ${speakPower(m.gridPower)} injectés`}
+            >
               <LabelWithIcon icon="PlugsConnected" label="Réseau" />
               <Text style={[typography.metric, { color: colors.ink }]}>
                 {formatPower(m.gridPower)}
