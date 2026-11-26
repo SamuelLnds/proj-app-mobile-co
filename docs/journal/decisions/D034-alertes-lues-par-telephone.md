@@ -43,3 +43,5 @@ L'équipe est petite et l'usage visé est personnel : savoir quelles alertes on 
 ## Sources
 
 Aucune source externe : choix de conception interne au projet.
+
+**Suivi (2026-11-26) :** la maquette de l'écran Alertes a été mise à jour (marqueur « Nouvelle », bouton « Tout marquer comme lu », état « toutes lues »).

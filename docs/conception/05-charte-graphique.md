@@ -127,4 +127,4 @@ Une alerte de panneau a, sous son texte, un contrôle **« Voir le panneau »** 
 
 - Le design system ne contient pas encore de composants réutilisables (boutons, pastilles, cartes) : ils seront écrits directement en React Native à partir des jetons.
 - Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).
-- L'écran Alertes diffère de la maquette actuelle (canevas hors du dépôt) : marqueur « Nouvelle », contrôle « Voir le panneau » et bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette est à mettre à jour.
+- L'écran Alertes montre le marqueur « Nouvelle », le contrôle « Voir le panneau » et le bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette (canevas hors du dépôt) a été mise à jour le 2026-11-26 : écran Alertes, thème sombre compris, et état « Alertes · toutes lues ».
