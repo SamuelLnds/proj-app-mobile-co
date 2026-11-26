@@ -4,7 +4,6 @@ import * as contracts from "../src/index";
 describe("enums", () => {
   it("reprennent exactement les valeurs de la base", () => {
     expect(contracts.UserRoleSchema.options).toEqual(["operator", "viewer"]);
-    expect(contracts.MobilePlatformSchema.options).toEqual(["android", "ios"]);
     expect(contracts.DeviceStatusValueSchema.options).toEqual(["unknown", "online", "offline"]);
     expect(contracts.PanelSourceSchema.options).toEqual(["seed", "discovered", "manual"]);
     expect(contracts.ControlModeSchema.options).toEqual(["manual", "automatic", "discharge"]);
@@ -63,6 +62,7 @@ describe("constantes", () => {
       BATTERY_SHARE_STEP_PCT: contracts.BATTERY_SHARE_STEP_PCT,
       DEFAULT_PANEL_RATED_POWER_W: contracts.DEFAULT_PANEL_RATED_POWER_W,
       MAX_PANELS_PER_SITE: contracts.MAX_PANELS_PER_SITE,
+      APP_URL_SCHEME: contracts.APP_URL_SCHEME,
     }).toEqual({
       SITE_MEASUREMENT_PERIOD_S: 5,
       PANEL_MEASUREMENT_PERIOD_S: 10,
@@ -85,6 +85,7 @@ describe("constantes", () => {
       BATTERY_SHARE_STEP_PCT: 10,
       DEFAULT_PANEL_RATED_POWER_W: 200,
       MAX_PANELS_PER_SITE: 200,
+      APP_URL_SCHEME: "solar",
     });
   });
 });

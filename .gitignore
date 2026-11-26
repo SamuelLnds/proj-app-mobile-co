@@ -26,3 +26,6 @@ Thumbs.db
 
 # Mots de passe hachés et certificats générés pour Mosquitto
 infra/mosquitto/generated/
+
+# Jetons d'accès générés pour ntfy
+infra/ntfy/generated/

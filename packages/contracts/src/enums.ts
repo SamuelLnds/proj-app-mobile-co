@@ -6,10 +6,6 @@ import { z } from "zod";
 export const UserRoleSchema = z.enum(["operator", "viewer"]);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
-/** Plateforme du téléphone qui a enregistré un jeton de notification. */
-export const MobilePlatformSchema = z.enum(["android", "ios"]);
-export type MobilePlatform = z.infer<typeof MobilePlatformSchema>;
-
 /** Statut d'un objet ; `unknown` tant qu'il n'a jamais rien publié. */
 export const DeviceStatusValueSchema = z.enum(["unknown", "online", "offline"]);
 export type DeviceStatusValue = z.infer<typeof DeviceStatusValueSchema>;
@@ -53,7 +49,7 @@ export const AlertTypeSchema = z.enum([
 ]);
 export type AlertType = z.infer<typeof AlertTypeSchema>;
 
-/** Gravité d'une alerte ; seules `warning` et `critical` déclenchent une notification push. */
+/** Gravité d'une alerte ; seules `warning` et `critical` déclenchent une notification. */
 export const AlertSeveritySchema = z.enum(["info", "warning", "critical"]);
 export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;
 

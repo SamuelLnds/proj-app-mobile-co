@@ -1,8 +1,8 @@
-// Requêtes sur les consignes et sur les alertes qui en découlent.
+// Requêtes sur les consignes.
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
-import type { AlertType, ControlMode, DeviceStatusValue, RejectionReason } from "@solar/contracts";
+import type { ControlMode, DeviceStatusValue, RejectionReason } from "@solar/contracts";
 import type { Database } from "../../db/client";
-import { alerts, devices, setpoints, sites, users } from "../../db/schema";
+import { devices, setpoints, sites, users } from "../../db/schema";
 
 export type SetpointRow = typeof setpoints.$inferSelect & { authorName: string };
 
@@ -27,13 +27,6 @@ export interface SetpointResponse {
   respondedAt: Date;
 }
 
-export interface NewAlert {
-  siteId: string;
-  type: AlertType;
-  severity: "warning" | "critical";
-  message: string;
-}
-
 export interface SetpointsRepository {
   findSite: (siteId: string) => Promise<SiteRef | null>;
   findSiteByCode: (siteCode: string) => Promise<SiteRef | null>;
@@ -50,10 +43,6 @@ export interface SetpointsRepository {
   applyResponse: (id: string, response: SetpointResponse) => Promise<SetpointRow | null>;
   /** Passe en `no_response` les consignes `sent` créées avant `before` ; renvoie celles qui ont changé. */
   markNoResponse: (before: Date) => Promise<Array<{ id: string; siteId: string }>>;
-  /** Ouvre l'alerte, sauf s'il en existe déjà une active de ce type sur le site. */
-  openAlert: (alert: NewAlert) => Promise<void>;
-  /** Résout les alertes actives de ces types sur le site. */
-  resolveAlerts: (siteId: string, types: AlertType[], endedAt: Date) => Promise<void>;
 }
 
 export function createSetpointsRepository({ db }: Database): SetpointsRepository {
@@ -122,17 +111,5 @@ export function createSetpointsRepository({ db }: Database): SetpointsRepository
         .set({ status: "no_response" })
         .where(and(eq(setpoints.status, "sent"), lt(setpoints.createdAt, before)))
         .returning({ id: setpoints.id, siteId: setpoints.siteId }),
-    async openAlert(alert) {
-      // L'index unique « une alerte active par site, panneau et type » écarte les doublons.
-      await db.insert(alerts).values(alert).onConflictDoNothing();
-    },
-    async resolveAlerts(siteId, types, endedAt) {
-      await db
-        .update(alerts)
-        .set({ status: "resolved", endedAt })
-        .where(
-          and(eq(alerts.siteId, siteId), inArray(alerts.type, types), eq(alerts.status, "active")),
-        );
-    },
   };
 }

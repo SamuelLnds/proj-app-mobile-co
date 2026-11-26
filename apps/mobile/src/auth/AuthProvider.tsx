@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { dataSource } from "../data";
+import { requestNotificationPermission } from "../notifications/local";
 import { clearResponses } from "../storage";
 import { clearSession, loadSession, saveSession } from "./session";
 
@@ -32,13 +33,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [restored, setRestored] = useState(false);
   const client = useQueryClient();
 
-  const logout = useCallback(() => {
+  // La déconnexion efface aussi la mémoire locale, dont les alertes déjà notifiées : à la
+  // prochaine connexion, les alertes actives seront seulement mémorisées, sans rafale.
+  const endSession = useCallback(() => {
     dataSource.setToken(null);
     client.clear();
     setUser(null);
     void clearSession();
     void clearResponses();
   }, [client]);
+  const logout = endSession;
 
   useEffect(() => {
     let active = true;
@@ -56,9 +60,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    dataSource.onUnauthorized(logout);
+    dataSource.onUnauthorized(endSession);
     return () => dataSource.onUnauthorized(null);
-  }, [logout]);
+  }, [endSession]);
+
+  // Notifications locales : après la connexion (ou la restauration de la session), demande
+  // d'autorisation (séquence 4.1 de l'UML). Aucun jeton, aucun appel à l'API. Sans module natif
+  // ou sans autorisation, l'app fonctionne sans notification.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId || dataSource.kind !== "api") return;
+    void requestNotificationPermission();
+  }, [userId]);
 
   const login = useCallback(async (body: LoginRequest) => {
     const response = await dataSource.login(body);

@@ -48,7 +48,13 @@ function setup(status: DeviceStatusValue, lastSeenAt: Date | null = null) {
       device.status === "online" && device.lastSeenAt && device.lastSeenAt < before ? [device] : [],
   };
   const logger = { warn: vi.fn(), info: vi.fn() } as unknown as FastifyBaseLogger;
-  return { service: createDevicesService(repository, logger), device, updates };
+  const alerts = { deviceOffline: vi.fn(async () => {}), deviceOnline: vi.fn(async () => {}) };
+  return {
+    service: createDevicesService(repository, logger, alerts),
+    device,
+    updates,
+    alerts,
+  };
 }
 
 const at = new Date("2026-11-26T10:00:00Z");
@@ -93,5 +99,42 @@ describe("suivi du statut de l'objet", () => {
     const { service, updates } = setup("unknown");
     await service.recordStatus("SITE99", { v: MESSAGE_VERSION, status: "online" }, at);
     expect(updates).toHaveLength(0);
+  });
+});
+
+describe("alertes device_offline (séquence 4.4)", () => {
+  it("le Last Will d'un objet en ligne ouvre l'alerte", async () => {
+    const { service, alerts } = setup("online", at);
+    await service.recordStatus("SITE01", { v: MESSAGE_VERSION, status: "offline" }, at);
+    expect(alerts.deviceOffline).toHaveBeenCalledExactlyOnceWith(SITE_ID);
+    expect(alerts.deviceOnline).not.toHaveBeenCalled();
+  });
+
+  it("un second Last Will ne rouvre pas d'alerte", async () => {
+    const { service, alerts } = setup("offline", at);
+    await service.recordStatus("SITE01", { v: MESSAGE_VERSION, status: "offline" }, at);
+    expect(alerts.deviceOffline).not.toHaveBeenCalled();
+  });
+
+  it("le planificateur ouvre l'alerte d'un objet silencieux", async () => {
+    const { service, alerts } = setup("online", at);
+    await service.checkSilence(new Date(at.getTime() + (DEVICE_SILENCE_TIMEOUT_S + 1) * 1000));
+    expect(alerts.deviceOffline).toHaveBeenCalledExactlyOnceWith(SITE_ID);
+  });
+
+  it("le statut online d'un objet hors ligne résout l'alerte", async () => {
+    const { service, alerts } = setup("offline", at);
+    await service.recordStatus("SITE01", { v: MESSAGE_VERSION, status: "online" }, at);
+    expect(alerts.deviceOnline).toHaveBeenCalledExactlyOnceWith(SITE_ID, at);
+  });
+
+  it("une mesure d'un objet hors ligne résout l'alerte ; pas d'appel pour un objet déjà en ligne", async () => {
+    const offline = setup("offline");
+    await offline.service.recordActivity(SITE_ID, at);
+    expect(offline.alerts.deviceOnline).toHaveBeenCalledExactlyOnceWith(SITE_ID, at);
+
+    const online = setup("online");
+    await online.service.recordActivity(SITE_ID, at);
+    expect(online.alerts.deviceOnline).not.toHaveBeenCalled();
   });
 });

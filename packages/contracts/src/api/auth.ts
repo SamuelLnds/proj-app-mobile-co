@@ -1,6 +1,6 @@
-// Schémas de l'authentification, du profil, des jetons de notification et de la santé de l'API.
+// Schémas de l'authentification, du profil et de la santé de l'API.
 import { z } from "zod";
-import { MobilePlatformSchema, UserRoleSchema } from "../enums";
+import { UserRoleSchema } from "../enums";
 import { Iso8601UtcSchema } from "../primitives";
 
 /** `User` : utilisateur connecté. */
@@ -26,19 +26,6 @@ export const LoginResponseSchema = z.object({
   user: UserSchema,
 });
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-
-/** `POST /v1/push-tokens` : corps de la requête (réponse 204). */
-export const RegisterPushTokenRequestSchema = z.object({
-  token: z.string().min(1),
-  platform: MobilePlatformSchema,
-});
-export type RegisterPushTokenRequest = z.infer<typeof RegisterPushTokenRequestSchema>;
-
-/** `DELETE /v1/push-tokens/{token}` : paramètres de chemin (réponse 204). */
-export const PushTokenParamsSchema = z.object({
-  token: z.string().min(1),
-});
-export type PushTokenParams = z.infer<typeof PushTokenParamsSchema>;
 
 /** `GET /v1/health` : réponse 200. */
 export const HealthResponseSchema = z.object({

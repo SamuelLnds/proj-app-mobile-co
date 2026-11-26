@@ -30,7 +30,6 @@ const citext = customType<{ data: string }>({
 
 // Enums (les valeurs sont identiques à celles de @solar/contracts)
 export const userRole = pgEnum("user_role", ["operator", "viewer"]);
-export const mobilePlatform = pgEnum("mobile_platform", ["android", "ios"]);
 export const deviceStatus = pgEnum("device_status", ["unknown", "online", "offline"]);
 export const panelSource = pgEnum("panel_source", ["seed", "discovered", "manual"]);
 export const controlMode = pgEnum("control_mode", ["manual", "automatic", "discharge"]);
@@ -71,20 +70,6 @@ export const users = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [check("users_name_length_check", sql`char_length(${t.name}) BETWEEN 1 AND 100`)],
-);
-
-export const pushTokens = pgTable(
-  "push_tokens",
-  {
-    id: uuid().primaryKey().defaultRandom(),
-    userId: uuid()
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    token: text().notNull().unique(),
-    platform: mobilePlatform().notNull(),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index("push_tokens_user_idx").on(t.userId)],
 );
 
 // Parc solaire

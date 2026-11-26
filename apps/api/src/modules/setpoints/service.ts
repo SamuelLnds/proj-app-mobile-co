@@ -15,6 +15,7 @@ import {
 } from "@solar/contracts";
 import { AppError, DEFAULT_MESSAGES } from "../../errors";
 import type { PublishOptions } from "../../mqtt/client";
+import type { AlertSink } from "../alerts/engine";
 import type { SetpointRow, SetpointsRepository } from "./repository";
 
 /** Publication MQTT (`ApiMqttClient.publish`). */
@@ -60,6 +61,7 @@ export function toSetpointRecord(row: SetpointRow): SetpointRecord {
 export function createSetpointsService(
   repository: SetpointsRepository,
   publish: PublishFn,
+  alerts: AlertSink,
 ): SetpointsService {
   const notFound = () => new AppError("NOT_FOUND", DEFAULT_MESSAGES.NOT_FOUND);
 
@@ -78,8 +80,8 @@ export function createSetpointsService(
         requestedBatteryShare: body.mode === "manual" ? (body.batteryShare ?? null) : null,
       });
       // Une nouvelle consigne résout les alertes de la précédente (section 6 de l'UML).
-      await repository.resolveAlerts(
-        siteId,
+      await alerts.resolve(
+        { siteId },
         ["setpoint_rejected", "setpoint_no_response"],
         row.createdAt,
       );
@@ -127,10 +129,10 @@ export function createSetpointsService(
       if (!updated) return; // Déjà répondue : seule la première réponse compte.
 
       // Une réponse tardive met fin à l'alerte « sans réponse ».
-      await repository.resolveAlerts(site.id, ["setpoint_no_response"], receivedAt);
+      await alerts.resolve({ siteId: site.id }, ["setpoint_no_response"], receivedAt);
       if (updated.status === "rejected") {
         const reason = updated.rejectionReason ? REASON_TEXT[updated.rejectionReason] : "refusée";
-        await repository.openAlert({
+        await alerts.open({
           siteId: site.id,
           type: "setpoint_rejected",
           severity: "warning",
@@ -145,7 +147,7 @@ export function createSetpointsService(
       for (const { siteId } of expired) {
         const site = await repository.findSite(siteId);
         if (!site) continue;
-        await repository.openAlert({
+        await alerts.open({
           siteId,
           type: "setpoint_no_response",
           severity: "critical",

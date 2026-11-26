@@ -22,6 +22,13 @@
       "when": 1793969996475,
       "tag": "0002_hypertables",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795685305388,
+      "tag": "0003_drop_push_tokens",
+      "breakpoints": true
     }
   ]
 }

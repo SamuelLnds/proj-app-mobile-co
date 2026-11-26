@@ -110,6 +110,10 @@ export default function AlertsScreen() {
           ))}
         </View>
       )}
+      <Text style={[typography.caption, { color: colors.inkMuted }]}>
+        Pour recevoir les alertes app fermée, abonnez-vous au sujet du site dans l'app ntfy (voir la
+        documentation du dossier infra).
+      </Text>
     </Screen>
   );
 }
