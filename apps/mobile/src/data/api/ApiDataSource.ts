@@ -11,6 +11,7 @@ import {
   type PanelDetail,
   type PanelList,
   type PanelMeasurementPoint,
+  type RegisterPushTokenRequest,
   type SetpointPage,
   type SetpointRecord,
   type SiteDetail,
@@ -104,6 +105,14 @@ export class ApiDataSource implements DataSource {
 
   login(body: LoginRequest): Promise<LoginResponse> {
     return this.request("POST", ROUTES.login, { body });
+  }
+
+  registerPushToken(body: RegisterPushTokenRequest): Promise<void> {
+    return this.request("POST", ROUTES.registerPushToken, { body });
+  }
+
+  deletePushToken(token: string): Promise<void> {
+    return this.request("DELETE", ROUTES.deletePushToken, { params: { token } });
   }
 
   listSites(): Promise<SiteList> {

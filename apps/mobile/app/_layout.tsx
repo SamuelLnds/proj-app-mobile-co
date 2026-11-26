@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { QueryProvider } from "../src/api";
 import { AuthProvider } from "../src/auth/AuthProvider";
+import { NotificationEffects } from "../src/notifications/NotificationEffects";
 import { appFonts, ThemeProvider, useTheme } from "../src/theme";
 
 // L'écran de lancement reste affiché jusqu'au chargement des polices.
@@ -45,6 +46,7 @@ export default function RootLayout() {
       <AuthProvider>
         <ThemeProvider>
           <ThemedStack />
+          <NotificationEffects />
         </ThemeProvider>
       </AuthProvider>
     </QueryProvider>

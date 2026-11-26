@@ -6,11 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import { dataSource } from "../data";
+import { registerForPush } from "../notifications/push";
 import { clearResponses } from "../storage";
 import { clearSession, loadSession, saveSession } from "./session";
 
@@ -32,13 +34,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [restored, setRestored] = useState(false);
   const client = useQueryClient();
 
-  const logout = useCallback(() => {
-    dataSource.setToken(null);
-    client.clear();
-    setUser(null);
-    void clearSession();
-    void clearResponses();
-  }, [client]);
+  // Jeton Expo enregistré par ce téléphone pour l'utilisateur connecté.
+  const pushToken = useRef<string | null>(null);
+
+  const endSession = useCallback(
+    (revokePushToken: boolean) => {
+      // La suppression du jeton push part avec l'ancien JWT, avant son effacement : après la
+      // déconnexion, le téléphone ne reçoit plus de notification. Une session expirée (401) ne
+      // peut plus la demander à l'API.
+      const token = pushToken.current;
+      pushToken.current = null;
+      if (revokePushToken && token) void dataSource.deletePushToken(token).catch(() => undefined);
+      dataSource.setToken(null);
+      client.clear();
+      setUser(null);
+      void clearSession();
+      void clearResponses();
+    },
+    [client],
+  );
+  const logout = useCallback(() => endSession(true), [endSession]);
 
   useEffect(() => {
     let active = true;
@@ -56,9 +71,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    dataSource.onUnauthorized(logout);
+    dataSource.onUnauthorized(() => endSession(false));
     return () => dataSource.onUnauthorized(null);
-  }, [logout]);
+  }, [endSession]);
+
+  // Notifications push : après la connexion (ou la restauration de la session), autorisation,
+  // jeton Expo puis `POST /push-tokens` (séquence 4.1 de l'UML). Sans module natif, sans
+  // autorisation ou sans réseau, l'app fonctionne sans notification.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId || dataSource.kind !== "api") return;
+    let active = true;
+    void registerForPush()
+      .then(async (registration) => {
+        if (!registration || !active) return;
+        await dataSource.registerPushToken(registration);
+        if (active) pushToken.current = registration.token;
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   const login = useCallback(async (body: LoginRequest) => {
     const response = await dataSource.login(body);
