@@ -248,7 +248,7 @@ apps/mobile/
 │   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE
 │   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active
 │   ├── auth/                     # Contexte d'authentification, stockage du jeton
-│   ├── storage/                  # Base SQLite locale : schéma, lecture, écriture
+│   ├── storage/                  # Base SQLite locale `solar.db` : database.ts (ouverture et tables), responses.ts (dernières réponses de l'API), read-alerts.ts (alertes lues)
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
 │   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification)
@@ -266,6 +266,15 @@ apps/mobile/
 | Pilotage | `app/(tabs)/control.tsx` | UC07, UC08 |
 | Alertes | `app/(tabs)/alerts.tsx` | UC09 |
 | Détail d'un panneau | `app/panel/[id].tsx` | UC05 |
+
+**Tables locales de `solar.db`** (`src/storage/`), jamais envoyées à l'API et effacées à la déconnexion :
+
+| Table | Colonnes | Rôle |
+|---|---|---|
+| `responses` | `key` (clé primaire), `body`, `saved_at` | Dernière réponse reçue pour chaque ressource, affichée au démarrage et sans réseau |
+| `read_alerts` | `alert_id` (clé primaire, texte), `read_at` (ISO 8601) | Alertes actives que l'utilisateur a marquées comme lues sur ce téléphone ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)) |
+
+`read_alerts` ne contient que des identifiants d'alertes actives : ceux qui ne le sont plus sont retirés quand la liste des alertes actives change. Les hooks `useReadAlerts` et `useUnreadAlertCount` (`src/api/`) partagent cet état entre l'écran Alertes et la pastille de l'onglet.
 
 **Rôle de chaque outil côté app :** TanStack Query interroge l'API et gère le rafraîchissement ; chaque réponse reçue est enregistrée dans SQLite ; à l'ouverture de l'app ou sans réseau, l'écran affiche d'abord les données de SQLite avec leur ancienneté.
 
@@ -606,6 +615,7 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
 | [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase), à la place de ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) remplacée) ; notifications locales retirées par [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md) |
 | [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md) | Aucune notification au premier plan ; pas de push pour une consigne refusée (`setpoint_rejected`) |
+| [D034](../journal/decisions/D034-alertes-lues-par-telephone.md) | Alertes lues : état propre à chaque téléphone, table SQLite locale `read_alerts`, rien côté API |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
 

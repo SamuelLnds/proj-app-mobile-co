@@ -117,7 +117,14 @@ Chaque élément affiché correspond à un champ de l'API (section 7.3 de la [ca
 
 L'app suit le réglage clair ou sombre du téléphone. Les couleurs sont définies une seule fois, à partir de `tokens.json`, dans `apps/mobile/src/theme/` (deux jeux de valeurs, mêmes noms de jetons).
 
+### Marqueur « Nouvelle » (écran Alertes)
+
+Dans l'onglet « Actives », une alerte non lue ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)) porte, sur la ligne de sa gravité, un **point plein** (8 px, couleur `ink`) suivi du mot **« Nouvelle »** (style `labelBold`, couleur `ink`). Une alerte lue n'a ni point ni mot. L'information ne passe jamais par la couleur seule : le point et le mot sont présents, et le libellé d'accessibilité de l'alerte ajoute « non lue ». La couleur de gravité (`status-*`) reste réservée à la gravité.
+
+Une alerte de panneau a, sous son texte, un contrôle **« Voir le panneau »** (icône `CaretRight`, couleur `primary`, hauteur d'au moins 48 px) ; une alerte du site n'a pas de navigation. Le bouton secondaire **« Tout marquer comme lu »** est à droite du titre de l'écran tant qu'il existe des alertes non lues.
+
 ## 7. Écarts et points ouverts
 
 - Le design system ne contient pas encore de composants réutilisables (boutons, pastilles, cartes) : ils seront écrits directement en React Native à partir des jetons.
 - Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).
+- L'écran Alertes diffère de la maquette actuelle (canevas hors du dépôt) : marqueur « Nouvelle », contrôle « Voir le panneau » et bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette est à mettre à jour.

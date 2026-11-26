@@ -1,7 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import type { ColorValue } from "react-native";
 
-import { useActiveAlertCount } from "../../src/api";
+import { useUnreadAlertCount } from "../../src/api";
 import { useAuth } from "../../src/auth/AuthProvider";
 import { fontFamilies, Icon, useTheme, type IconName } from "../../src/theme";
 
@@ -9,7 +9,8 @@ const tabIcon =
   (name: IconName) =>
   ({ color }: { color: ColorValue }) => <Icon name={name} color={color} />;
 
-// Barre d'onglets de la charte : Supervision, Carte, Pilotage, Alertes.
+// Barre d'onglets de la charte : Supervision, Carte, Pilotage, Alertes. La pastille de l'onglet
+// Alertes compte les alertes actives non lues (D034).
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function TabsLayout() {
 
 function AuthenticatedTabs({ alertColor }: { alertColor: string }) {
   const { colors } = useTheme();
-  const alertCount = useActiveAlertCount();
+  const alertCount = useUnreadAlertCount();
   return (
     <Tabs
       screenOptions={{
@@ -48,7 +49,10 @@ function AuthenticatedTabs({ alertColor }: { alertColor: string }) {
           tabBarIcon: tabIcon(alertCount > 0 ? "BellRinging" : "Bell"),
           tabBarBadge: alertCount > 0 ? alertCount : undefined,
           tabBarBadgeStyle: { backgroundColor: alertColor, color: colors.onPrimary },
-          tabBarAccessibilityLabel: alertCount > 0 ? `Alertes, ${alertCount} actives` : "Alertes",
+          tabBarAccessibilityLabel:
+            alertCount > 0
+              ? `Alertes, ${alertCount} non lue${alertCount > 1 ? "s" : ""}`
+              : "Alertes",
         }}
       />
     </Tabs>

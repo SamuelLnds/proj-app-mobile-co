@@ -63,4 +63,4 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D031](decisions/D031-tunnel-bore-pour-wokwi.md) | Connexion de l'ESP32 de Wokwi au broker par un tunnel TCP bore, en attendant le VPS | 2026-11-26 | Acceptée |
 | [D032](decisions/D032-analyseur-json-minimal-du-firmware.md) | Analyseur JSON minimal dans le firmware, à la place d'ArduinoJson | 2026-11-26 | Acceptée |
 | [D033](decisions/D033-regles-envoi-notifications-alerte.md) | Règles d'envoi des notifications d'alerte : aucune au premier plan, pas de push pour une consigne refusée | 2026-11-26 | Acceptée |
-
+| [D034](decisions/D034-alertes-lues-par-telephone.md) | Alertes lues : état propre à chaque téléphone | 2026-11-26 | Acceptée |

@@ -176,11 +176,6 @@ export function useAlerts(status?: AlertStatus, options?: { enabled?: boolean })
   });
 }
 
-/** Nombre d'alertes actives, pour la barre d'onglets. */
-export function useActiveAlertCount(): number {
-  return useAlerts("active").data?.items.length ?? 0;
-}
-
 export function useCreateSetpoint(siteId: string | undefined) {
   const client = useQueryClient();
   return useMutation({

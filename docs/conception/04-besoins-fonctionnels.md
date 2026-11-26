@@ -180,6 +180,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #82 | Mobile : gestion des objets (comparer, accepter, refuser, révoquer) | M9 | mobile |
 | #83 | Firmware : enrôlement et connexion par certificat | M9 | firmware |
 | #84 | Simulateur : enrôlement en mode objet du site | M9 | simulator |
+| #104 | Mobile : marquer les alertes comme lues | M5 | mobile |
 
 ---
 
@@ -946,6 +947,34 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 - [ ] Une alerte `critical` arrive sur le téléphone de test, app fermée, dans Solar (nécessite le projet Firebase et un nouveau build : à vérifier sur le téléphone).
 
 **Dépend de :** #28, #48, #49, #76
+
+### #104 · Mobile : marquer les alertes comme lues
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Contexte :** la pastille de l'onglet Alertes compte les alertes actives et ne baisse que lorsque le système résout l'alerte : l'exploitant ne peut pas dire qu'il l'a vue. L'état « lu » est propre à chaque téléphone, stocké dans SQLite, sans changement d'API ni de base serveur ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)).
+
+**À faire :**
+- Table locale `read_alerts` (`alert_id`, `read_at`) dans `solar.db`, avec lecture, écriture, purge et effacement dans `src/storage/` ; effacée à la déconnexion avec le reste des données locales.
+- Hooks `useReadAlerts` (identifiants lus, `markAlertRead`, `markAllAlertsRead`) et `useUnreadAlertCount` (alertes actives et non lues) en remplacement de `useActiveAlertCount` pour la pastille. L'état est partagé entre l'onglet et l'écran : une action met la pastille à jour aussitôt, sans attendre le rafraîchissement de 5 s.
+- Écran Alertes, onglet « Actives » : une alerte non lue porte un point plein et le mot « Nouvelle » (et « non lue » dans le libellé d'accessibilité) ; un appui sur l'alerte la marque comme lue sans faire sauter ni défiler la liste ; pour une alerte de panneau, un contrôle séparé « Voir le panneau » (48 px de haut au moins) ouvre le détail du panneau ; une alerte du site n'a pas de navigation ; un bouton « Tout marquer comme lu » est visible tant qu'il existe des alertes non lues.
+- Onglet « Résolues » : pas de notion de lu.
+- Une alerte résolue puis rouverte a un nouvel identifiant : elle est non lue. Au premier lancement après la mise à jour, les alertes déjà actives sont non lues.
+- Purge des identifiants d'alertes qui ne sont plus actives quand la liste des alertes actives change.
+- Fonctionne avec la source `mock` et hors ligne (copie locale SQLite).
+
+**Critères d'acceptation :**
+- [ ] La pastille de l'onglet Alertes compte les alertes actives et non lues ; elle ne compte pas les alertes résolues (test).
+- [ ] Marquer une alerte comme lue fait baisser la pastille aussitôt, sans attendre un rafraîchissement ; une nouvelle alerte la fait remonter (test).
+- [ ] Un appui sur une alerte active non lue la marque comme lue ; « Tout marquer comme lu » ramène le compte à zéro et disparaît ensuite (test).
+- [ ] Une alerte non lue est signalée par un point, le mot « Nouvelle » et le libellé d'accessibilité « non lue » : la couleur ne porte pas l'information (test).
+- [ ] « Voir le panneau » ouvre le détail du panneau et ne marque pas l'alerte comme lue par lui-même ; il mesure 48 px de haut au moins ; une alerte du site n'a pas ce contrôle (test).
+- [ ] Les identifiants des alertes qui ne sont plus actives sont retirés de la mémoire locale ; la déconnexion efface la table `read_alerts` (tests de stockage).
+- [ ] Aucun changement dans `apps/api`, `packages/contracts` ni en base serveur : aucune route, aucune migration.
+- [ ] Même comportement avec la source `mock` et hors ligne (test).
+- [ ] Un appui qui marque comme lue ne fait ni sauter ni défiler la liste ; l'état « lu » reste après un redémarrage de l'app (à vérifier sur le téléphone).
+
+**Dépend de :** #50, #76 · **Références :** [D034](../journal/decisions/D034-alertes-lues-par-telephone.md), [D014](../journal/decisions/D014-stockage-local-sqlite.md), [UML, UC09](02-uml.md), [Cartographie, section 5.3](03-cartographie-technique.md), [Charte graphique](05-charte-graphique.md)
 
 ---
 
