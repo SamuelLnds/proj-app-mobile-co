@@ -1080,7 +1080,7 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 
 **Interface :** réalisée avec des données d'exemple dans #73 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
-**À faire :** dans la vue Liste de l'écran Carte, section « Panneaux à positionner » (code, date de détection, dernière production) ; bouton « Placer ici » qui demande l'autorisation de localisation (`expo-location`), affiche la position et sa précision, puis envoie le `PATCH` ; formulaire pour corriger le nom et la puissance ; suppression avec confirmation. Actions masquées pour un `viewer`.
+**À faire :** dans la vue Liste de l'écran Carte, section « Panneaux à positionner » (code, dernière production ; la date de détection n'est pas conservée par le modèle de données) ; bouton « Placer ici » qui demande l'autorisation de localisation (`expo-location`), affiche la position et sa précision, puis envoie le `PATCH` ; formulaire pour corriger le nom et la puissance ; suppression avec confirmation. Actions masquées pour un `viewer`.
 
 **Critères d'acceptation :**
 - [ ] Un panneau ajouté au simulateur (`EXTRA_PANELS`) apparaît dans la section, puis sur la carte une fois placé.
