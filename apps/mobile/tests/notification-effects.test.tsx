@@ -3,6 +3,8 @@ import { render, waitFor } from "@testing-library/react-native";
 import { QueryProvider } from "../src/api";
 import { NotificationEffects } from "../src/notifications/NotificationEffects";
 
+const mockAlerts = jest.fn();
+
 const mockPush = jest.fn();
 let mockSignedIn = true;
 let mockSourceKind: "api" | "mock" = "api";
@@ -21,6 +23,7 @@ jest.mock("../src/data", () => ({
     get kind() {
       return mockSourceKind;
     },
+    listAlerts: (...args: unknown[]) => mockAlerts(...args),
   },
 }));
 
@@ -40,6 +43,8 @@ const tapListener = () =>
 describe("NotificationEffects", () => {
   beforeEach(() => {
     mockPush.mockClear();
+    mockAlerts.mockReset();
+    mockAlerts.mockResolvedValue({ items: [], next: null });
     mockSignedIn = true;
     mockSourceKind = "api";
     for (const name of [

@@ -9,6 +9,7 @@ const config: ExpoConfig = {
   version: "0.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
+  // Même valeur que APP_URL_SCHEME de @solar/contracts (liens des notifications ntfy)
   scheme: "solar",
   userInterfaceStyle: "automatic",
   android: {

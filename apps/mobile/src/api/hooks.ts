@@ -164,8 +164,9 @@ export function useResetSetpoints(siteId: string | undefined) {
   return () => client.resetQueries({ queryKey: queryKeys.setpoints(siteId ?? "") });
 }
 
-export function useAlerts(status?: AlertStatus) {
+export function useAlerts(status?: AlertStatus, options?: { enabled?: boolean }) {
   return useQuery({
+    enabled: options?.enabled ?? true,
     queryKey: queryKeys.alerts(status),
     queryFn: () =>
       withLocalCopy(queryKeys.alerts(status), () =>

@@ -1,5 +1,3 @@
-import type { RegisterPushTokenRequest } from "@solar/contracts";
-import Constants from "expo-constants";
 import type * as ExpoNotifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -11,13 +9,12 @@ export type NotificationsModule = typeof ExpoNotifications;
  */
 export const nativeModules = {
   notifications: (): Promise<NotificationsModule> => import("expo-notifications"),
-  device: () => import("expo-device"),
 };
 
 /**
  * Charge expo-notifications à la demande. Le module contient du code natif : une version de
  * l'app installée avant son ajout ne l'a pas, et un import au chargement ferait planter le
- * démarrage. Sans le module, les notifications sont désactivées en silence (`null`).
+ * démarrage. Sans le module, les notifications locales sont désactivées en silence (`null`).
  */
 export async function loadNotifications(): Promise<NotificationsModule | null> {
   try {
@@ -28,25 +25,19 @@ export async function loadNotifications(): Promise<NotificationsModule | null> {
 }
 
 /** Identifiant du canal Android des notifications d'alerte. */
-export const ALERT_CHANNEL_ID = "default";
+export const ALERT_CHANNEL_ID = "alerts";
 
 /**
- * Demande l'autorisation d'afficher des notifications puis obtient le jeton Expo du téléphone
- * (séquence 4.1 de l'UML). Renvoie `null` quand les notifications sont indisponibles : module
- * natif absent, émulateur, autorisation refusée, projet EAS inconnu ou erreur.
+ * Crée le canal Android puis demande l'autorisation d'afficher des notifications (Android 13 et
+ * plus), séquence 4.1 de l'UML. Renvoie `false` quand les notifications sont indisponibles :
+ * module natif absent, autorisation refusée ou erreur. Aucun jeton n'est obtenu ni envoyé.
  */
-export async function registerForPush(): Promise<RegisterPushTokenRequest | null> {
+export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const Notifications = await loadNotifications();
-    if (!Notifications) return null;
-    const Device = await nativeModules.device();
-    // Les émulateurs ne reçoivent pas de notification push.
-    if (!Device.isDevice) return null;
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
-    if (!projectId) return null;
-
+    if (!Notifications) return false;
     if (Platform.OS === "android") {
-      // Le canal doit exister avant la demande d'autorisation (Android 13 et plus).
+      // Le canal doit exister avant la demande d'autorisation.
       await Notifications.setNotificationChannelAsync(ALERT_CHANNEL_ID, {
         name: "Alertes",
         importance: Notifications.AndroidImportance.MAX,
@@ -54,16 +45,13 @@ export async function registerForPush(): Promise<RegisterPushTokenRequest | null
     }
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted") ({ status } = await Notifications.requestPermissionsAsync());
-    if (status !== "granted") return null;
-
-    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
-    return { token: data, platform: Platform.OS === "ios" ? "ios" : "android" };
+    return status === "granted";
   } catch {
-    return null;
+    return false;
   }
 }
 
-/** Affiche aussi les notifications reçues quand l'app est ouverte. */
+/** Affiche aussi les notifications quand l'app est ouverte. */
 export function showNotificationsInForeground(Notifications: NotificationsModule): void {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -75,9 +63,29 @@ export function showNotificationsInForeground(Notifications: NotificationsModule
   });
 }
 
+/** Contenu d'une notification locale : le texte de l'alerte et des identifiants techniques. */
+export interface LocalNotification {
+  title: string;
+  body: string;
+  /** Identifiants qui permettent d'ouvrir le bon écran à l'appui : jamais de donnée personnelle. */
+  data: { alertId: string; panelId: string | null; type: string };
+}
+
+/** Affiche immédiatement une notification locale (sans jeton ni serveur). */
+export async function showLocalNotification(
+  Notifications: NotificationsModule,
+  notification: LocalNotification,
+): Promise<void> {
+  await Notifications.scheduleNotificationAsync({
+    content: notification,
+    // Affichage immédiat ; sur Android, dans le canal des alertes plutôt que dans le canal de secours.
+    trigger: Platform.OS === "android" ? { channelId: ALERT_CHANNEL_ID } : null,
+  });
+}
+
 /**
  * Écran ouvert par l'appui sur une notification : le détail du panneau concerné, sinon
- * l'écran Alertes. Les données viennent du service Expo : tout est vérifié.
+ * l'écran Alertes. Les données sont reçues du système : tout est vérifié.
  */
 export function notificationTarget(data: unknown): string {
   const panelId =

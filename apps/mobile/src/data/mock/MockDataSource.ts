@@ -127,14 +127,6 @@ export class MockDataSource implements DataSource {
     return { token: `mock-${user.role}`, expiresAt: iso(this.now() + 8 * HOUR), user };
   }
 
-  async registerPushToken(): Promise<void> {
-    // Pas de notification avec les données d'exemple.
-  }
-
-  async deletePushToken(): Promise<void> {
-    // Pas de notification avec les données d'exemple.
-  }
-
   async listSites(): Promise<SiteList> {
     const site = await this.getSite(SITE.id);
     const {

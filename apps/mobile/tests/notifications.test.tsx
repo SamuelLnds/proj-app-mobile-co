@@ -4,17 +4,16 @@ import type { ReactNode } from "react";
 
 import { QueryProvider } from "../src/api";
 import { AuthProvider, useAuth } from "../src/auth/AuthProvider";
-import { MockDataSource, type DataSource } from "../src/data";
+import { createMemoryStore, readResponse, saveResponse, setResponseStore } from "../src/storage";
 import {
   loadNotifications,
   nativeModules,
   notificationTarget,
-  registerForPush,
-} from "../src/notifications/push";
+  requestNotificationPermission,
+} from "../src/notifications/local";
+import { NOTIFIED_KEY } from "../src/notifications/alert-notifications";
 
-const BASE_URL = "http://localhost:3000/v1";
 const JWT = "jeton.jwt.de-test";
-const PUSH_TOKEN = "ExponentPushToken[jeton-de-test]";
 
 const LOGIN: LoginResponse = {
   token: JWT,
@@ -27,96 +26,50 @@ const LOGIN: LoginResponse = {
   },
 };
 
-// Le projet EAS vient de app.config.ts, absent de l'environnement de test.
-jest.mock("expo-constants", () => ({
-  __esModule: true,
-  default: { expoConfig: { extra: { eas: { projectId: "projet-eas-de-test" } } } },
-}));
-
 // La source active devient une source api, dont les appels passent par le faux serveur.
 jest.mock("../src/data", () => {
   const actual = jest.requireActual("../src/data");
   return { ...actual, dataSource: new actual.ApiDataSource("http://localhost:3000/v1") };
 });
 
-interface Call {
-  method: string;
-  url: string;
-  authorization: string | null;
-  body: unknown;
-}
-
-function fakeServer() {
-  const calls: Call[] = [];
-  const fetchFn = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    calls.push({
-      method: init?.method ?? "GET",
-      url,
-      authorization: new Headers(init?.headers).get("Authorization"),
-      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
-    });
-    if (url.endsWith("/auth/login")) {
-      return new Response(JSON.stringify(LOGIN), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(null, { status: 204 });
-  });
-  return { calls, fetchFn };
-}
-
 const notifications = () => jest.requireMock("expo-notifications");
-const device = () => jest.requireMock("expo-device");
 
-describe("registerForPush", () => {
+describe("requestNotificationPermission", () => {
   beforeEach(() => {
-    device().isDevice = true;
     notifications().getPermissionsAsync.mockResolvedValue({ status: "granted" });
     notifications().requestPermissionsAsync.mockClear();
-    notifications().getExpoPushTokenAsync.mockClear();
   });
 
-  it("renvoie le jeton Expo et la plateforme quand l'autorisation est accordée", async () => {
-    const registration = await registerForPush();
-    expect(registration).toEqual({ token: PUSH_TOKEN, platform: "ios" });
-    // Le jeton est demandé pour le projet EAS de app.config.ts.
-    expect(notifications().getExpoPushTokenAsync).toHaveBeenCalledWith({
-      projectId: "projet-eas-de-test",
-    });
+  it("renvoie true quand l'autorisation est déjà accordée, sans la redemander", async () => {
+    await expect(requestNotificationPermission()).resolves.toBe(true);
     expect(notifications().requestPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it("demande l'autorisation si elle n'est pas encore accordée", async () => {
     notifications().getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
-    await expect(registerForPush()).resolves.toMatchObject({ token: PUSH_TOKEN });
+    await expect(requestNotificationPermission()).resolves.toBe(true);
     expect(notifications().requestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("renvoie null quand l'autorisation est refusée", async () => {
+  it("renvoie false quand l'autorisation est refusée", async () => {
     notifications().getPermissionsAsync.mockResolvedValue({ status: "denied" });
     notifications().requestPermissionsAsync.mockResolvedValueOnce({ status: "denied" });
-    await expect(registerForPush()).resolves.toBeNull();
+    await expect(requestNotificationPermission()).resolves.toBe(false);
   });
 
-  it("renvoie null sur un émulateur", async () => {
-    device().isDevice = false;
-    await expect(registerForPush()).resolves.toBeNull();
-  });
-
-  it("renvoie null, sans erreur, quand l'obtention du jeton échoue", async () => {
-    notifications().getExpoPushTokenAsync.mockRejectedValueOnce(new Error("réseau"));
-    await expect(registerForPush()).resolves.toBeNull();
+  it("renvoie false, sans erreur, quand la demande échoue", async () => {
+    notifications().getPermissionsAsync.mockRejectedValueOnce(new Error("système"));
+    await expect(requestNotificationPermission()).resolves.toBe(false);
   });
 
   it("désactive les notifications sans erreur quand le module natif est absent", async () => {
     // Version de l'app installée avant l'ajout du module : son chargement échoue.
     nativeModules.notifications = () =>
       Promise.reject(new Error("Cannot find native module 'ExpoPushTokenManager'"));
+    notifications().getPermissionsAsync.mockClear();
     await expect(loadNotifications()).resolves.toBeNull();
-    await expect(registerForPush()).resolves.toBeNull();
-    expect(notifications().getExpoPushTokenAsync).not.toHaveBeenCalled();
+    await expect(requestNotificationPermission()).resolves.toBe(false);
+    expect(notifications().getPermissionsAsync).not.toHaveBeenCalled();
   });
 });
 
@@ -134,18 +87,23 @@ describe("notificationTarget", () => {
   });
 });
 
-describe("jeton push et session", () => {
-  const server = fakeServer();
+describe("session et notifications locales", () => {
+  const calls: string[] = [];
   const realFetch = globalThis.fetch;
   beforeAll(() => {
-    globalThis.fetch = server.fetchFn as typeof fetch;
+    globalThis.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(`${init?.method ?? "GET"} ${String(input)}`);
+      return new Response(JSON.stringify(LOGIN), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
   });
   afterAll(() => {
     globalThis.fetch = realFetch;
   });
   beforeEach(() => {
-    server.calls.length = 0;
-    device().isDevice = true;
+    calls.length = 0;
     notifications().getPermissionsAsync.mockResolvedValue({ status: "granted" });
   });
 
@@ -154,70 +112,42 @@ describe("jeton push et session", () => {
       <AuthProvider>{children}</AuthProvider>
     </QueryProvider>
   );
-  const pushCalls = () => server.calls.filter((c) => c.url.includes("/push-tokens"));
 
-  it("enregistre le jeton après la connexion puis le supprime à la déconnexion", async () => {
+  async function signIn() {
     const hook = await renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(hook.result.current).not.toBeNull());
     await act(() => hook.result.current.login({ email: "operator@demo.local", password: "x" }));
+    return hook;
+  }
 
-    await waitFor(() => expect(pushCalls()).toHaveLength(1));
-    expect(pushCalls()[0]).toMatchObject({
-      method: "POST",
-      url: `${BASE_URL}/push-tokens`,
-      authorization: `Bearer ${JWT}`,
-      body: { token: PUSH_TOKEN, platform: "ios" },
-    });
-
+  it("demande l'autorisation après la connexion, sans aucun appel de jeton à l'API", async () => {
+    notifications().getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+    notifications().requestPermissionsAsync.mockClear();
+    const hook = await signIn();
+    await waitFor(() => expect(notifications().requestPermissionsAsync).toHaveBeenCalled());
     await act(async () => hook.result.current.logout());
-    await waitFor(() => expect(pushCalls()).toHaveLength(2));
-    // Les crochets du jeton Expo sont encodés dans l'URL, et le JWT part encore avec la requête.
-    expect(pushCalls()[1]).toMatchObject({
-      method: "DELETE",
-      url: `${BASE_URL}/push-tokens/${encodeURIComponent(PUSH_TOKEN)}`,
-      authorization: `Bearer ${JWT}`,
-    });
     await waitFor(() => expect(hook.result.current.user).toBeNull());
+    // Seule la connexion passe par l'API : ni enregistrement ni suppression de jeton.
+    expect(calls).toEqual(["POST http://localhost:3000/v1/auth/login"]);
     await hook.unmount();
   });
 
-  it("ne demande rien à l'API quand les notifications sont refusées", async () => {
+  it("la connexion réussit même si l'autorisation est refusée", async () => {
     notifications().getPermissionsAsync.mockResolvedValue({ status: "denied" });
     notifications().requestPermissionsAsync.mockResolvedValueOnce({ status: "denied" });
-    const hook = await renderHook(() => useAuth(), { wrapper });
-    await waitFor(() => expect(hook.result.current).not.toBeNull());
-    await act(() => hook.result.current.login({ email: "operator@demo.local", password: "x" }));
+    const hook = await signIn();
     await waitFor(() => expect(hook.result.current.user).not.toBeNull());
+    await hook.unmount();
+  });
+
+  it("la déconnexion efface les alertes déjà notifiées (pas de rafale à la reconnexion)", async () => {
+    const store = createMemoryStore();
+    setResponseStore(store);
+    await saveResponse(NOTIFIED_KEY, ["a1"]);
+    const hook = await signIn();
     await act(async () => hook.result.current.logout());
     await waitFor(() => expect(hook.result.current.user).toBeNull());
-    expect(pushCalls()).toHaveLength(0);
+    await waitFor(async () => expect(await readResponse(NOTIFIED_KEY)).toBeNull());
     await hook.unmount();
-  });
-
-  it("la connexion réussit même si l'enregistrement du jeton échoue", async () => {
-    server.fetchFn.mockImplementationOnce(async () => {
-      return new Response(JSON.stringify(LOGIN), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    });
-    server.fetchFn.mockImplementationOnce(async () => {
-      throw new TypeError("Network request failed");
-    });
-    const hook = await renderHook(() => useAuth(), { wrapper });
-    await waitFor(() => expect(hook.result.current).not.toBeNull());
-    await act(() => hook.result.current.login({ email: "operator@demo.local", password: "x" }));
-    await waitFor(() => expect(hook.result.current.user).not.toBeNull());
-    await hook.unmount();
-  });
-});
-
-describe("source d'exemple", () => {
-  it("les méthodes de jeton push n'ont aucun effet", async () => {
-    const source: DataSource = new MockDataSource("normal");
-    await expect(
-      source.registerPushToken({ token: PUSH_TOKEN, platform: "android" }),
-    ).resolves.toBeUndefined();
-    await expect(source.deletePushToken(PUSH_TOKEN)).resolves.toBeUndefined();
   });
 });
