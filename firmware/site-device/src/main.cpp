@@ -5,6 +5,7 @@
 #include "config.h"
 #include "messages.h"
 #include "network.h"
+#include "readings.h"
 #include "sensors.h"
 
 namespace {
@@ -30,6 +31,14 @@ void publishMeasurement() {
   data.gridPower = production;  // sans batterie, toute la production part sur le réseau
   data.mode = FIXED_MODE;
   data.simulatedFault = sensors::simulatedFault();
+
+  // Valeurs lisibles des capteurs, pour les régler dans Wokwi sans lire le JSON publié.
+  const float potPercent = clampFloat(
+      data.production * (data.simulatedFault ? FAULT_PRODUCTION_DIVISOR : 1.0f) / DEMO_SITE_PEAK_POWER_W * 100.0f,
+      0.0f, 100.0f);
+  Serial.printf("Capteurs : lumière %.0f W/m² | potentiomètre %.0f %% -> production %.0f W%s | température %.1f °C\n",
+                data.irradiance, potPercent, data.production, data.simulatedFault ? " (panne ÷5)" : "",
+                data.temperature);
 
   char payload[MESSAGE_BUFFER_SIZE];
   if (!formatSiteMeasurement(payload, sizeof(payload), data)) {
