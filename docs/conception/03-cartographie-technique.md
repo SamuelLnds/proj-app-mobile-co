@@ -255,7 +255,7 @@ apps/mobile/
 │   └── utils/
 ├── assets/                       # Polices, icône de l'app
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
-└── eas.json                      # Profils de build
+└── eas.json                      # Profils de build (chacun lié à l'environnement EAS du même nom)
 ```
 
 | Onglet ou écran | Fichier | Cas d'utilisation |
@@ -318,7 +318,7 @@ Deux mécanismes complémentaires ([D030](../journal/decisions/D030-notification
 
 **Pas de doublon.** Le gestionnaire de notifications (`setNotificationHandler`) n'affiche pas un push reçu app ouverte dont l'`alertId` est déjà mémorisé (déjà notifié localement) et mémorise celui d'un push qu'il affiche. En retour, l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan : à l'ouverture et au retour au premier plan, les alertes déjà actives sont seulement mémorisées, le push les ayant signalées. Un appui sur une notification, push ou locale, ouvre le panneau concerné (`panelId`) ou l'écran Alertes.
 
-**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans `apps/mobile/README.md`. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et n'affiche que les notifications locales.
+**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans [`apps/mobile/README.md`](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase) ; la propriété `environment` de chaque profil de `eas.json` désigne l'environnement EAS dont les variables sont injectées au build. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et n'affiche que les notifications locales.
 
 ## 6. Contrat MQTT
 
