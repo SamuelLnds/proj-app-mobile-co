@@ -4,9 +4,9 @@ App Expo (React Native, Expo Router) de supervision et de pilotage du parc solai
 
 ## Notifications d'alerte : configuration Firebase
 
-Les alertes `warning` et `critical` arrivent app fermée par le **push Expo**, qui s'appuie sur Firebase Cloud Messaging (FCM) sur Android ([D030](../../docs/journal/decisions/D030-notifications-push-expo-et-locales.md)). Quand l'app est ouverte, elle affiche ses propres notifications locales. La configuration Firebase se fait **une seule fois**, par le développeur, et n'est jamais versionnée.
+Les alertes `warning` et `critical` arrivent app fermée ou en arrière-plan par le **push Expo**, qui s'appuie sur Firebase Cloud Messaging (FCM) sur Android ([D030](../../docs/journal/decisions/D030-notifications-push-expo-et-locales.md)). Quand l'app est ouverte, aucune notification n'est affichée : l'alerte est déjà visible dans l'app, et le push d'une consigne refusée n'est pas envoyé ([D033](../../docs/journal/decisions/D033-regles-envoi-notifications-alerte.md)). La configuration Firebase se fait **une seule fois**, par le développeur, et n'est jamais versionnée.
 
-Sans cette configuration, l'app se construit et fonctionne : elle n'obtient simplement pas de jeton push et n'affiche que les notifications locales.
+Sans cette configuration, l'app se construit et fonctionne : elle n'obtient simplement pas de jeton push et ne reçoit aucune notification (les alertes restent visibles dans l'app).
 
 Deux fichiers sont à fournir, pour deux usages différents :
 

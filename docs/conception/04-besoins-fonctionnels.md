@@ -66,7 +66,7 @@ Une issue n'est fermée que si **tous** ces points sont vrais :
 | **M8 · Intégration de l'interface** | Toute l'app conforme aux maquettes, sur des données d'exemple | L'app complète est consultable sur le téléphone, dans les deux thèmes et tous ses états, sans API |
 | **M3 · Supervision** | Toutes les fonctions de consultation | Connexion, supervision, carte, détail, historiques, affichage sans réseau |
 | **M4 · Pilotage** | Communication bidirectionnelle complète | Une consigne envoyée depuis l'app est appliquée ou refusée par l'objet, et l'app l'affiche |
-| **M5 · Alertes et notifications** | Règles d'alerte, notifications push Expo (Firebase) et notifications locales ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) | Panne injectée → notification sur le téléphone |
+| **M5 · Alertes et notifications** | Règles d'alerte, notifications push Expo (Firebase), aucune au premier plan ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) | Panne injectée → notification sur le téléphone |
 | **M9 · Sécurité de l'objet** | L'objet s'authentifie par certificat, sans secret dans son code | Un objet accepté dans l'app se connecte ; un objet révoqué est refusé par le broker |
 | **M6 · Livraison** | Projet prêt pour la soutenance | APK installé, démo hébergée, dossier et documentation complets |
 | **M7 · Bonus** | Améliorations facultatives | Vue 3D, rotation des panneaux, flux temps réel |
@@ -150,7 +150,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #47 | API : moteur de règles d'alerte | M5 | api |
 | #48 | API : route de consultation des alertes | M5 | api |
 | #49 | API : jetons et envoi des notifications push | M5 | api |
-| #50 | Mobile : notifications push et locales, écran Alertes | M5 | mobile |
+| #50 | Mobile : notifications push, écran Alertes | M5 | mobile |
 | #51 | Revue de sécurité et dossier sécurité | M6 | docs |
 | #52 | Compléter les tests | M6 | test |
 | #53 | Construire et distribuer l'APK | M6 | mobile |
@@ -901,12 +901,12 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **À faire :**
 - Table `push_tokens` et enum `mobile_platform` rétablis (documentation, schéma Drizzle, **nouvelle** migration : `0003_drop_push_tokens` n'est pas modifiée) ; schémas `RegisterPushTokenRequest` et `PushTokenParams`, entrées `registerPushToken` et `deletePushToken` de `ROUTES`, enum `MobilePlatform` dans `@solar/contracts`.
 - Module `modules/notifications/` (`routes.ts`, `service.ts`, `repository.ts`, `sender.ts`) : `POST /v1/push-tokens` (insertion ou réattribution du jeton à l'utilisateur) et `DELETE /v1/push-tokens/{token}`.
-- Envoi par `expo-server-sdk` à l'ouverture d'une alerte `warning` ou `critical` par le moteur d'alertes (`modules/alerts/engine.ts`), à tous les jetons enregistrés, en un envoi groupé : titre `Alerte` ou `Alerte critique`, corps = message de l'alerte, données `alertId`, `siteId`, `panelId`, `type`, canal Android `ALERT_NOTIFICATION_CHANNEL_ID`. Fonction d'envoi injectable. Variable facultative `EXPO_ACCESS_TOKEN`.
+- Envoi par `expo-server-sdk` à l'ouverture d'une alerte `warning` ou `critical` par le moteur d'alertes (`modules/alerts/engine.ts`), à tous les jetons enregistrés, en un envoi groupé, sauf pour les types de `PUSH_EXCLUDED_ALERT_TYPES` (`setpoint_rejected` : alerte créée, sans push, [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) : titre `Alerte` ou `Alerte critique`, corps = message de l'alerte, données `alertId`, `siteId`, `panelId`, `type`, canal Android `ALERT_NOTIFICATION_CHANNEL_ID`. Fonction d'envoi injectable. Variable facultative `EXPO_ACCESS_TOKEN`.
 - Supprimer le service `ntfy` et tout ce qui s'y rattache : `infra/ntfy/`, scripts `ntfy:setup` et `ntfy:up`, démarrage dans `pnpm dev`, section de `infra/README.md`, client ntfy de l'API, variables `NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`.
 
 **Critères d'acceptation :**
 - [ ] `POST /v1/push-tokens` enregistre un jeton (204), sans doublon si on le renvoie ; un autre utilisateur qui se connecte sur le même téléphone le récupère ; `DELETE /v1/push-tokens/{token}` le supprime ; 401 sans jeton d'accès, 422 sur un corps invalide.
-- [ ] Une alerte `critical` (par exemple `device_offline`) envoie un message groupé à tous les jetons enregistrés avec le titre « Alerte critique » ; une alerte `warning` avec le titre « Alerte » ; une alerte `info` n'envoie rien (test).
+- [ ] Une alerte `critical` (par exemple `device_offline`) envoie un message groupé à tous les jetons enregistrés avec le titre « Alerte critique » ; une alerte `warning` avec le titre « Alerte » ; une alerte `info` n'envoie rien ; une alerte `setpoint_rejected` n'envoie rien, alors que `setpoint_no_response` envoie (test).
 - [ ] Le message ne contient aucune donnée personnelle : ni e-mail ni nom d'utilisateur (test).
 - [ ] Tests avec la fonction d'envoi simulée, sans appel réseau ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message (test).
 - [ ] Un jeton refusé par Expo avec l'erreur `DeviceNotRegistered` est supprimé ; une autre erreur ne le supprime pas (test).
@@ -916,7 +916,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Dépend de :** #27, #47 · **Références :** [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [UML, séquences 4.1, 4.4 et 4.5](02-uml.md), [Cartographie, sections 5.7 et 9](03-cartographie-technique.md)
 
-### #50 · Mobile : notifications push et locales, écran Alertes
+### #50 · Mobile : notifications push, écran Alertes
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
 
@@ -924,9 +924,8 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **À faire :**
 - Push ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) : après la connexion (ou la restauration de la session), demande d'autorisation (Android 13 et plus, canal Android), obtention du jeton Expo (`getExpoPushTokenAsync`) puis `POST /v1/push-tokens` ; suppression du jeton (`DELETE`) à la déconnexion. `expo-notifications` et `expo-device` chargés à la demande, dans un `try/catch` : sans eux, ou sans configuration Firebase, le push est désactivé en silence.
-- Notifications locales conservées : quand l'app est ouverte, une notification locale pour chaque nouvelle alerte `warning` ou `critical` (identifiants déjà notifiés conservés dans SQLite).
-- Pas de doublon : le gestionnaire de notifications n'affiche pas un push dont l'alerte a déjà été notifiée localement, et l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan (voir [Cartographie, section 5.7](03-cartographie-technique.md)).
-- Appui sur une notification, push ou locale → panneau concerné, ou écran Alertes.
+- Aucune notification au premier plan ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) : pas de notification locale, et le gestionnaire de notifications (`setNotificationHandler`) ne montre rien (voir [Cartographie, section 5.7](03-cartographie-technique.md)). L'alerte est visible dans l'app (badge de l'onglet Alertes, écran Alertes).
+- Appui sur un push affiché par le système (app fermée ou en arrière-plan) → panneau concerné, ou écran Alertes.
 - Écran Alertes : actives puis résolues, gravité par couleur et icône.
 - Configuration Firebase dans `app.config.ts` : `android.googleServicesFile` lu dans la variable d'environnement EAS de type fichier `GOOGLE_SERVICES_JSON`, avec repli sur `./google-services.json` s'il existe ; ce fichier est ignoré par Git. Le build ne casse pas tant que le fichier n'existe pas.
 - `apps/mobile/README.md` : procédure Firebase pas à pas ([section « Notifications d'alerte : configuration Firebase »](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase)).
@@ -939,10 +938,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Critères d'acceptation :**
 - [ ] Après la connexion, le jeton Expo est enregistré auprès de l'API ; après la déconnexion, il est supprimé et le téléphone ne reçoit plus de notification (test avec une API simulée).
-- [ ] Une nouvelle alerte `warning` ou `critical` reçue app ouverte affiche une notification locale ; une alerte `info` n'en affiche pas ; une alerte déjà notifiée ne l'est jamais deux fois, y compris après un redémarrage de l'app (test).
-- [ ] Une même alerte n'est jamais affichée à la fois en push et en notification locale quand l'app est au premier plan (test).
+- [ ] Au premier plan, aucune notification n'est affichée : le gestionnaire de notifications ne montre rien (bannière, liste, son, badge) et aucune notification locale n'est programmée (test).
 - [ ] Sans les modules natifs `expo-notifications` ou `expo-device`, sans autorisation, sur un émulateur ou sans jeton, l'app ne plante pas et le push est désactivé (test).
-- [ ] L'appui sur une notification, push ou locale, ouvre le panneau concerné ou l'écran Alertes (test).
+- [ ] L'appui sur une notification push ouvre le panneau concerné ou l'écran Alertes (test).
 - [ ] L'écran Alertes affiche les alertes actives puis résolues, la gravité étant indiquée par une couleur, une icône et un texte.
 - [ ] `apps/mobile/README.md` décrit la configuration Firebase ; sans `google-services.json`, `expo config` et les tests fonctionnent.
 - [ ] Une alerte `critical` arrive sur le téléphone de test, app fermée, dans Solar (nécessite le projet Firebase et un nouveau build : à vérifier sur le téléphone).

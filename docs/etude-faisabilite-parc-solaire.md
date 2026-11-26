@@ -42,7 +42,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 |---|---|
 | Lire une grandeur en temps réel | L'ESP32 publie ensoleillement, production, température, niveau de la batterie et répartition des flux |
 | L'afficher | Écrans Supervision, Carte et Pilotage (flux en direct, jauge de batterie) |
-| Alerter au seuil | Production anormalement basse, surchauffe, batterie faible ou pleine, consigne refusée, objet hors ligne : notification push Expo (app fermée) et notification locale (app ouverte, [D030](journal/decisions/D030-notifications-push-expo-et-locales.md)) |
+| Alerter au seuil | Production anormalement basse, surchauffe, batterie faible ou pleine, consigne refusée, objet hors ligne : notification push Expo, sauf pour une consigne refusée, et aucune notification quand l'app est ouverte ([D030](journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | Synchroniser vers un back-end | L'API enregistre les mesures et l'historique des consignes ; l'app consulte l'historique |
 | Démo live | Consigne « 70 % vers la batterie » dans l'app → les relais et la barre de LED réagissent dans Wokwi → batterie à 95 % → l'objet refuse la charge, l'app affiche le refus et sa raison |
 
@@ -55,7 +55,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 | Objet | Wokwi (ESP32) | Pas de matériel à acheter |
 | Broker | Mosquitto | Auto-hébergé dans Docker Compose ; l'ESP32 de Wokwi s'y connecte par un tunnel TCP ([D023](journal/decisions/D023-broker-mosquitto-auto-heberge.md)) |
 | Rétention | TimescaleDB | PostgreSQL classique, avec une table optimisée pour les mesures |
-| Banc | Téléphone | Notifications (push et locales) et conditions réelles |
+| Banc | Téléphone | Notifications push et conditions réelles |
 | Distribution | Device de test | APK installé via EAS |
 
 > Wokwi gratuit ne peut joindre que des services sur Internet : c'est pour cela que le broker est hébergé et non lancé en local.

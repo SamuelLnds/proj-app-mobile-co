@@ -138,7 +138,7 @@ flowchart BT
 | Client MQTT (Node) | **mqtt.js** (`mqtt`) | Référence en Node.js, reconnexion automatique | — |
 | Mots de passe | **argon2** (argon2id) | Recommandé par l'OWASP | bcrypt |
 | Authentification | **JWT** via `@fastify/jwt` | Sans état, simple à vérifier | Sessions (état côté serveur) |
-| Notifications | **expo-notifications** (app : push et notifications locales) + **expo-server-sdk** (API), push Expo via Firebase Cloud Messaging | Fiable app fermée, sans friction ni coût de batterie notable, configuration unique par le développeur ; notifications locales pour l'affichage immédiat app ouverte | ntfy auto-hébergé, tâche de fond, notifications locales seules ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), qui remplace [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
+| Notifications | **expo-notifications** (app : réception du push) + **expo-server-sdk** (API), push Expo via Firebase Cloud Messaging | Fiable app fermée, sans friction ni coût de batterie notable, configuration unique par le développeur ; aucune notification au premier plan | ntfy auto-hébergé, tâche de fond, notifications locales ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), qui remplace [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) ; notifications locales retirées par [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | Firmware | **PlatformIO + framework Arduino** (PubSubClient, OneWire, DallasTemperature ; analyseur JSON des consignes écrit pour le projet, [D032](../journal/decisions/D032-analyseur-json-minimal-du-firmware.md)) | Démarrage rapide, nombreux exemples Wokwi | ESP-IDF pur, MicroPython |
 | Tests | **Vitest** (API, contrats, simulateur), **Jest + React Native Testing Library** (app) | Vitest rapide et compatible TypeScript ; Jest est l'outil fourni par Expo | — |
 | Qualité du code | **ESLint + Prettier**, configuration commune à la racine | Style homogène entre les membres du groupe | — |
@@ -226,7 +226,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
-| `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo) et notifications locales ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
+| `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo, réception, appui) ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
 | `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
 | `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
 | `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
@@ -251,7 +251,7 @@ apps/mobile/
 │   ├── storage/                  # Base SQLite locale : schéma, lecture, écriture
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
-│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts et alert-notifications.ts (notifications locales, pas de doublon avec le push), NotificationEffects.tsx (appui sur une notification)
+│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification)
 │   └── utils/
 ├── assets/                       # Polices, icône de l'app
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
@@ -322,9 +322,9 @@ Wokwi simule l'ESP32 plus lentement que le temps réel (environ 50 %, moins si l
 
 ### 5.7 Notifications
 
-Deux mécanismes complémentaires ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)), sans service d'infrastructure.
+Un seul mécanisme, le push Expo ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)), sans service d'infrastructure ; les règles d'envoi sont celles de [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md).
 
-**Push Expo (app fermée).** À l'ouverture d'une alerte `warning` ou `critical`, le moteur d'alertes appelle `modules/notifications/service.ts`, qui envoie un message groupé à tous les jetons de `push_tokens` par `expo-server-sdk` (Expo relaie à Firebase Cloud Messaging sur Android). L'envoi est injectable dans les tests ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message ; un jeton refusé avec l'erreur `DeviceNotRegistered` est supprimé.
+**Push Expo.** À l'ouverture d'une alerte `warning` ou `critical`, sauf si son type figure dans `PUSH_EXCLUDED_ALERT_TYPES` (`setpoint_rejected` : alerte créée et visible dans l'app, mais sans push), le moteur d'alertes appelle `modules/notifications/service.ts`, qui envoie un message groupé à tous les jetons de `push_tokens` par `expo-server-sdk` (Expo relaie à Firebase Cloud Messaging sur Android). L'envoi est injectable dans les tests ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message ; un jeton refusé avec l'erreur `DeviceNotRegistered` est supprimé.
 
 | Élément | Valeur |
 |---|---|
@@ -334,11 +334,11 @@ Deux mécanismes complémentaires ([D030](../journal/decisions/D030-notification
 | Canal Android | `ALERT_NOTIFICATION_CHANNEL_ID` (`alerts`), priorité haute |
 | Contenu interdit | Toute donnée personnelle (e-mail, nom d'utilisateur) |
 
-**Notifications locales (app ouverte).** L'app compare les alertes actives `warning` et `critical` reçues de `GET /v1/alerts?status=active` (déjà interrogé toutes les 5 s) avec les identifiants déjà notifiés, conservés dans SQLite, et affiche une notification locale pour chaque nouvelle alerte.
+**Au premier plan : rien.** Quand l'app est ouverte, l'alerte est déjà visible (badge de l'onglet Alertes, écran Alertes, interrogé toutes les 5 s) : aucune notification système, ni push ni locale. L'app n'envoie aucune notification locale. Le gestionnaire de notifications (`setNotificationHandler`) ne s'applique qu'à une notification reçue app au premier plan : il renvoie « ne pas afficher » (`shouldShowBanner`, `shouldShowList`, `shouldPlaySound` et `shouldSetBadge` à `false`).
 
-**Pas de doublon.** Le gestionnaire de notifications (`setNotificationHandler`) n'affiche pas un push reçu app ouverte dont l'`alertId` est déjà mémorisé (déjà notifié localement) et mémorise celui d'un push qu'il affiche. En retour, l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan : à l'ouverture et au retour au premier plan, les alertes déjà actives sont seulement mémorisées, le push les ayant signalées. Un appui sur une notification, push ou locale, ouvre le panneau concerné (`panelId`) ou l'écran Alertes.
+**Hors premier plan : inchangé.** App fermée ou en arrière-plan, le système affiche le push. Un appui sur la notification ouvre le panneau concerné (`panelId`) ou l'écran Alertes.
 
-**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans [`apps/mobile/README.md`](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase) ; la propriété `environment` de chaque profil de `eas.json` désigne l'environnement EAS dont les variables sont injectées au build. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et n'affiche que les notifications locales.
+**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans [`apps/mobile/README.md`](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase) ; la propriété `environment` de chaque profil de `eas.json` désigne l'environnement EAS dont les variables sont injectées au build. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et ne reçoit aucune notification : les alertes restent visibles dans l'app.
 
 ## 6. Contrat MQTT
 
@@ -549,7 +549,8 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `BATTERY_SHARE_STEP_PCT` | 10 | App, API |
 | `DEFAULT_PANEL_RATED_POWER_W` | 200 | API (panneau détecté) |
 | `MAX_PANELS_PER_SITE` | 200 | API (limite de la création automatique) |
-| `ALERT_NOTIFICATION_CHANNEL_ID` | `alerts` | API (canal du push), app (canal des notifications locales) |
+| `ALERT_NOTIFICATION_CHANNEL_ID` | `alerts` | API (canal du push), app (création du canal Android) |
+| `PUSH_EXCLUDED_ALERT_TYPES` | `setpoint_rejected` | API (types d'alerte sans push, [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
 | `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 48 | API, app (durée du certificat d'un objet) |
@@ -603,7 +604,8 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
 | [D028](../journal/decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS : API, base, broker et Caddy ; Wokwi joint directement le broker |
 | [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
-| [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) pour l'app fermée et notifications locales pour l'app ouverte, à la place de ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) remplacée) |
+| [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase), à la place de ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) remplacée) ; notifications locales retirées par [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md) |
+| [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md) | Aucune notification au premier plan ; pas de push pour une consigne refusée (`setpoint_rejected`) |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
 
