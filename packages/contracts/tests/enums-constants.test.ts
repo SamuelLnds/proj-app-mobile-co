@@ -62,7 +62,7 @@ describe("constantes", () => {
       BATTERY_SHARE_STEP_PCT: contracts.BATTERY_SHARE_STEP_PCT,
       DEFAULT_PANEL_RATED_POWER_W: contracts.DEFAULT_PANEL_RATED_POWER_W,
       MAX_PANELS_PER_SITE: contracts.MAX_PANELS_PER_SITE,
-      APP_URL_SCHEME: contracts.APP_URL_SCHEME,
+      ALERT_NOTIFICATION_CHANNEL_ID: contracts.ALERT_NOTIFICATION_CHANNEL_ID,
     }).toEqual({
       SITE_MEASUREMENT_PERIOD_S: 5,
       PANEL_MEASUREMENT_PERIOD_S: 10,
@@ -85,7 +85,7 @@ describe("constantes", () => {
       BATTERY_SHARE_STEP_PCT: 10,
       DEFAULT_PANEL_RATED_POWER_W: 200,
       MAX_PANELS_PER_SITE: 200,
-      APP_URL_SCHEME: "solar",
+      ALERT_NOTIFICATION_CHANNEL_ID: "alerts",
     });
   });
 });

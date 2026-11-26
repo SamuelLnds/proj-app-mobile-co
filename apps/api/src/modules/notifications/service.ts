@@ -1,46 +1,59 @@
-// Notification des alertes ouvertes (séquence 4.5 de l'UML, D029). Ce module n'a ni route ni
-// requête à la base : il compose le message d'une alerte et le confie à la fonction d'envoi
-// (client ntfy), d'où l'absence de `routes.ts` et de `repository.ts`.
-import { APP_URL_SCHEME } from "@solar/contracts";
+// Jetons push et notifications d'alerte (séquences 4.1 et 4.5 de l'UML).
+import type { RegisterPushTokenRequest } from "@solar/contracts";
 import type { AlertRow } from "../alerts/repository";
-import type { NtfyMessage, NtfySender } from "./ntfy-client";
+import type { PushTokensRepository } from "./repository";
+import { DEVICE_NOT_REGISTERED, type PushMessage, type PushSender } from "./sender";
 
-export interface NotificationsService {
-  /** Faux quand `NTFY_URL` est absent : aucun message n'est alors envoyé. */
-  enabled: boolean;
+export interface PushService {
+  /** `POST /v1/push-tokens` : enregistre ou réattribue le jeton. */
+  register: (userId: string, body: RegisterPushTokenRequest) => Promise<void>;
+  /** `DELETE /v1/push-tokens/{token}` : sans effet si le jeton n'existe pas ou n'est plus le sien. */
+  remove: (userId: string, token: string) => Promise<void>;
   /**
-   * Publie l'alerte sur ntfy si elle est `warning` ou `critical`. Renvoie `true` si un message a
-   * été envoyé. Lève l'erreur d'envoi : le moteur d'alertes la journalise sans interrompre le
-   * traitement du message.
+   * Notifie tous les téléphones enregistrés de l'ouverture d'une alerte `warning` ou `critical`.
+   * Renvoie le nombre de notifications envoyées et de jetons supprimés.
    */
-  notifyAlert: (alert: AlertRow) => Promise<boolean>;
+  notifyAlert: (alert: AlertRow) => Promise<{ sent: number; removed: number }>;
 }
 
 /**
- * Contenu du message ntfy : le texte de l'alerte (nom du site ou du panneau, valeurs) et un lien
- * vers l'app. Jamais d'e-mail, de nom d'utilisateur ni d'autre donnée personnelle.
+ * Contenu de la notification : le texte de l'alerte (nom du site ou du panneau, valeurs) et des
+ * identifiants. Jamais d'e-mail, de nom d'utilisateur ni d'autre donnée personnelle.
  */
-export function alertNotification(alert: AlertRow): NtfyMessage {
-  const critical = alert.severity === "critical";
+export function alertNotification(alert: AlertRow): Omit<PushMessage, "to"> {
   return {
-    title: critical ? "Alerte critique" : "Alerte",
+    title: alert.severity === "critical" ? "Alerte critique" : "Alerte",
     body: alert.message,
-    priority: critical ? "urgent" : "high",
-    tags: [critical ? "rotating_light" : "warning", alert.type],
-    click: alert.panelId
-      ? `${APP_URL_SCHEME}://panel/${alert.panelId}`
-      : `${APP_URL_SCHEME}://alerts`,
+    data: {
+      alertId: alert.id,
+      siteId: alert.siteId,
+      panelId: alert.panelId,
+      type: alert.type,
+    },
   };
 }
 
-/** `send` à `null` : envoi désactivé (variables `NTFY_*` absentes). */
-export function createNotificationsService(send: NtfySender | null): NotificationsService {
+export function createPushService(repository: PushTokensRepository, send: PushSender): PushService {
   return {
-    enabled: send !== null,
+    register: (userId, body) => repository.upsert(userId, body.token, body.platform),
+
+    remove: (userId, token) => repository.remove(userId, token),
+
     async notifyAlert(alert) {
-      if (!send || alert.severity === "info") return false;
-      await send(alertNotification(alert));
-      return true;
+      if (alert.severity === "info") return { sent: 0, removed: 0 };
+      const tokens = await repository.listTokens();
+      if (tokens.length === 0) return { sent: 0, removed: 0 };
+
+      const content = alertNotification(alert);
+      const results = await send(tokens.map((to) => ({ to, ...content })));
+
+      // Un jeton refusé par Expo ne servira plus : il est supprimé.
+      const invalid = tokens.filter((_, i) => {
+        const result = results[i];
+        return result && !result.ok && result.error === DEVICE_NOT_REGISTERED;
+      });
+      await repository.removeTokens(invalid);
+      return { sent: tokens.length - invalid.length, removed: invalid.length };
     },
   };
 }

@@ -22,6 +22,7 @@ vi.mock("expo-server-sdk", () => {
   return { Expo };
 });
 
+import { ALERT_NOTIFICATION_CHANNEL_ID } from "@solar/contracts";
 import { createExpoSender, type PushMessage } from "./sender";
 
 const message = (to: string): PushMessage => ({
@@ -50,6 +51,19 @@ describe("envoi par le service Expo", () => {
     sdk.send.mockResolvedValue([{ status: "ok", id: "1" }]);
     await createExpoSender("secret-expo")([message(GOOD)]);
     expect(sdk.constructed).toEqual([{ accessToken: "secret-expo" }]);
+  });
+
+  it("envoie le message dans le canal Android des alertes, avec priorité haute", async () => {
+    sdk.send.mockResolvedValue([{ status: "ok", id: "1" }]);
+    await createExpoSender()([message(GOOD)]);
+    expect(sdk.send).toHaveBeenCalledWith([
+      expect.objectContaining({
+        to: GOOD,
+        channelId: ALERT_NOTIFICATION_CHANNEL_ID,
+        priority: "high",
+        data: { alertId: "a" },
+      }),
+    ]);
   });
 
   it("signale DeviceNotRegistered pour un jeton refusé et pour un jeton mal formé", async () => {

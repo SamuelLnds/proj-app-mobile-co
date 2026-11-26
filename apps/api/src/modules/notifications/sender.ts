@@ -1,4 +1,5 @@
 // Envoi des notifications push par le service Expo (`expo-server-sdk`).
+import { ALERT_NOTIFICATION_CHANNEL_ID } from "@solar/contracts";
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 
 /** Notification à envoyer à un téléphone (jeton Expo). */
@@ -42,6 +43,7 @@ export function createExpoSender(accessToken?: string): PushSender {
             body: message.body,
             data: message.data,
             sound: "default",
+            channelId: ALERT_NOTIFICATION_CHANNEL_ID,
             priority: "high",
           },
         });
