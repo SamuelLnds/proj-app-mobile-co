@@ -12,6 +12,8 @@ import type { ErrorDetail, HealthResponse } from "@solar/contracts";
 import type { Config } from "./config";
 import { AppError, errorBody } from "./errors";
 import { registerJwt, requireRole, type Guards } from "./modules/auth/plugin";
+import { alertsRoutes } from "./modules/alerts/routes";
+import type { AlertsService } from "./modules/alerts/service";
 import { authRoutes } from "./modules/auth/routes";
 import type { AuthService } from "./modules/auth/service";
 import { historyRoutes } from "./modules/history/routes";
@@ -20,6 +22,8 @@ import { panelsRoutes } from "./modules/panels/routes";
 import type { PanelsService } from "./modules/panels/service";
 import { setpointsRoutes } from "./modules/setpoints/routes";
 import type { SetpointsService } from "./modules/setpoints/service";
+import { pushRoutes } from "./modules/notifications/routes";
+import type { PushService } from "./modules/notifications/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import type { SitesService } from "./modules/sites/service";
 
@@ -39,6 +43,8 @@ export interface ServerDependencies {
   panels?: PanelsService;
   history?: HistoryService;
   setpoints?: SetpointsService;
+  alerts?: AlertsService;
+  push?: PushService;
 }
 
 export function buildServer({
@@ -50,6 +56,8 @@ export function buildServer({
   panels,
   history,
   setpoints,
+  alerts,
+  push,
 }: ServerDependencies) {
   const app = Fastify({
     logger: {
@@ -120,6 +128,8 @@ export function buildServer({
       if (panels) panelsRoutes(v1, panels, guards);
       if (history) historyRoutes(v1, history, guards);
       if (setpoints) setpointsRoutes(v1, setpoints, guards);
+      if (alerts) alertsRoutes(v1, alerts, guards);
+      if (push) pushRoutes(v1, push, guards);
     },
     { prefix: "/v1" },
   );

@@ -205,8 +205,8 @@ apps/api/src/
 │   ├── panels/
 │   ├── measurements/         # Enregistrement des mesures reçues
 │   ├── setpoints/
-│   ├── alerts/               # rules.ts (section 6 de 02-uml.md), service.ts
-│   └── notifications/
+│   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
+│   └── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts)
 ├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux
 └── errors.ts                 # Erreurs applicatives et format de réponse
 ```

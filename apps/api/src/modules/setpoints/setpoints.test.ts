@@ -15,7 +15,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildServer } from "../../server";
 import type { AuthRepository, UserRow } from "../auth/repository";
 import { createAuthService } from "../auth/service";
-import type { NewAlert, SetpointRow, SetpointsRepository, SiteRef } from "./repository";
+import type { AlertSink } from "../alerts/engine";
+import type { NewAlert } from "../alerts/repository";
+import type { SetpointRow, SetpointsRepository, SiteRef } from "./repository";
 import { createSetpointsService } from "./service";
 
 const START = new Date("2026-11-26T10:00:00Z");
@@ -70,15 +72,20 @@ function fakeRepository(deviceStatus: DeviceStatusValue | null = "online") {
       for (const row of expired) row.status = "no_response";
       return expired.map((r) => ({ id: r.id, siteId: r.siteId }));
     },
-    openAlert: async (alert) => {
-      if (alerts.some((a) => a.type === alert.type && a.status === "active")) return;
+  };
+
+  /** Moteur d'alertes factice : même règle d'unicité que l'index de la base. */
+  const sink: AlertSink = {
+    open: async (alert) => {
+      if (alerts.some((a) => a.type === alert.type && a.status === "active")) return false;
       alerts.push({ ...alert, status: "active" });
+      return true;
     },
-    resolveAlerts: async (_siteId, types: AlertType[]) => {
+    resolve: async (_scope, types: AlertType[]) => {
       for (const a of alerts) if (types.includes(a.type)) a.status = "resolved";
     },
   };
-  return { repository, rows, alerts, state };
+  return { repository, sink, rows, alerts, state };
 }
 
 interface Published {
@@ -126,9 +133,13 @@ beforeAll(async () => {
 async function setup(deviceStatus: DeviceStatusValue | null = "online") {
   const fake = fakeRepository(deviceStatus);
   const published: Published[] = [];
-  const service = createSetpointsService(fake.repository, async (topic, message, options) => {
-    published.push({ topic, message, options });
-  });
+  const service = createSetpointsService(
+    fake.repository,
+    async (topic, message, options) => {
+      published.push({ topic, message, options });
+    },
+    fake.sink,
+  );
   const auth: AuthRepository = {
     findUserByEmail: async (email) => USERS.find((u) => u.email === email) ?? null,
     findUserById: async (userId) => USERS.find((u) => u.id === userId) ?? null,
@@ -409,7 +420,7 @@ describe("Délai de réponse (#43)", () => {
     const ctx = await setup();
     await post(ctx, { mode: "automatic" });
     // Nouveau service sur le même dépôt : l'état n'est pas en mémoire, il vient de la base.
-    const restarted = createSetpointsService(ctx.repository, async () => undefined);
+    const restarted = createSetpointsService(ctx.repository, async () => undefined, ctx.sink);
     expect(await restarted.checkResponseTimeouts(at(3600))).toBe(1);
     expect(ctx.rows[0]?.status).toBe("no_response");
   });

@@ -3,7 +3,13 @@ import { loadConfig } from "./config";
 import { createDb } from "./db/client";
 import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
+import { createAlertEngine, type AlertEngine, type AlertSink } from "./modules/alerts/engine";
+import { createAlertsRepository } from "./modules/alerts/repository";
+import { createAlertsService } from "./modules/alerts/service";
 import { createAuthRepository } from "./modules/auth/repository";
+import { createPushTokensRepository } from "./modules/notifications/repository";
+import { createExpoSender } from "./modules/notifications/sender";
+import { createPushService } from "./modules/notifications/service";
 import { createAuthService } from "./modules/auth/service";
 import { createDevicesRepository } from "./modules/devices/repository";
 import { createDevicesService } from "./modules/devices/service";
@@ -27,13 +33,25 @@ const { pool } = database;
 let mqttClient: ApiMqttClient | null = null;
 const controlStates = createControlStateStore();
 
-// Le client MQTT est créé après le serveur : la publication passe par une fonction différée.
+// Le client MQTT et le moteur d'alertes (qui journalise par le logger du serveur) sont créés
+// après le serveur : les modules qui en dépendent passent par des fonctions différées.
+let alertEngine: AlertEngine | null = null;
+const alertSink: AlertSink = {
+  open: (alert) => alertEngine!.open(alert),
+  resolve: (scope, types, endedAt) => alertEngine!.resolve(scope, types, endedAt),
+};
 const setpoints = createSetpointsService(
   createSetpointsRepository(database),
   (topic, message, options) =>
     mqttClient
       ? mqttClient.publish(topic, message, options)
       : Promise.reject(new Error("Client MQTT non initialisé")),
+  alertSink,
+);
+const alertsRepository = createAlertsRepository(database);
+const pushService = createPushService(
+  createPushTokensRepository(database),
+  createExpoSender(config.EXPO_ACCESS_TOKEN),
 );
 
 const app = buildServer({
@@ -51,9 +69,20 @@ const app = buildServer({
   panels: createPanelsService(createPanelsRepository(database)),
   history: createHistoryService(createHistoryRepository(database)),
   setpoints,
+  alerts: createAlertsService(alertsRepository),
+  push: pushService,
 });
 
-const devices = createDevicesService(createDevicesRepository(database), app.log);
+const engine = createAlertEngine(
+  alertsRepository,
+  async (alert) => {
+    const summary = await pushService.notifyAlert(alert);
+    app.log.info(summary, "Notifications d'alerte envoyées");
+  },
+  app.log,
+);
+alertEngine = engine;
+const devices = createDevicesService(createDevicesRepository(database), app.log, engine);
 const measurements = createMeasurementsService(
   createMeasurementsRepository(database),
   app.log,
@@ -63,8 +92,15 @@ const stopScheduler = startScheduler(devices, setpoints, app.log);
 
 const handleMessage = createMessageHandler(
   {
-    siteMeasurement: measurements.recordSiteMeasurement,
-    panelMeasurement: measurements.recordPanelMeasurement,
+    // Chaque mesure est enregistrée, puis évaluée par les règles d'alerte.
+    siteMeasurement: async (siteCode, message, receivedAt) => {
+      await measurements.recordSiteMeasurement(siteCode, message, receivedAt);
+      await engine.evaluateSiteMeasurement(siteCode, message, receivedAt);
+    },
+    panelMeasurement: async (siteCode, panelCode, message, receivedAt) => {
+      await measurements.recordPanelMeasurement(siteCode, panelCode, message, receivedAt);
+      await engine.evaluatePanelMeasurement(siteCode, panelCode, message, receivedAt);
+    },
     controlState: async (siteCode, state, receivedAt) => {
       controlStates.set(siteCode, state);
       await devices.recordActivityForSiteCode(siteCode, receivedAt);

@@ -15,16 +15,26 @@ export interface DevicesService {
   checkSilence: (now: Date) => Promise<DeviceRow[]>;
 }
 
+/** Alertes liées au statut de l'objet, ouvertes et résolues par le moteur d'alertes. */
+export interface DeviceAlerts {
+  deviceOffline: (siteId: string) => Promise<void>;
+  deviceOnline: (siteId: string, at: Date) => Promise<void>;
+}
+
 export function createDevicesService(
   repository: DevicesRepository,
   logger: FastifyBaseLogger,
+  alerts: DeviceAlerts = { deviceOffline: async () => {}, deviceOnline: async () => {} },
 ): DevicesService {
   async function markSeen(device: DeviceRow | null, receivedAt: Date) {
     if (!device) return;
+    const previous = device.status;
     await repository.update(device.id, {
       status: nextDeviceStatus(device.status, "message"),
       lastSeenAt: receivedAt,
     });
+    // Seul un objet qui n'était pas en ligne peut avoir une alerte `device_offline` à résoudre.
+    if (previous !== "online") await alerts.deviceOnline(device.siteId, receivedAt);
   }
 
   return {
@@ -34,15 +44,21 @@ export function createDevicesService(
         logger.warn({ siteCode }, "Statut ignoré : aucun objet pour ce site");
         return;
       }
-      const status = nextDeviceStatus(device.status, message.status);
+      const previous = device.status;
+      const status = nextDeviceStatus(previous, message.status);
       await repository.update(device.id, {
         status,
         // Le Last Will est publié par le broker : ce n'est pas un signe de vie de l'objet.
         ...(message.status === "online" && { lastSeenAt: receivedAt }),
         ...(message.firmwareVersion && { firmwareVersion: message.firmwareVersion }),
       });
-      if (status !== device.status) {
-        logger.info({ siteCode, from: device.status, to: status }, "Statut de l'objet modifié");
+      if (status !== previous) {
+        logger.info({ siteCode, from: previous, to: status }, "Statut de l'objet modifié");
+      }
+      if (status === "offline" && previous !== "offline") {
+        await alerts.deviceOffline(device.siteId);
+      } else if (status === "online" && previous !== "online") {
+        await alerts.deviceOnline(device.siteId, receivedAt);
       }
     },
 
@@ -60,6 +76,7 @@ export function createDevicesService(
       for (const device of silent) {
         await repository.update(device.id, { status: nextDeviceStatus(device.status, "silence") });
         logger.warn({ siteId: device.siteId }, "Objet silencieux : passé hors ligne");
+        await alerts.deviceOffline(device.siteId);
       }
       return silent;
     },

@@ -530,6 +530,8 @@ expected production of a site  = irradiance_w_m2 × sites.production_factor
 expected production of a panel = irradiance_w_m2 × panels.rated_power_w / 1000
 ```
 
+La durée de 60 s de `low_production` est suivie **en mémoire** par l'API, par site et par panneau : elle repart de zéro si la production repasse au-dessus du seuil de déclenchement, si l'ensoleillement tombe à 100 W/m² ou moins, si plus aucune mesure n'arrive pendant 60 s, ou si l'API redémarre. Toute ouverture et toute résolution d'alerte passent par le moteur d'alertes de l'API, qui déclenche la notification (séquence 4.5).
+
 L'ensoleillement utilisé pour les panneaux est celui de la **dernière mesure du site** (les panneaux simulés n'ont pas de capteur d'ensoleillement).
 
 **Statut d'un panneau sur la carte** (calculé par l'API, non stocké) :
