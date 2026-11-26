@@ -155,7 +155,7 @@ erDiagram
 | `setpoint_status` | `sent`, `applied`, `partial`, `rejected`, `no_response` | Voir le diagramme d'états dans [02-uml.md](02-uml.md) |
 | `rejection_reason` | `battery_full`, `battery_low`, `charge_limit`, `invalid_setpoint` | Raison donnée par l'objet quand il n'applique pas tout ou partie d'une consigne |
 | `alert_type` | `low_production`, `overheating`, `battery_low`, `battery_full`, `setpoint_rejected`, `setpoint_no_response`, `device_offline` | Voir les règles d'alerte dans [02-uml.md](02-uml.md) |
-| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent une notification (push Expo app fermée, notification locale app ouverte, [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) |
+| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent un push Expo, sauf l'alerte `setpoint_rejected` ; aucune notification système au premier plan ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | `alert_status` | `active`, `resolved` | Une alerte est résolue automatiquement quand sa condition disparaît |
 
 ## 4. Dictionnaire de données

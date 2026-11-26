@@ -3,8 +3,6 @@ import { render, waitFor } from "@testing-library/react-native";
 import { QueryProvider } from "../src/api";
 import { NotificationEffects } from "../src/notifications/NotificationEffects";
 
-const mockAlerts = jest.fn();
-
 const mockPush = jest.fn();
 let mockSignedIn = true;
 let mockSourceKind: "api" | "mock" = "api";
@@ -23,7 +21,6 @@ jest.mock("../src/data", () => ({
     get kind() {
       return mockSourceKind;
     },
-    listAlerts: (...args: unknown[]) => mockAlerts(...args),
   },
 }));
 
@@ -43,14 +40,13 @@ const tapListener = () =>
 describe("NotificationEffects", () => {
   beforeEach(() => {
     mockPush.mockClear();
-    mockAlerts.mockReset();
-    mockAlerts.mockResolvedValue({ items: [], next: null });
     mockSignedIn = true;
     mockSourceKind = "api";
     for (const name of [
       "setNotificationHandler",
       "addNotificationReceivedListener",
       "addNotificationResponseReceivedListener",
+      "scheduleNotificationAsync",
     ]) {
       notifications()[name].mockClear();
     }
@@ -92,12 +88,25 @@ describe("NotificationEffects", () => {
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/panel/p-3"));
   });
 
-  it("affiche les notifications reçues quand l'app est ouverte", async () => {
+  it("ne montre aucune notification quand l'app est au premier plan", async () => {
     await mount();
     await waitFor(() => expect(notifications().setNotificationHandler).toHaveBeenCalled());
-    const options =
-      await notifications().setNotificationHandler.mock.calls[0][0].handleNotification();
-    expect(options).toMatchObject({ shouldShowBanner: true, shouldPlaySound: true });
+    // Le gestionnaire ne s'applique qu'au premier plan, quel que soit le push reçu (D033).
+    const { handleNotification } = notifications().setNotificationHandler.mock.calls[0][0];
+    const push = { request: { trigger: { type: "push" }, content: { data: { alertId: "a" } } } };
+    expect(await handleNotification(push)).toEqual({
+      shouldShowBanner: false,
+      shouldShowList: false,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    });
+  });
+
+  it("ne programme aucune notification locale", async () => {
+    await mount();
+    await waitFor(() => expect(notifications().setNotificationHandler).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(notifications().scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
   it("ne fait rien sans utilisateur connecté", async () => {

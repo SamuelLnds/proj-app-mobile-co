@@ -18,7 +18,7 @@ export const nativeModules = {
 /**
  * Charge expo-notifications à la demande. Le module contient du code natif : une version de
  * l'app installée avant son ajout ne l'a pas, et un import au chargement ferait planter le
- * démarrage. Sans le module, les notifications (locales et push) sont désactivées en silence
+ * démarrage. Sans le module, les notifications push sont désactivées en silence
  * (`null`).
  */
 export async function loadNotifications(): Promise<NotificationsModule | null> {
@@ -56,23 +56,20 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
-/** Contenu d'une notification locale : le texte de l'alerte et des identifiants techniques. */
-export interface LocalNotification {
-  title: string;
-  body: string;
-  /** Identifiants qui permettent d'ouvrir le bon écran à l'appui : jamais de donnée personnelle. */
-  data: { alertId: string; panelId: string | null; type: string };
-}
-
-/** Affiche immédiatement une notification locale (sans jeton ni serveur). */
-export async function showLocalNotification(
-  Notifications: NotificationsModule,
-  notification: LocalNotification,
-): Promise<void> {
-  await Notifications.scheduleNotificationAsync({
-    content: notification,
-    // Affichage immédiat ; sur Android, dans le canal des alertes plutôt que dans le canal de secours.
-    trigger: Platform.OS === "android" ? { channelId: ALERT_CHANNEL_ID } : null,
+/**
+ * Au premier plan, aucune notification système (D033) : l'alerte est déjà visible dans l'app
+ * (badge de l'onglet Alertes, écran Alertes). Le gestionnaire ne s'applique qu'à une notification
+ * reçue app ouverte ; il demande de ne rien afficher. Hors premier plan, le système affiche le
+ * push sans passer par lui.
+ */
+export function hideNotificationsInForeground(Notifications: NotificationsModule): void {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: false,
+      shouldShowList: false,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
   });
 }
 

@@ -2,6 +2,8 @@
 // Les valeurs propres au firmware sont recopiées dans firmware/site-device/include/config.h
 // et doivent rester identiques.
 
+import type { AlertType } from "./enums";
+
 /** Période de publication des mesures du site par l'objet (s). */
 export const SITE_MEASUREMENT_PERIOD_S = 5;
 /** Période de publication des mesures de chaque panneau par le simulateur (s). */
@@ -47,8 +49,15 @@ export const BATTERY_SHARE_STEP_PCT = 10;
 export const DEFAULT_PANEL_RATED_POWER_W = 200;
 /** Nombre maximal de panneaux par site (limite de la création automatique). */
 export const MAX_PANELS_PER_SITE = 200;
-/** Canal Android des notifications d'alerte, partagé par le push (API) et les notifications locales (app). */
+/** Canal Android des notifications d'alerte, partagé par le push (API) et l'app (création du canal). */
 export const ALERT_NOTIFICATION_CHANNEL_ID = "alerts";
+/**
+ * Types d'alerte créés et visibles dans l'app, mais sans push : l'écran Pilotage affiche déjà le
+ * refus à l'exploitant qui vient d'envoyer la consigne (D033).
+ */
+export const PUSH_EXCLUDED_ALERT_TYPES = [
+  "setpoint_rejected",
+] as const satisfies readonly AlertType[];
 
 // Paramètres du site de démonstration (seed et objet).
 /** Puissance crête du site de démonstration (W). */

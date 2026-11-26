@@ -53,7 +53,7 @@ export const AlertTypeSchema = z.enum([
 ]);
 export type AlertType = z.infer<typeof AlertTypeSchema>;
 
-/** Gravité d'une alerte ; seules `warning` et `critical` déclenchent une notification (push Expo et notification locale). */
+/** Gravité d'une alerte ; seules `warning` et `critical` déclenchent un push Expo (sauf `PUSH_EXCLUDED_ALERT_TYPES`). */
 export const AlertSeveritySchema = z.enum(["info", "warning", "critical"]);
 export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;
 

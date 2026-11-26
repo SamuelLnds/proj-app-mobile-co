@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-26 |
-| **Statut** | Acceptée (validée par le binôme) |
+| **Statut** | Acceptée (validée par le binôme) · les notifications locales sont retirées par [D033](D033-regles-envoi-notifications-alerte.md) |
 | **Décideurs** | Le binôme |
 | **Liens** | Issues [#49](https://github.com/SamuelLnds/proj-app-mobile-co/issues/49) et [#50](https://github.com/SamuelLnds/proj-app-mobile-co/issues/50) · Remplace [D029](D029-notifications-locales-et-ntfy.md) · Rétablit la partie notifications de [D005](D005-framework-mobile.md) · [Cartographie, sections 1, 2, 5, 7 et 9](../../conception/03-cartographie-technique.md) |
 

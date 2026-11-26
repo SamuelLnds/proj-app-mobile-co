@@ -66,7 +66,7 @@ flowchart LR
 | UC07 | Envoyer une consigne | Exploitant | Choix du mode et de la répartition, confirmation, suivi de l'application | Socle |
 | UC08 | Consulter l'historique des consignes | Lecteur | Liste des consignes : auteur, demande, résultat | Socle |
 | UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues | Socle |
-| UC10 | Recevoir une notification | Lecteur | À l'ouverture d'une alerte `warning` ou `critical` : notification push Expo (app fermée) et notification locale de l'app (app ouverte) | Socle |
+| UC10 | Recevoir une notification | Lecteur | À l'ouverture d'une alerte `warning` ou `critical` (sauf `setpoint_rejected`) : notification push Expo affichée par le système quand l'app est fermée ou en arrière-plan ; rien au premier plan, l'alerte étant déjà visible dans l'app ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) | Socle |
 | UC11 | Publier les mesures du site | Objet | Toutes les 5 s | Socle |
 | UC12 | Appliquer une consigne | Objet | Application avec limites de sécurité, réponse avec l'état appliqué | Socle |
 | UC13 | Signaler sa présence | Objet | Statut `online` à la connexion, `offline` via le Last Will | Socle |
@@ -342,7 +342,7 @@ sequenceDiagram
   X-->>P: Notification, via FCM (app fermée)
   App->>API: GET /alerts?status=active (toutes les 5 s, app ouverte)
   API-->>App: Nouvelle alerte device_offline
-  App->>App: Notification locale (app ouverte)
+  App->>App: Badge et écran Alertes mis à jour, aucune notification système (app ouverte)
 
   Note over D,B: Retour du réseau
   D->>B: CONNECT, abonnement à solar/SITE01/setpoint
@@ -369,27 +369,29 @@ sequenceDiagram
   API->>DB: Alerte active du même type ?
   alt Aucune alerte active
     API->>DB: INSERT alerts (active)
-    opt Gravité warning ou critical
+    opt Gravité warning ou critical, type autre que setpoint_rejected
       API->>DB: Lecture des jetons push de tous les utilisateurs
       API->>X: Envoi groupé des notifications push
       Note over API,X: Une erreur d'envoi est journalisée, sans effet sur le traitement ; un jeton DeviceNotRegistered est supprimé
-      X-->>App: Notification, même app fermée
+      X-->>App: Push reçu par le téléphone
     end
   else Alerte déjà active
     API->>API: Rien à faire (pas de doublon)
   end
 
-  loop Toutes les 5 s, app ouverte
-    App->>API: GET /alerts?status=active
-    API-->>App: Alertes actives
-    App->>App: Alerte warning ou critique jamais notifiée ?
-    opt Nouvelle alerte
-      App->>App: Notification locale, identifiant mémorisé (SQLite)
+  alt App fermée ou en arrière-plan
+    App->>App: Le système affiche le push ; l'appui ouvre le panneau concerné ou l'écran Alertes
+  else App au premier plan
+    App->>App: Push reçu, rien d'affiché (gestionnaire de notifications)
+    loop Toutes les 5 s
+      App->>API: GET /alerts?status=active
+      API-->>App: Alertes actives
+      App->>App: Badge de l'onglet Alertes et écran Alertes mis à jour
     end
   end
 ```
 
-**Pas de doublon** ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)). Le message push contient l'identifiant de l'alerte (`alertId`). Quand l'app est au premier plan, le gestionnaire de notifications n'affiche pas un push dont l'alerte a déjà été notifiée localement ; il mémorise l'identifiant de l'alerte reçue en push, ce qui empêche aussi la notification locale suivante. L'app n'affiche une notification locale que pour les alertes ouvertes **depuis son dernier passage** : au premier chargement, les alertes déjà actives sont seulement mémorisées. Un appui sur une notification, push ou locale, ouvre le panneau concerné ou l'écran Alertes.
+**Règles d'envoi** ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)). Le message push contient l'identifiant de l'alerte (`alertId`). **Au premier plan, aucune notification système** : ni push ni notification locale (il n'y en a plus), car l'alerte est déjà visible dans l'app ; le gestionnaire de notifications de l'app ne montre rien. Hors premier plan, le push est affiché par le système, et un appui ouvre le panneau concerné ou l'écran Alertes. **Exclusion du push** : l'alerte `setpoint_rejected` est créée et visible dans l'app, mais n'envoie aucun push (constante `PUSH_EXCLUDED_ALERT_TYPES`), l'écran Pilotage affichant déjà le refus à l'exploitant qui vient d'envoyer la consigne. `setpoint_no_response` reste notifiée : elle est critique et l'exploitant peut avoir quitté l'app pendant l'attente.
 
 ### 4.6 Détection puis positionnement d'un panneau (UC14, UC17)
 
@@ -549,7 +551,7 @@ expected production of a site  = irradiance_w_m2 × sites.production_factor
 expected production of a panel = irradiance_w_m2 × panels.rated_power_w / 1000
 ```
 
-La durée de 60 s de `low_production` est suivie **en mémoire** par l'API, par site et par panneau : elle repart de zéro si la production repasse au-dessus du seuil de déclenchement, si l'ensoleillement tombe à 100 W/m² ou moins, si plus aucune mesure n'arrive pendant 60 s, ou si l'API redémarre. Toute ouverture et toute résolution d'alerte passent par le moteur d'alertes de l'API, qui déclenche la notification (séquence 4.5).
+La durée de 60 s de `low_production` est suivie **en mémoire** par l'API, par site et par panneau : elle repart de zéro si la production repasse au-dessus du seuil de déclenchement, si l'ensoleillement tombe à 100 W/m² ou moins, si plus aucune mesure n'arrive pendant 60 s, ou si l'API redémarre. Toute ouverture et toute résolution d'alerte passent par le moteur d'alertes de l'API, qui déclenche la notification (séquence 4.5). Seule exception : l'alerte `setpoint_rejected` est créée mais n'envoie pas de push ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)).
 
 L'ensoleillement utilisé pour les panneaux est celui de la **dernière mesure du site** (les panneaux simulés n'ont pas de capteur d'ensoleillement).
 

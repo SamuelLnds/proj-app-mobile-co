@@ -3,24 +3,21 @@ import { useEffect } from "react";
 
 import { useAuth } from "../auth/AuthProvider";
 import { dataSource } from "../data";
-import { showNotificationsInForeground, useLocalAlertNotifications } from "./alert-notifications";
-import { loadNotifications, notificationTarget } from "./local";
+import { hideNotificationsInForeground, loadNotifications, notificationTarget } from "./local";
 
 /** Notifications déjà traitées : un appui n'ouvre l'écran qu'une fois, même après un remontage. */
 const handled = new Set<string>();
 
 /**
- * Notifications (locales et push reçus app ouverte), tant que l'utilisateur est connecté (source `api` seulement) :
- * notification de chaque nouvelle alerte `warning` ou `critical`, affichage même app ouverte, et
- * appui sur une notification (app ouverte ou fermée) → écran Alertes ou détail du panneau.
- * N'affiche rien.
+ * Notifications push, tant que l'utilisateur est connecté (source `api` seulement) : rien n'est
+ * affiché app au premier plan (D033), et l'appui sur une notification (app fermée ou en
+ * arrière-plan) ouvre l'écran Alertes ou le détail du panneau. N'affiche rien lui-même.
  */
 export function NotificationEffects() {
   const router = useRouter();
   const navigationKey = useRootNavigationState()?.key;
   const { user } = useAuth();
   const active = !!user && !!navigationKey && dataSource.kind === "api";
-  useLocalAlertNotifications(!!user && dataSource.kind === "api");
 
   useEffect(() => {
     if (!active) return;
@@ -29,7 +26,7 @@ export function NotificationEffects() {
 
     void loadNotifications().then(async (Notifications) => {
       if (!Notifications || cancelled) return;
-      showNotificationsInForeground(Notifications);
+      hideNotificationsInForeground(Notifications);
       const open = (response: {
         notification: { request: { identifier: string; content: { data?: unknown } } };
       }) => {
