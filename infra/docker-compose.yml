@@ -1,6 +1,7 @@
 # Services d'infrastructure du développement local.
 # Les variables sont lues dans infra/.env (copie de .env.example, ignorée par Git).
 # Avant le premier démarrage du broker : pnpm mqtt:setup
+# Avant de recevoir des alertes sur ntfy : pnpm ntfy:setup (infra/README.md)
 
 services:
   db:
@@ -52,6 +53,31 @@ services:
         chmod 0600 /etc/mosquitto-solar/* &&
         exec mosquitto -c /etc/mosquitto-solar/mosquitto.conf
 
+  ntfy:
+    # Serveur de notifications auto-hébergé (D029) : l'API y publie les alertes, l'app ntfy du
+    # téléphone les reçoit app fermée. Utilisateurs et jetons : pnpm ntfy:setup
+    image: binwiederhier/ntfy
+    command: serve
+    restart: unless-stopped
+    environment:
+      # Adresse sous laquelle le téléphone joint ntfy ; HTTPS derrière Caddy sur le VPS
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8090}
+      NTFY_BEHIND_PROXY: ${NTFY_BEHIND_PROXY:-false}
+    ports:
+      # Sur cette machine seulement ; le téléphone y accède par « adb reverse » (infra/README.md)
+      - "${NTFY_BIND:-127.0.0.1}:${NTFY_PORT:-8090}:80"
+    volumes:
+      - ./ntfy/config/server.yml:/etc/ntfy/server.yml:ro
+      # Base des utilisateurs et des jetons, cache des messages
+      - solar-ntfy-data:/var/lib/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
 volumes:
   solar-db-data:
   solar-mqtt-data:
+  solar-ntfy-data:
