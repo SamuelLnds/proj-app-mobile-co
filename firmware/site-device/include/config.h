@@ -9,14 +9,15 @@
 constexpr int MESSAGE_VERSION = 1;
 // Période de publication des mesures du site (s).
 constexpr int SITE_MEASUREMENT_PERIOD_S = 5;
-// Facteur d'accélération du temps pour la simulation de la batterie (utilisé par #38).
+// Facteur d'accélération du temps pour la simulation de la batterie.
 constexpr int BATTERY_TIME_FACTOR = 60;
-// Seuils de la batterie (%), utilisés par #38 et #39.
+// Seuils de la batterie (%) et pas de la part envoyée vers la batterie (%).
 constexpr int BATTERY_FULL_PCT = 95;
 constexpr int BATTERY_FULL_RESOLVED_PCT = 90;
 constexpr int BATTERY_LOW_PCT = 20;
 constexpr int BATTERY_LOW_RESOLVED_PCT = 25;
 constexpr int AUTOMATIC_CHARGE_TARGET_PCT = 80;
+constexpr int BATTERY_SHARE_STEP_PCT = 10;
 // Paramètres du site de démonstration.
 constexpr int DEMO_SITE_PEAK_POWER_W = 4000;
 constexpr int DEMO_SITE_BATTERY_CAPACITY_WH = 10000;
@@ -30,10 +31,18 @@ constexpr const char *SITE_CODE = "SITE01";
 // Identifiant MQTT, aussi utilisé comme identifiant de client (section 6.3 de la cartographie).
 constexpr const char *MQTT_DEVICE_ID = "device-site01";
 
-// Valeurs fixes en attendant la batterie simulée (#38).
-constexpr float FIXED_BATTERY_LEVEL_PCT = 50.0f;
-constexpr float FIXED_BATTERY_POWER_W = 0.0f;
-constexpr const char *FIXED_MODE = "automatic";
+// Niveau de la batterie simulée au démarrage de l'objet (%), comme le simulateur Node.
+constexpr double INITIAL_BATTERY_LEVEL_PCT = 50.0;
+// Période de l'algorithme de pilotage (ms) : batterie, flux, relais et barre de LED. La mesure part
+// toutes les SITE_MEASUREMENT_PERIOD_S secondes.
+constexpr unsigned long CONTROL_TICK_PERIOD_MS = 1000;
+// Délai (ms) après une connexion MQTT avant de publier l'état en attente depuis le tick : laisse au broker
+// le temps de renvoyer la consigne retained, pour ne pas publier un état initial que cette consigne
+// remplacerait aussitôt.
+constexpr unsigned long STATE_SETTLE_AFTER_CONNECT_MS = 1500;
+// Taille du tampon MQTT (octets) : un paquet entrant ou sortant plus grand est ignoré par PubSubClient.
+// Les messages de la section 6.2 font moins de 320 octets (MESSAGE_BUFFER_SIZE) ; une consigne, environ 130.
+constexpr int MQTT_BUFFER_SIZE = 512;
 
 // Bouton de panne : la production est divisée par ce facteur.
 constexpr float FAULT_PRODUCTION_DIVISOR = 5.0f;

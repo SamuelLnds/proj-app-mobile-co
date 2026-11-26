@@ -26,10 +26,10 @@ int main() {
     data.irradiance = irradianceFromRaw(ldrRaw[i]);
     data.production = productionFromRaw(pot, fault);
     data.temperature = 20.0f + 5.0f * static_cast<float>(i);
-    data.batteryLevel = FIXED_BATTERY_LEVEL_PCT;
-    data.batteryPower = FIXED_BATTERY_POWER_W;
+    data.batteryLevel = 50.0f;
+    data.batteryPower = 0.0f;
     data.gridPower = data.production;
-    data.mode = FIXED_MODE;
+    data.mode = modeName(ControlMode::Automatic);
     data.simulatedFault = fault;
     if (!formatSiteMeasurement(buffer, sizeof(buffer), data)) {
       std::fprintf(stderr, "mesure %d refusée\n", i);
@@ -46,7 +46,7 @@ int main() {
 
   // Une valeur hors bornes doit être refusée, pas publiée
   SiteMeasurementData invalid = {};
-  invalid.mode = FIXED_MODE;
+  invalid.mode = modeName(ControlMode::Automatic);
   invalid.irradiance = 2000.0f;
   std::printf("rejected-out-of-bounds 0 0 0 0 %s\n",
               formatSiteMeasurement(buffer, sizeof(buffer), invalid) ? "accepted" : "rejected");
