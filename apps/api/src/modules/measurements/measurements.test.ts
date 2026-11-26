@@ -14,14 +14,19 @@ function setup(knownCodes: Record<string, string> = { SITE01: SITE_ID }) {
     insertSiteMeasurement: async (row) => {
       rows.push(row);
     },
-    touchDevice: async (siteId, seenAt) => {
-      touched.push({ siteId, seenAt });
-    },
   };
   const logger = { warn: vi.fn() } as unknown as FastifyBaseLogger & {
     warn: ReturnType<typeof vi.fn>;
   };
-  return { service: createMeasurementsService(repository, logger), rows, touched, logger };
+  const recordActivity = async (siteId: string, seenAt: Date) => {
+    touched.push({ siteId, seenAt });
+  };
+  return {
+    service: createMeasurementsService(repository, logger, recordActivity),
+    rows,
+    touched,
+    logger,
+  };
 }
 
 function message(timestamp: string): SiteMeasurement {

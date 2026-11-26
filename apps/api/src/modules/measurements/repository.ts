@@ -1,7 +1,7 @@
 // Requêtes d'enregistrement des mesures reçues par MQTT.
 import { eq } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { devices, siteMeasurements, sites } from "../../db/schema";
+import { siteMeasurements, sites } from "../../db/schema";
 
 export interface SiteMeasurementRow {
   time: Date;
@@ -19,7 +19,6 @@ export interface SiteMeasurementRow {
 export interface MeasurementsRepository {
   findSiteIdByCode: (code: string) => Promise<string | null>;
   insertSiteMeasurement: (row: SiteMeasurementRow) => Promise<void>;
-  touchDevice: (siteId: string, seenAt: Date) => Promise<void>;
 }
 
 export function createMeasurementsRepository({ db }: Database): MeasurementsRepository {
@@ -31,9 +30,6 @@ export function createMeasurementsRepository({ db }: Database): MeasurementsRepo
     async insertSiteMeasurement(row) {
       // Une mesure déjà reçue pour le même instant (message dupliqué) est ignorée.
       await db.insert(siteMeasurements).values(row).onConflictDoNothing();
-    },
-    async touchDevice(siteId, seenAt) {
-      await db.update(devices).set({ lastSeenAt: seenAt }).where(eq(devices.siteId, siteId));
     },
   };
 }

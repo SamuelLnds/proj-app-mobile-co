@@ -5,11 +5,14 @@ import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
 import { createAuthRepository } from "./modules/auth/repository";
 import { createAuthService } from "./modules/auth/service";
+import { createDevicesRepository } from "./modules/devices/repository";
+import { createDevicesService } from "./modules/devices/service";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
 import { createControlStateStore } from "./modules/sites/control-states";
 import { createSitesRepository } from "./modules/sites/repository";
 import { createSitesService } from "./modules/sites/service";
+import { startScheduler } from "./scheduler";
 import { buildServer } from "./server";
 
 const config = loadConfig();
@@ -32,12 +35,22 @@ const app = buildServer({
   sites: createSitesService(createSitesRepository(database), controlStates),
 });
 
-const measurements = createMeasurementsService(createMeasurementsRepository(database), app.log);
+const devices = createDevicesService(createDevicesRepository(database), app.log);
+const measurements = createMeasurementsService(
+  createMeasurementsRepository(database),
+  app.log,
+  devices.recordActivity,
+);
+const stopScheduler = startScheduler(devices, app.log);
 
 const handleMessage = createMessageHandler(
   {
     siteMeasurement: measurements.recordSiteMeasurement,
-    controlState: async (siteCode, state) => controlStates.set(siteCode, state),
+    controlState: async (siteCode, state, receivedAt) => {
+      controlStates.set(siteCode, state);
+      await devices.recordActivityForSiteCode(siteCode, receivedAt);
+    },
+    deviceStatus: devices.recordStatus,
   },
   app.log,
 );
@@ -48,6 +61,7 @@ mqttClient = createMqttClient(
 );
 
 app.addHook("onClose", async () => {
+  stopScheduler();
   await mqttClient?.close();
   await pool.end();
 });

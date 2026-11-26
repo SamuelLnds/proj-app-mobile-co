@@ -491,9 +491,12 @@ Une réponse est rattachée à une consigne par son identifiant (`setpointId`). 
 stateDiagram-v2
   [*] --> unknown
   unknown --> online : premier message reçu
+  unknown --> offline : Last Will retained relu au démarrage de l'API
   online --> offline : Last Will reçu ou silence de 60 s
   offline --> online : statut online ou message reçu
 ```
+
+Le Last Will est publié par le broker : il change le statut mais pas `devices.last_seen_at`, qui ne retient que les messages de l'objet lui-même.
 
 ### 5.3 Alerte (`alert_status`)
 

@@ -24,6 +24,8 @@ export function measurementTime(timestamp: string, receivedAt: Date): Date {
 export function createMeasurementsService(
   repository: MeasurementsRepository,
   logger: FastifyBaseLogger,
+  /** Signe de vie de l'objet du site (suivi de son statut, #29). */
+  recordDeviceActivity: (siteId: string, receivedAt: Date) => Promise<void> = async () => {},
 ): MeasurementsService {
   return {
     async recordSiteMeasurement(siteCode, message, receivedAt) {
@@ -53,7 +55,7 @@ export function createMeasurementsService(
         mode: message.mode,
         simulatedFault: message.simulatedFault,
       });
-      await repository.touchDevice(siteId, receivedAt);
+      await recordDeviceActivity(siteId, receivedAt);
     },
   };
 }
