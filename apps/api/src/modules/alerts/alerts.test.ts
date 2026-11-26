@@ -417,7 +417,7 @@ describe("règle device_offline", () => {
 describe("notification à l'ouverture", () => {
   it("une erreur d'envoi ne casse pas le traitement et l'alerte reste ouverte", async () => {
     const t = setup();
-    t.notify.mockRejectedValueOnce(new Error("Expo injoignable"));
+    t.notify.mockRejectedValueOnce(new Error("ntfy injoignable"));
     await expect(t.engine.deviceOffline(SITE.id)).resolves.toBeUndefined();
     expect(t.active("device_offline")).toHaveLength(1);
     expect(t.logger.error).toHaveBeenCalled();
