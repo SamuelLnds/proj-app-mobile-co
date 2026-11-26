@@ -1,10 +1,13 @@
 import type { Alert } from "@solar/contracts";
-import { render, waitFor } from "@testing-library/react-native";
+import { act, render, waitFor } from "@testing-library/react-native";
+import { AppState } from "react-native";
 
 import { QueryProvider } from "../src/api";
 import {
   NOTIFIED_KEY,
   notifyNewAlerts,
+  shouldShowPush,
+  showNotificationsInForeground,
   takeNewAlerts,
   useLocalAlertNotifications,
 } from "../src/notifications/alert-notifications";
@@ -125,6 +128,74 @@ describe("notifications locales des alertes", () => {
   });
 });
 
+describe("pas de doublon entre le push et la notification locale", () => {
+  it("memorizeOnly : mémorise les alertes sans rien notifier, même après le premier passage", async () => {
+    await notifyNewAlerts([]);
+    const opened = alert();
+    await notifyNewAlerts([opened], { memorizeOnly: true });
+    expect(shown()).toHaveLength(0);
+    expect((await readResponse<string[]>(NOTIFIED_KEY))?.value).toContain(opened.id);
+    // L'alerte est connue : aucune notification locale ensuite.
+    await notifyNewAlerts([opened]);
+    expect(shown()).toHaveLength(0);
+  });
+
+  it("un push dont l'alerte a déjà été notifiée localement n'est pas affiché", async () => {
+    await notifyNewAlerts([]);
+    const fresh = alert();
+    await notifyNewAlerts([fresh]);
+    expect(shown()).toHaveLength(1);
+    await expect(shouldShowPush({ alertId: fresh.id })).resolves.toBe(false);
+  });
+
+  it("un push d'une alerte inconnue s'affiche et empêche la notification locale suivante", async () => {
+    await notifyNewAlerts([]);
+    const fresh = alert();
+    await expect(shouldShowPush({ alertId: fresh.id })).resolves.toBe(true);
+    await expect(shouldShowPush({ alertId: fresh.id })).resolves.toBe(false);
+    await notifyNewAlerts([fresh]);
+    expect(shown()).toHaveLength(0);
+  });
+
+  it("un push sans identifiant d'alerte, ou sans mémoire locale, s'affiche", async () => {
+    await expect(shouldShowPush({})).resolves.toBe(true);
+    await expect(shouldShowPush(undefined)).resolves.toBe(true);
+    await expect(shouldShowPush({ alertId: "a" })).resolves.toBe(true);
+  });
+
+  it("une erreur de stockage ne bloque pas l'affichage d'un push", async () => {
+    setResponseStore({
+      write: () => Promise.reject(new Error("disque plein")),
+      read: () => Promise.reject(new Error("disque plein")),
+      clear: async () => undefined,
+    });
+    await expect(shouldShowPush({ alertId: "a" })).resolves.toBe(true);
+    setResponseStore(createMemoryStore());
+  });
+
+  it("le gestionnaire du premier plan masque le push déjà notifié, jamais une notification locale", async () => {
+    await notifyNewAlerts([]);
+    const fresh = alert();
+    await notifyNewAlerts([fresh]);
+    showNotificationsInForeground(notifications());
+    const { handleNotification } = notifications().setNotificationHandler.mock.calls.at(-1)[0];
+    const notification = (type: string) => ({
+      request: { trigger: { type }, content: { data: { alertId: fresh.id } } },
+    });
+    await expect(handleNotification(notification("push"))).resolves.toMatchObject({
+      shouldShowBanner: false,
+      shouldShowList: false,
+      shouldPlaySound: false,
+    });
+    await expect(handleNotification(notification("channel"))).resolves.toMatchObject({
+      shouldShowBanner: true,
+      shouldPlaySound: true,
+    });
+    const other = { request: { trigger: { type: "push" }, content: { data: { alertId: "x" } } } };
+    await expect(handleNotification(other)).resolves.toMatchObject({ shouldShowBanner: true });
+  });
+});
+
 describe("useLocalAlertNotifications", () => {
   function Probe({ enabled }: { enabled: boolean }) {
     useLocalAlertNotifications(enabled);
@@ -158,6 +229,37 @@ describe("useLocalAlertNotifications", () => {
     expect(shown()[0].content.body).toBe("Batterie faible");
     await view.unmount();
   });
+
+  it("au retour au premier plan, les alertes ouvertes entre-temps sont seulement mémorisées", async () => {
+    // Le push les a signalées app fermée : pas de notification locale en plus.
+    let onChange: ((state: string) => void) | undefined;
+    const original = AppState.addEventListener;
+    AppState.addEventListener = ((_type: string, listener: (state: string) => void) => {
+      onChange = listener;
+      return { remove: jest.fn() };
+    }) as never;
+    const existing = alert();
+    mockAlerts.mockResolvedValue({ items: [existing], next: null });
+    const view = await mount(true);
+    await waitFor(async () =>
+      expect((await readResponse<string[]>(NOTIFIED_KEY))?.value).toEqual([existing.id]),
+    );
+
+    const missed = alert({ severity: "warning", message: "Batterie faible" });
+    mockAlerts.mockResolvedValue({ items: [existing, missed], next: null });
+    await act(async () => {
+      onChange?.("background");
+      onChange?.("active");
+    });
+    // Prochaine interrogation des alertes (toutes les 5 s).
+    await waitFor(
+      async () => expect((await readResponse<string[]>(NOTIFIED_KEY))?.value).toContain(missed.id),
+      { timeout: 9000 },
+    );
+    expect(shown()).toHaveLength(0);
+    AppState.addEventListener = original;
+    await view.unmount();
+  }, 15000);
 
   it("n'interroge rien tant qu'il n'est pas activé", async () => {
     const view = await mount(false);

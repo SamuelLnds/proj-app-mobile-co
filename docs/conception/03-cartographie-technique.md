@@ -17,6 +17,8 @@ flowchart LR
 
   subgraph external["Services externes"]
     TUN["Tunnel TCP<br/>(ou passerelle privée Wokwi)"]
+    EXPO["Service de notifications Expo"]
+    FCM["Firebase Cloud Messaging<br/>(Google, Android)"]
     EAS["EAS Build<br/>(construction de l'APK)"]
   end
 
@@ -24,13 +26,11 @@ flowchart LR
     API["API<br/>Node.js · Fastify · TypeScript"]
     DB[("PostgreSQL<br/>+ TimescaleDB")]
     MQ["Mosquitto<br/>broker MQTT"]
-    NTFY["ntfy<br/>serveur de notifications"]
   end
 
   subgraph phone["Téléphone"]
     APP["App mobile<br/>Expo · React Native · TypeScript"]
     LOCAL[("SQLite local<br/>expo-sqlite")]
-    NTFYAPP["App ntfy<br/>(Android, sans compte)"]
   end
 
   ESP -- "MQTT 8883 TLS<br/>mesures, état, statut" --> TUN
@@ -42,8 +42,9 @@ flowchart LR
   API <-- "SQL 5432" --> DB
   APP <-- "HTTPS REST + JWT" --> API
   APP <--> LOCAL
-  API -- "HTTP + jeton de publication<br/>alertes warning et critical" --> NTFY
-  NTFYAPP <-- "HTTP(S) + jeton de lecture<br/>abonnement au sujet" --> NTFY
+  API -- "HTTPS<br/>alertes warning et critical" --> EXPO
+  EXPO --> FCM
+  FCM -- "push" --> APP
   EAS -. "APK" .-> APP
 ```
 
@@ -54,8 +55,8 @@ flowchart LR
 | API ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens | Identifiant propre à l'API ; port publié sur 127.0.0.1 uniquement |
 | App ↔ API | HTTPS, JSON | Deux sens | JWT dans l'en-tête `Authorization: Bearer` |
 | App ↔ SQLite local | Appels locaux | Deux sens | Données non sensibles uniquement (le JWT est dans `expo-secure-store`) |
-| API → ntfy | HTTP (réseau Docker ou `127.0.0.1` en développement), HTTPS sur le VPS | Montant | Jeton d'accès en **écriture seule** sur le sujet des alertes ; le serveur refuse tout accès par défaut (`auth-default-access: deny-all`) ; aucune donnée personnelle dans le message ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
-| App ntfy ↔ ntfy | HTTP(S), connexion maintenue par l'app ntfy du téléphone | Téléphone vers serveur (abonnement), serveur vers téléphone (messages) | Jeton d'accès en **lecture seule** sur le sujet ; en développement, port publié sur `127.0.0.1` et joint par `adb reverse` ; sur le VPS, HTTPS derrière Caddy ; jamais le serveur public ntfy.sh |
+| API → Expo | HTTPS (`expo-server-sdk`) | Montant | Jeton d'accès Expo facultatif (`EXPO_ACCESS_TOKEN`) ; aucune donnée personnelle dans le message : texte de l'alerte et identifiants techniques seulement ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) |
+| Expo → FCM → téléphone | Service de notifications d'Expo, puis Firebase Cloud Messaging (Google) | Montant | Canal système ; le message transite par Expo et Google ; clé de compte de service FCM V1 déposée sur EAS, jamais versionnée |
 | API ↔ base | Protocole PostgreSQL, port 5432 | Deux sens | Réseau Docker interne, utilisateur dédié |
 
 > MQTT 3.1.1 suffit pour le socle : Last Will, retained et QoS 1 en font partie. La bibliothèque de l'ESP32 (PubSubClient) ne gère pas MQTT 5 ([D006](../journal/decisions/D006-protocole-mqtt.md)).
@@ -64,10 +65,10 @@ flowchart LR
 
 | Environnement | Où tourne quoi | Usage |
 |---|---|---|
-| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto et serveur ntfy dans le même Docker Compose ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
-| **Démonstration** | API, base, broker et serveur ntfy dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
+| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; notifications push via le service Expo et Firebase (aucun service local) ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
+| **Démonstration** | API, base et broker dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; notifications par le service Expo ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
 
-L'hébergement final est un VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) : seuls les ports 443 (API et serveur ntfy, séparés par nom d'hôte ou par chemin dans Caddy, [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) et 8883 (MQTT en TLS mutuel) sont ouverts sur Internet ; le port de ntfy n'est jamais publié directement. Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; une fois le VPS en place, l'ESP32 joint directement son broker et le tunnel n'est plus utile ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
+L'hébergement final est un VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) : seuls les ports 443 (API) et 8883 (MQTT en TLS mutuel) sont ouverts sur Internet. Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; une fois le VPS en place, l'ESP32 joint directement son broker et le tunnel n'est plus utile ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
 
 ## 3. Organisation du dépôt
 
@@ -85,7 +86,7 @@ proj-app-mobile-co/
 ├── firmware/
 │   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi (plus tard)
 ├── infra/
-│   └── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto, ntfy (+ API pour la démo)
+│   └── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto (+ API pour la démo)
 ├── docs/
 │   ├── etude-faisabilite-parc-solaire.md
 │   ├── conception/          # Ce dossier
@@ -137,7 +138,7 @@ flowchart BT
 | Client MQTT (Node) | **mqtt.js** (`mqtt`) | Référence en Node.js, reconnexion automatique | — |
 | Mots de passe | **argon2** (argon2id) | Recommandé par l'OWASP | bcrypt |
 | Authentification | **JWT** via `@fastify/jwt` | Sans état, simple à vérifier | Sessions (état côté serveur) |
-| Notifications | **expo-notifications** (notifications locales de l'app) + **ntfy** auto-hébergé (alertes app fermée) | Aucun compte tiers ni Firebase ; ntfy dans le même Docker Compose que Mosquitto ; l'envoi est une requête HTTP | Push Expo / Firebase Cloud Messaging, UnifiedPush, connexion permanente de l'app ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
+| Notifications | **expo-notifications** (app : push et notifications locales) + **expo-server-sdk** (API), push Expo via Firebase Cloud Messaging | Fiable app fermée, sans friction ni coût de batterie notable, configuration unique par le développeur ; notifications locales pour l'affichage immédiat app ouverte | ntfy auto-hébergé, tâche de fond, notifications locales seules ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), qui remplace [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
 | Firmware | **PlatformIO + framework Arduino** (PubSubClient, ArduinoJson, OneWire, DallasTemperature) | Démarrage rapide, nombreux exemples Wokwi | ESP-IDF pur, MicroPython |
 | Tests | **Vitest** (API, contrats, simulateur), **Jest + React Native Testing Library** (app) | Vitest rapide et compatible TypeScript ; Jest est l'outil fourni par Expo | — |
 | Qualité du code | **ESLint + Prettier**, configuration commune à la racine | Style homogène entre les membres du groupe | — |
@@ -182,6 +183,7 @@ packages/contracts/src/
 | `drizzle-kit` (dév.) | Génération et application des migrations |
 | `mqtt` | Client MQTT |
 | `argon2` | Hachage des mots de passe |
+| `expo-server-sdk` | Envoi des notifications push |
 | `pino-pretty` (dév.) | Logs lisibles en développement (Fastify utilise `pino`) |
 | `tsx` (dév.) | Exécution TypeScript en développement |
 | `vitest` (dév.) | Tests |
@@ -207,7 +209,7 @@ apps/api/src/
 │   ├── measurements/         # Enregistrement des mesures reçues
 │   ├── setpoints/
 │   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
-│   └── notifications/        # Notification ntfy des alertes : service.ts seul (aucune route ni requête à la base, voir section 5.7)
+│   └── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
 ├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux
 └── errors.ts                 # Erreurs applicatives et format de réponse
 ```
@@ -224,7 +226,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
-| `expo-notifications` | Notifications locales des nouvelles alertes (chargé à la demande : module natif) |
+| `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo) et notifications locales ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
 | `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
 | `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
 | `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
@@ -249,7 +251,7 @@ apps/mobile/
 │   ├── storage/                  # Base SQLite locale : schéma, lecture, écriture
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
-│   ├── notifications/            # Notifications locales (module chargé à la demande, alertes déjà notifiées) et ouverture de l'écran au toucher
+│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts et alert-notifications.ts (notifications locales, pas de doublon avec le push), NotificationEffects.tsx (appui sur une notification)
 │   └── utils/
 ├── assets/                       # Polices, icône de l'app
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
@@ -296,27 +298,27 @@ Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de
 |---|---|---|---|
 | `db` | `timescale/timescaledb` (étiquette PostgreSQL 16 ou plus) | `DB_PORT`, 5432 par défaut (développement seulement) | Base de données |
 | `mqtt` | `eclipse-mosquitto:2` | `MQTT_PORT` (1883, sur 127.0.0.1 uniquement) et `MQTTS_PORT` (8883, TLS) | Broker MQTT ; configuration dans `infra/mosquitto/config/` (`mosquitto.conf`, `acl`), mots de passe hachés et certificats générés par `pnpm mqtt:setup` dans `infra/mosquitto/generated/` (ignoré par Git) |
-| `ntfy` | `binwiederhier/ntfy`, commande `serve` | `NTFY_PORT` (8090 par défaut, sur 127.0.0.1 uniquement) | Serveur de notifications ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) ; configuration dans `infra/ntfy/config/server.yml`, utilisateurs et jetons créés par `pnpm ntfy:setup` dans `infra/ntfy/generated/` (ignoré par Git) |
 | `api` | Construite depuis `apps/api` | 3000 | API (démo ; en développement l'API tourne avec `tsx`) |
 
 ### 5.7 Notifications
 
-Deux mécanismes complémentaires ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)), sans jeton push ni compte tiers.
+Deux mécanismes complémentaires ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)), sans service d'infrastructure.
 
-**Serveur ntfy (app fermée).** À l'ouverture d'une alerte `warning` ou `critical`, le moteur d'alertes appelle le service de notification de l'API, qui publie par `POST {NTFY_URL}/{NTFY_TOPIC}` avec l'en-tête `Authorization: Bearer {NTFY_TOKEN}`. Sans `NTFY_URL`, l'envoi est désactivé (un seul avertissement au démarrage) ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message.
+**Push Expo (app fermée).** À l'ouverture d'une alerte `warning` ou `critical`, le moteur d'alertes appelle `modules/notifications/service.ts`, qui envoie un message groupé à tous les jetons de `push_tokens` par `expo-server-sdk` (Expo relaie à Firebase Cloud Messaging sur Android). L'envoi est injectable dans les tests ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message ; un jeton refusé avec l'erreur `DeviceNotRegistered` est supprimé.
 
 | Élément | Valeur |
 |---|---|
-| Titre (`Title`) | `Alerte` (`warning`) ou `Alerte critique` (`critical`) |
+| Titre | `Alerte` (`warning`) ou `Alerte critique` (`critical`) |
 | Corps | Le `message` de l'alerte, en français |
-| Priorité (`Priority`) | `high` pour `warning`, `urgent` pour `critical` |
-| Étiquettes (`Tags`) | `warning` ou `rotating_light`, puis le type de l'alerte (`device_offline`…) |
-| Lien d'action (`Click`) | `solar://panel/{panelId}` pour une alerte de panneau, sinon `solar://alerts` |
+| Données (`data`) | `alertId`, `siteId`, `panelId` (ou `null`), `type` : identifiants techniques |
+| Canal Android | `ALERT_NOTIFICATION_CHANNEL_ID` (`alerts`), priorité haute |
 | Contenu interdit | Toute donnée personnelle (e-mail, nom d'utilisateur) |
 
-Nom du sujet : `solar-{siteCode en minuscules}-alerts` (par exemple `solar-site01-alerts`). Le sujet n'est jamais un secret : l'accès est protégé par les jetons. Deux jetons, créés par `pnpm ntfy:setup` : un de **publication** (écriture seule, pour l'API) et un de **lecture** (lecture seule, pour le téléphone).
+**Notifications locales (app ouverte).** L'app compare les alertes actives `warning` et `critical` reçues de `GET /v1/alerts?status=active` (déjà interrogé toutes les 5 s) avec les identifiants déjà notifiés, conservés dans SQLite, et affiche une notification locale pour chaque nouvelle alerte.
 
-**Notifications locales (app active).** L'app compare les alertes actives `warning` et `critical` reçues de `GET /v1/alerts?status=active` (déjà interrogé toutes les 5 s) avec les identifiants déjà notifiés, conservés dans SQLite, et affiche une notification locale (`expo-notifications`) pour chaque nouvelle alerte. Au premier chargement, les alertes déjà actives sont seulement mémorisées. Sans le module natif, ces notifications sont désactivées en silence.
+**Pas de doublon.** Le gestionnaire de notifications (`setNotificationHandler`) n'affiche pas un push reçu app ouverte dont l'`alertId` est déjà mémorisé (déjà notifié localement) et mémorise celui d'un push qu'il affiche. En retour, l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan : à l'ouverture et au retour au premier plan, les alertes déjà actives sont seulement mémorisées, le push les ayant signalées. Un appui sur une notification, push ou locale, ouvre le panneau concerné (`panelId`) ou l'écran Alertes.
+
+**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans `apps/mobile/README.md`. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et n'affiche que les notifications locales.
 
 ## 6. Contrat MQTT
 
@@ -443,7 +445,7 @@ L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'A
 |---|---|
 | Format | JSON UTF-8, champs en `camelCase` |
 | Préfixe | `/v1` (exemple : `/v1/sites`) |
-| Nommage des routes | Anglais, `kebab-case`, ressources au pluriel (`/panels`, `/setpoints`) |
+| Nommage des routes | Anglais, `kebab-case`, ressources au pluriel (`/push-tokens`, `/setpoints`) |
 | Authentification | `Authorization: Bearer <jwt>` sur toutes les routes sauf `/v1/auth/login` et `/v1/health` |
 | JWT | Signé en HS256, durée de vie 8 h, contenu `{ sub: userId, role }`. Pas de jeton de rafraîchissement dans le socle : l'utilisateur se reconnecte. |
 | Dates | Chaînes ISO 8601 en UTC |
@@ -475,6 +477,8 @@ L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'A
 | GET | `/v1/health` | aucun | | 200 `{ status, database, broker }` |
 | POST | `/v1/auth/login` | aucun | `{ email, password }` | 200 `{ token, expiresAt, user }` |
 | GET | `/v1/auth/me` | viewer | | 200 `User` |
+| POST | `/v1/push-tokens` | viewer | `{ token, platform }` | 204 |
+| DELETE | `/v1/push-tokens/{token}` | viewer | | 204 |
 | GET | `/v1/sites` | viewer | | 200 liste de `SiteSummary` |
 | GET | `/v1/sites/{id}` | viewer | | 200 `SiteDetail` |
 | GET | `/v1/sites/{id}/measurements` | viewer | `from`, `to` (ISO, écart ≤ 7 jours), `interval` (`1m`, `5m`, `15m`, `1h`) | 200 liste de points moyennés |
@@ -524,8 +528,8 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `LOW_PRODUCTION_DURATION_S` | 60 | API |
 | `BATTERY_SHARE_STEP_PCT` | 10 | App, API |
 | `DEFAULT_PANEL_RATED_POWER_W` | 200 | API (panneau détecté) |
-| `APP_URL_SCHEME` | `solar` | API (lien d'action des notifications ntfy), app |
 | `MAX_PANELS_PER_SITE` | 200 | API (limite de la création automatique) |
+| `ALERT_NOTIFICATION_CHANNEL_ID` | `alerts` | API (canal du push), app (canal des notifications locales) |
 | `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
 | `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 48 | API, app (durée du certificat d'un objet) |
@@ -542,9 +546,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | api | `JWT_SECRET` | 64 caractères aléatoires | **oui** |
 | api | `MQTT_URL` | `mqtt://127.0.0.1:1883` (`127.0.0.1` plutôt que `localhost`, qui désigne d'abord `::1` sous Windows) | non |
 | api | `MQTT_USERNAME` / `MQTT_PASSWORD` | `api` / `***` | **oui** (mot de passe) |
-| api | `NTFY_URL` | `http://127.0.0.1:8090` ; facultatif : sans valeur, l'envoi des alertes à ntfy est désactivé | non |
-| api | `NTFY_TOPIC` | `solar-site01-alerts` | non |
-| api | `NTFY_TOKEN` | jeton de publication `tk_***` (écriture seule), créé par `pnpm ntfy:setup` | **oui** |
+| api | `EXPO_ACCESS_TOKEN` | facultatif : jeton d'accès du compte Expo ; sans lui, les notifications partent quand même | **oui** |
 | api | `LOG_LEVEL` | `info` | non |
 | api (seed) | `SEED_OPERATOR_PASSWORD` / `SEED_VIEWER_PASSWORD` | `***` | **oui** |
 | api (tests) | `TEST_DATABASE_URL` | facultatif, même forme que `DATABASE_URL` : active les tests sur une base TimescaleDB réelle (transactions annulées) | **oui** |
@@ -554,13 +556,12 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `SIMULATE_DEVICE` | `true` (le simulateur joue l'objet du site) | non |
 | infra | `MQTT_API_PASSWORD` / `MQTT_SIMULATOR_PASSWORD` / `MQTT_DEVICE_PASSWORD` | `***` | **oui** |
 | infra | `MQTT_TLS_HOSTS` | `localhost,bore.pub` | non |
-| infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` / `NTFY_PORT` | `5432` / `1883` / `8883` / `8090` | non |
-| infra | `NTFY_BASE_URL` | `http://localhost:8090` (adresse sous laquelle le téléphone joint ntfy ; HTTPS sur le VPS) | non |
-| infra | `NTFY_BEHIND_PROXY` | `false` en développement, `true` derrière Caddy | non |
+| infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` | `5432` / `1883` / `8883` | non |
 | simulator | `EXTRA_PANELS` | `P21` | non |
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
 | mobile | `EXPO_PUBLIC_DATA_SOURCE` | `mock` ou `api` | non |
 | mobile | `EXPO_PUBLIC_MOCK_SCENARIO` | `normal`, `device_offline`, `battery_full`, `no_alerts` | non |
+| mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
 Côté firmware, les identifiants WiFi et MQTT sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné.
@@ -582,7 +583,7 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
 | [D028](../journal/decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS : API, base, broker et Caddy ; Wokwi joint directement le broker |
 | [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
-| [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) | Notifications : notifications locales de l'app et serveur ntfy auto-hébergé, à la place du push Expo/Firebase |
+| [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) pour l'app fermée et notifications locales pour l'app ouverte, à la place de ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) remplacée) |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
 

@@ -25,12 +25,18 @@ jest.mock("expo-notifications", () => ({
   setNotificationChannelAsync: jest.fn(async () => null),
   getPermissionsAsync: jest.fn(async () => ({ status: "granted" })),
   requestPermissionsAsync: jest.fn(async () => ({ status: "granted" })),
+  getExpoPushTokenAsync: jest.fn(async () => ({
+    type: "expo",
+    data: "ExponentPushToken[jeton-de-test]",
+  })),
   scheduleNotificationAsync: jest.fn(async () => "id-notification"),
   setNotificationHandler: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   getLastNotificationResponseAsync: jest.fn(async () => null),
 }));
+
+jest.mock("expo-device", () => ({ isDevice: true }));
 
 jest.mock("expo-sqlite", () => ({
   openDatabaseAsync: () => Promise.reject(new Error("SQLite indisponible dans les tests")),
@@ -40,6 +46,7 @@ beforeEach(() => {
   // Pas d'import() dynamique dans jest : les modules chargés à la demande sont fournis ici.
   const { nativeModules } = require("../src/notifications/local");
   nativeModules.notifications = async () => require("expo-notifications");
+  nativeModules.device = async () => require("expo-device");
   // Chaque test part d'un stockage local et d'une session vides.
   const { createMemoryStore, setResponseStore } = require("../src/storage");
   setResponseStore(createMemoryStore());

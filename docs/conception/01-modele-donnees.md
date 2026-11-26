@@ -39,12 +39,14 @@
 | État appliqué | `control state` |
 | Mode manuel / automatique / restitution | `manual` / `automatic` / `discharge` |
 | Alerte | `alert` |
+| Jeton de notification | `push token` |
 
 ## 2. Modèle conceptuel
 
 ```mermaid
 erDiagram
   USERS ||--o{ SETPOINTS : "émet"
+  USERS ||--o{ PUSH_TOKENS : "possède"
   SITES ||--o{ DEVICES : "est équipé de"
   SITES ||--o{ PANELS : "comporte"
   SITES ||--o{ SITE_MEASUREMENTS : "est mesuré par"
@@ -59,6 +61,13 @@ erDiagram
     text name
     text password_hash
     user_role role
+    timestamptz created_at
+  }
+  PUSH_TOKENS {
+    uuid id PK
+    uuid user_id FK
+    text token UK
+    mobile_platform platform
     timestamptz created_at
   }
   SITES {
@@ -139,13 +148,14 @@ erDiagram
 | Type | Valeurs | Signification |
 |---|---|---|
 | `user_role` | `operator`, `viewer` | L'exploitant (`operator`) peut envoyer des consignes, le lecteur (`viewer`) consulte seulement |
+| `mobile_platform` | `android`, `ios` | Plateforme du téléphone qui a enregistré un jeton de notification |
 | `device_status` | `unknown`, `online`, `offline` | `unknown` tant que l'objet n'a jamais rien publié |
 | `panel_source` | `seed`, `discovered`, `manual` | Origine du panneau : données de démonstration, détecté automatiquement à la réception de ses mesures, ou ajouté par un exploitant ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `control_mode` | `manual`, `automatic`, `discharge` | Modes manuel, automatique et restitution (voir l'étude de faisabilité, section 4) |
 | `setpoint_status` | `sent`, `applied`, `partial`, `rejected`, `no_response` | Voir le diagramme d'états dans [02-uml.md](02-uml.md) |
 | `rejection_reason` | `battery_full`, `battery_low`, `charge_limit`, `invalid_setpoint` | Raison donnée par l'objet quand il n'applique pas tout ou partie d'une consigne |
 | `alert_type` | `low_production`, `overheating`, `battery_low`, `battery_full`, `setpoint_rejected`, `setpoint_no_response`, `device_offline` | Voir les règles d'alerte dans [02-uml.md](02-uml.md) |
-| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent une notification (notification locale de l'app et message ntfy, [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
+| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent une notification (push Expo app fermée, notification locale app ouverte, [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) |
 | `alert_status` | `active`, `resolved` | Une alerte est résolue automatiquement quand sa condition disparaît |
 
 ## 4. Dictionnaire de données
@@ -160,6 +170,20 @@ erDiagram
 | `password_hash` | `text` | non | | | Empreinte argon2id |
 | `role` | `user_role` | non | `'viewer'` | | Droits dans l'app |
 | `created_at` | `timestamptz` | non | `now()` | | Date de création |
+
+### `push_tokens`
+
+| Colonne | Type | Null | Défaut | Contraintes | Description |
+|---|---|---|---|---|---|
+| `id` | `uuid` | non | `gen_random_uuid()` | PK | Identifiant |
+| `user_id` | `uuid` | non | | FK → `users.id`, `ON DELETE CASCADE` | Propriétaire du téléphone |
+| `token` | `text` | non | | unique | Jeton Expo (`ExponentPushToken[...]`) |
+| `platform` | `mobile_platform` | non | | | Android ou iOS |
+| `created_at` | `timestamptz` | non | `now()` | | Date d'enregistrement |
+
+Cette table a déjà existé : [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) l'avait supprimée, [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) la rétablit (nouvelle migration, définition identique).
+
+Un même jeton ne peut appartenir qu'à un utilisateur : si un autre utilisateur se connecte sur le même téléphone, la ligne est réattribuée (mise à jour de `user_id`).
 
 ### `sites`
 
@@ -296,6 +320,7 @@ Ces volumes sont faibles pour PostgreSQL et TimescaleDB.
 | `setpoints` | `(site_id, created_at DESC)` | Consigne en vigueur et historique paginé |
 | `alerts` | `(status, started_at DESC)` | Liste des alertes actives et récentes |
 | `alerts` | unique partiel `(site_id, panel_id, type) NULLS NOT DISTINCT WHERE status = 'active'` | Une seule alerte active par cause |
+| `push_tokens` | `(user_id)` | Envoi des notifications |
 
 ## 7. Script SQL de référence
 
@@ -307,6 +332,7 @@ CREATE EXTENSION IF NOT EXISTS citext;
 
 -- Enums
 CREATE TYPE user_role AS ENUM ('operator', 'viewer');
+CREATE TYPE mobile_platform AS ENUM ('android', 'ios');
 CREATE TYPE device_status AS ENUM ('unknown', 'online', 'offline');
 CREATE TYPE panel_source AS ENUM ('seed', 'discovered', 'manual');
 CREATE TYPE control_mode AS ENUM ('manual', 'automatic', 'discharge');
@@ -328,6 +354,15 @@ CREATE TABLE users (
   role          user_role NOT NULL DEFAULT 'viewer',
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE push_tokens (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  token      text NOT NULL UNIQUE,
+  platform   mobile_platform NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX push_tokens_user_idx ON push_tokens (user_id);
 
 -- Solar park
 CREATE TABLE sites (

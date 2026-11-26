@@ -34,7 +34,7 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D002](decisions/D002-perimetre-reduit.md) | Périmètre volontairement réduit, bonus après le socle | 2026-11-06 | Acceptée |
 | [D003](decisions/D003-pilotage-batterie-reseau.md) | Pilotage par répartition batterie / réseau plutôt que par tracker | 2026-11-06 | Acceptée |
 | [D004](decisions/D004-mode-restitution.md) | Ajout du mode « restitution » | 2026-11-06 | Acceptée |
-| [D005](decisions/D005-framework-mobile.md) | Framework mobile : Expo / React Native | 2026-11-06 | Acceptée · notifications push remplacées par D029 |
+| [D005](decisions/D005-framework-mobile.md) | Framework mobile : Expo / React Native | 2026-11-06 | Acceptée · notifications : push Expo rétabli par D030 (D029 remplacée) |
 | [D006](decisions/D006-protocole-mqtt.md) | Protocole objet : MQTT 3.1.1 | 2026-11-06 | Acceptée |
 | [D007](decisions/D007-objet-wokwi.md) | Objet : un seul ESP32 simulé dans Wokwi | 2026-11-06 | Acceptée |
 | [D008](decisions/D008-broker-hivemq-cloud.md) | Broker : HiveMQ Cloud | 2026-11-06 | Remplacée par D023 |
@@ -58,5 +58,6 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D026](decisions/D026-icones-phosphor-embarquees.md) | Icônes Phosphor embarquées dans le code de l'app | 2026-11-06 | Acceptée |
 | [D027](decisions/D027-certificat-objet-et-enrolement.md) | Authentification de l'objet par certificat client, délivré à l'exécution par enrôlement | 2026-11-23 | Acceptée |
 | [D028](decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS | 2026-11-23 | Acceptée |
-| [D029](decisions/D029-notifications-locales-et-ntfy.md) | Notifications : notifications locales dans l'app et serveur ntfy auto-hébergé, à la place du push Expo/Firebase | 2026-11-26 | Acceptée |
+| [D029](decisions/D029-notifications-locales-et-ntfy.md) | Notifications : notifications locales dans l'app et serveur ntfy auto-hébergé, à la place du push Expo/Firebase | 2026-11-26 | Remplacée par D030 |
+| [D030](decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) et notifications locales, à la place de ntfy | 2026-11-26 | Acceptée |
 

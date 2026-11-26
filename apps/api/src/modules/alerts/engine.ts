@@ -27,7 +27,7 @@ export interface AlertScope {
   panelId?: string | null;
 }
 
-/** Envoi de la notification d'une alerte ouverte (ntfy) ; une erreur est journalisée sans effet sur le traitement. */
+/** Envoi de la notification d'une alerte ouverte (push Expo, D030) ; une erreur est journalisée sans effet sur le traitement. */
 export type AlertNotifier = (alert: AlertRow) => Promise<void>;
 
 /** Ce que les autres modules utilisent du moteur. */

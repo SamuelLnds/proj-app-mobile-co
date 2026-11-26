@@ -1,5 +1,5 @@
 // Point d'entrée : valide la configuration, démarre le serveur puis le client MQTT.
-import { loadConfig, ntfySettings } from "./config";
+import { loadConfig } from "./config";
 import { createDb } from "./db/client";
 import { createMqttClient, type ApiMqttClient } from "./mqtt/client";
 import { createMessageHandler } from "./mqtt/handlers";
@@ -8,8 +8,9 @@ import { createAlertsRepository } from "./modules/alerts/repository";
 import { createAlertsService } from "./modules/alerts/service";
 import { createAuthRepository } from "./modules/auth/repository";
 import { createAuthService } from "./modules/auth/service";
-import { createNtfySender } from "./modules/notifications/ntfy-client";
-import { createNotificationsService } from "./modules/notifications/service";
+import { createPushTokensRepository } from "./modules/notifications/repository";
+import { createExpoSender } from "./modules/notifications/sender";
+import { createPushService } from "./modules/notifications/service";
 import { createDevicesRepository } from "./modules/devices/repository";
 import { createDevicesService } from "./modules/devices/service";
 import { createHistoryRepository } from "./modules/history/repository";
@@ -48,8 +49,10 @@ const setpoints = createSetpointsService(
   alertSink,
 );
 const alertsRepository = createAlertsRepository(database);
-const ntfy = ntfySettings(config);
-const notifications = createNotificationsService(ntfy ? createNtfySender(ntfy) : null);
+const pushService = createPushService(
+  createPushTokensRepository(database),
+  createExpoSender(config.EXPO_ACCESS_TOKEN),
+);
 
 const app = buildServer({
   config,
@@ -67,21 +70,18 @@ const app = buildServer({
   history: createHistoryService(createHistoryRepository(database)),
   setpoints,
   alerts: createAlertsService(alertsRepository),
+  push: pushService,
 });
 
 const engine = createAlertEngine(
   alertsRepository,
   async (alert) => {
-    if (await notifications.notifyAlert(alert)) {
-      app.log.info({ type: alert.type, severity: alert.severity }, "Alerte envoyée à ntfy");
-    }
+    const summary = await pushService.notifyAlert(alert);
+    app.log.info(summary, "Notifications d'alerte envoyées");
   },
   app.log,
 );
 alertEngine = engine;
-if (!notifications.enabled) {
-  app.log.warn("NTFY_URL absent : les alertes ne sont pas envoyées à ntfy");
-}
 const devices = createDevicesService(createDevicesRepository(database), app.log, engine);
 const measurements = createMeasurementsService(
   createMeasurementsRepository(database),

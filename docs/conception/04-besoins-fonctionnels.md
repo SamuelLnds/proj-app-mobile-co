@@ -66,7 +66,7 @@ Une issue n'est fermée que si **tous** ces points sont vrais :
 | **M8 · Intégration de l'interface** | Toute l'app conforme aux maquettes, sur des données d'exemple | L'app complète est consultable sur le téléphone, dans les deux thèmes et tous ses états, sans API |
 | **M3 · Supervision** | Toutes les fonctions de consultation | Connexion, supervision, carte, détail, historiques, affichage sans réseau |
 | **M4 · Pilotage** | Communication bidirectionnelle complète | Une consigne envoyée depuis l'app est appliquée ou refusée par l'objet, et l'app l'affiche |
-| **M5 · Alertes et notifications** | Règles d'alerte, notifications locales de l'app et serveur ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) | Panne injectée → notification sur le téléphone |
+| **M5 · Alertes et notifications** | Règles d'alerte, notifications push Expo (Firebase) et notifications locales ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) | Panne injectée → notification sur le téléphone |
 | **M9 · Sécurité de l'objet** | L'objet s'authentifie par certificat, sans secret dans son code | Un objet accepté dans l'app se connecte ; un objet révoqué est refusé par le broker |
 | **M6 · Livraison** | Projet prêt pour la soutenance | APK installé, démo hébergée, dossier et documentation complets |
 | **M7 · Bonus** | Améliorations facultatives | Vue 3D, rotation des panneaux, flux temps réel |
@@ -149,12 +149,12 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #46 | Mobile : brancher l'historique des consignes | M4 | mobile |
 | #47 | API : moteur de règles d'alerte | M5 | api |
 | #48 | API : route de consultation des alertes | M5 | api |
-| #49 | API et infra : notifications d'alerte par ntfy | M5 | api, infra |
-| #50 | Mobile : notifications locales et branchement de l'écran Alertes | M5 | mobile |
+| #49 | API : jetons et envoi des notifications push | M5 | api |
+| #50 | Mobile : notifications push et locales, écran Alertes | M5 | mobile |
 | #51 | Revue de sécurité et dossier sécurité | M6 | docs |
 | #52 | Compléter les tests | M6 | test |
 | #53 | Construire et distribuer l'APK | M6 | mobile |
-| #54 | Héberger l'API, la base, le broker et ntfy sur le VPS | M6 | infra |
+| #54 | Héberger l'API, la base et le broker sur le VPS | M6 | infra |
 | #55 | Documentation technique | M6 | docs |
 | #56 | Scénario de démonstration et répétition | M6 | docs |
 | #57 | Point final du journal | M6 | docs |
@@ -892,55 +892,60 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Dépend de :** #47
 
-### #49 · API et infra : notifications d'alerte par ntfy
+### #49 · API : jetons et envoi des notifications push
 
-**Labels :** `type:feature`, `area:api`, `area:infra`, `priority:core`
+**Labels :** `type:feature`, `area:api`, `priority:core`
 
-**Contexte :** pas de push Expo ni de Firebase : l'API publie les alertes sur un serveur ntfy auto-hébergé, que le téléphone lit par l'app ntfy, app fermée ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)).
+**Contexte :** les alertes `warning` et `critical` arrivent app fermée par le push Expo, qui s'appuie sur Firebase Cloud Messaging sur Android ; il remplace le serveur ntfy ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)).
 
 **À faire :**
-- Service `ntfy` (`binwiederhier/ntfy`, commande `serve`) dans `infra/docker-compose.yml` : port publié sur `127.0.0.1` uniquement (`NTFY_PORT`, 8090 par défaut). Configuration versionnée dans `infra/ntfy/config/server.yml` : `base-url`, `auth-file`, `auth-default-access: deny-all`, `behind-proxy`, cache de messages court.
-- Script `pnpm ntfy:setup` (sur le modèle de `pnpm mqtt:setup`) : crée dans `infra/ntfy/generated/` (ignoré par Git) un jeton de **publication** en écriture seule sur le sujet pour l'API et un jeton de **lecture** en lecture seule pour le téléphone, et affiche une seule fois les valeurs à recopier. Scripts `pnpm ntfy:up` ; `pnpm dev` démarre aussi ntfy.
-- Sujet `solar-{siteCode en minuscules}-alerts` (`solar-site01-alerts`).
-- `infra/README.md` : procédure pas à pas pour le téléphone (installer l'app ntfy, ajouter le serveur auto-hébergé et le jeton de lecture, s'abonner au sujet, retirer l'optimisation de batterie, `adb reverse` en développement).
-- API : service de notification (`modules/notifications/service.ts`, sans route ni requête à la base) appelé par le moteur d'alertes à l'ouverture d'une alerte `warning` ou `critical` : `POST {NTFY_URL}/{NTFY_TOPIC}` avec `Authorization: Bearer {NTFY_TOKEN}`, titre `Alerte` ou `Alerte critique`, corps = message de l'alerte, priorité `high` (`warning`) ou `urgent` (`critical`), étiquettes, lien d'action `solar://panel/{id}` ou `solar://alerts`. Fonction d'envoi injectable. Variables `NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`.
-- Retirer le push Expo : table `push_tokens` et enum `mobile_platform` (documentation, schéma Drizzle, nouvelle migration), routes `POST /v1/push-tokens` et `DELETE /v1/push-tokens/{token}` et leurs schémas, dépendance `expo-server-sdk`, variable `EXPO_ACCESS_TOKEN`.
+- Table `push_tokens` et enum `mobile_platform` rétablis (documentation, schéma Drizzle, **nouvelle** migration : `0003_drop_push_tokens` n'est pas modifiée) ; schémas `RegisterPushTokenRequest` et `PushTokenParams`, entrées `registerPushToken` et `deletePushToken` de `ROUTES`, enum `MobilePlatform` dans `@solar/contracts`.
+- Module `modules/notifications/` (`routes.ts`, `service.ts`, `repository.ts`, `sender.ts`) : `POST /v1/push-tokens` (insertion ou réattribution du jeton à l'utilisateur) et `DELETE /v1/push-tokens/{token}`.
+- Envoi par `expo-server-sdk` à l'ouverture d'une alerte `warning` ou `critical` par le moteur d'alertes (`modules/alerts/engine.ts`), à tous les jetons enregistrés, en un envoi groupé : titre `Alerte` ou `Alerte critique`, corps = message de l'alerte, données `alertId`, `siteId`, `panelId`, `type`, canal Android `ALERT_NOTIFICATION_CHANNEL_ID`. Fonction d'envoi injectable. Variable facultative `EXPO_ACCESS_TOKEN`.
+- Supprimer le service `ntfy` et tout ce qui s'y rattache : `infra/ntfy/`, scripts `ntfy:setup` et `ntfy:up`, démarrage dans `pnpm dev`, section de `infra/README.md`, client ntfy de l'API, variables `NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`.
 
 **Critères d'acceptation :**
-- [ ] Un abonné sans jeton au sujet est refusé ; le jeton de lecture ne permet pas de publier et le jeton de publication ne permet pas de lire.
-- [ ] Une alerte `critical` (par exemple `device_offline`) arrive à un abonné en lecture avec le titre « Alerte critique » et la priorité `urgent` ; une alerte `warning` arrive avec le titre « Alerte » et la priorité `high`.
-- [ ] Une alerte `info` n'envoie rien.
-- [ ] Le message ne contient aucune donnée personnelle (test : ni e-mail ni nom d'utilisateur).
+- [ ] `POST /v1/push-tokens` enregistre un jeton (204), sans doublon si on le renvoie ; un autre utilisateur qui se connecte sur le même téléphone le récupère ; `DELETE /v1/push-tokens/{token}` le supprime ; 401 sans jeton d'accès, 422 sur un corps invalide.
+- [ ] Une alerte `critical` (par exemple `device_offline`) envoie un message groupé à tous les jetons enregistrés avec le titre « Alerte critique » ; une alerte `warning` avec le titre « Alerte » ; une alerte `info` n'envoie rien (test).
+- [ ] Le message ne contient aucune donnée personnelle : ni e-mail ni nom d'utilisateur (test).
 - [ ] Tests avec la fonction d'envoi simulée, sans appel réseau ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message (test).
-- [ ] Sans `NTFY_URL`, l'envoi est désactivé avec un seul avertissement au démarrage.
-- [ ] Aucun jeton ni mot de passe n'est versionné ; `infra/ntfy/generated/` est ignoré par Git.
-- [ ] La table `push_tokens`, les routes `push-tokens`, `expo-server-sdk` et `EXPO_ACCESS_TOKEN` n'existent plus ; `db:migrate` passe sur une base vide.
-- [ ] Une alerte arrive sur le téléphone de test, app fermée, par l'app ntfy.
+- [ ] Un jeton refusé par Expo avec l'erreur `DeviceNotRegistered` est supprimé ; une autre erreur ne le supprime pas (test).
+- [ ] `db:migrate` passe sur une base vide : la table `push_tokens` existe avec la définition de [01-modele-donnees.md](01-modele-donnees.md).
+- [ ] Le service ntfy, `infra/ntfy/`, ses scripts et ses variables n'existent plus ; aucun jeton ni secret n'est versionné.
+- [ ] Un envoi réel vers Expo avec un faux jeton renvoie une erreur et supprime le jeton (vérification manuelle).
 
-**Dépend de :** #11, #47 · **Références :** [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md), [UML, séquences 4.4 et 4.5](02-uml.md), [Cartographie, sections 5.6, 5.7 et 9](03-cartographie-technique.md)
+**Dépend de :** #27, #47 · **Références :** [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [UML, séquences 4.1, 4.4 et 4.5](02-uml.md), [Cartographie, sections 5.7 et 9](03-cartographie-technique.md)
 
-### #50 · Mobile : notifications locales et branchement de l'écran Alertes
+### #50 · Mobile : notifications push et locales, écran Alertes
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
 
 **Interface :** réalisée avec des données d'exemple dans #76 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
 **À faire :**
-- Notifications locales ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) : quand l'app est active, comparer les alertes actives `warning` et `critical` reçues par `useAlerts("active")` avec celles déjà notifiées, et afficher une notification locale (`expo-notifications`) pour chaque nouvelle alerte. Les identifiants déjà notifiés sont conservés dans SQLite, même après un redémarrage de l'app. Au premier chargement, les alertes déjà actives sont seulement mémorisées.
-- Demande d'autorisation des notifications après la connexion (Android 13 et plus), canal Android. Module `expo-notifications` chargé à la demande : sans lui, les notifications locales sont désactivées en silence.
-- Appui sur une notification → panneau concerné, ou écran Alertes.
+- Push ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) : après la connexion (ou la restauration de la session), demande d'autorisation (Android 13 et plus, canal Android), obtention du jeton Expo (`getExpoPushTokenAsync`) puis `POST /v1/push-tokens` ; suppression du jeton (`DELETE`) à la déconnexion. `expo-notifications` et `expo-device` chargés à la demande, dans un `try/catch` : sans eux, ou sans configuration Firebase, le push est désactivé en silence.
+- Notifications locales conservées : quand l'app est ouverte, une notification locale pour chaque nouvelle alerte `warning` ou `critical` (identifiants déjà notifiés conservés dans SQLite).
+- Pas de doublon : le gestionnaire de notifications n'affiche pas un push dont l'alerte a déjà été notifiée localement, et l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan (voir [Cartographie, section 5.7](03-cartographie-technique.md)).
+- Appui sur une notification, push ou locale → panneau concerné, ou écran Alertes.
 - Écran Alertes : actives puis résolues, gravité par couleur et icône.
-- Retirer le push Expo : plus de jeton push, d'appel à `/push-tokens`, de `getExpoPushTokenAsync` ni de dépendance `expo-device`.
-- Facultatif : une ligne dans l'app qui explique comment recevoir les alertes app fermée (abonnement ntfy, voir `infra/README.md`).
+- Configuration Firebase dans `app.config.ts` : `android.googleServicesFile` lu dans la variable d'environnement EAS de type fichier `GOOGLE_SERVICES_JSON`, avec repli sur `./google-services.json` s'il existe ; ce fichier est ignoré par Git. Le build ne casse pas tant que le fichier n'existe pas.
+- `apps/mobile/README.md` : procédure Firebase pas à pas.
+
+**À faire par le binôme (Firebase, une seule fois) :**
+1. Créer le projet Firebase et l'app Android de paquet `fr.solar.mobile`, puis télécharger `google-services.json`.
+2. Déposer ce fichier sur EAS comme variable fichier `GOOGLE_SERVICES_JSON`.
+3. Créer la clé de compte de service FCM V1 et la déposer sur EAS (`eas credentials`, Android).
+4. Relancer un build de développement et l'installer sur le téléphone de test.
 
 **Critères d'acceptation :**
-- [ ] Une nouvelle alerte `warning` ou `critical` reçue app active affiche une notification locale ; une alerte `info` n'en affiche pas.
-- [ ] Une alerte déjà notifiée ne l'est jamais deux fois, y compris après un redémarrage de l'app (test).
-- [ ] Au premier chargement, les alertes déjà actives ne déclenchent aucune notification (test).
-- [ ] Sans le module natif `expo-notifications`, l'app ne plante pas et les notifications locales sont désactivées (test).
-- [ ] L'appui sur une notification ouvre le panneau concerné ou l'écran Alertes.
+- [ ] Après la connexion, le jeton Expo est enregistré auprès de l'API ; après la déconnexion, il est supprimé et le téléphone ne reçoit plus de notification (test avec une API simulée).
+- [ ] Une nouvelle alerte `warning` ou `critical` reçue app ouverte affiche une notification locale ; une alerte `info` n'en affiche pas ; une alerte déjà notifiée ne l'est jamais deux fois, y compris après un redémarrage de l'app (test).
+- [ ] Une même alerte n'est jamais affichée à la fois en push et en notification locale quand l'app est au premier plan (test).
+- [ ] Sans les modules natifs `expo-notifications` ou `expo-device`, sans autorisation, sur un émulateur ou sans jeton, l'app ne plante pas et le push est désactivé (test).
+- [ ] L'appui sur une notification, push ou locale, ouvre le panneau concerné ou l'écran Alertes (test).
 - [ ] L'écran Alertes affiche les alertes actives puis résolues, la gravité étant indiquée par une couleur, une icône et un texte.
-- [ ] La connexion et la déconnexion ne font aucun appel de jeton push.
+- [ ] `apps/mobile/README.md` décrit la configuration Firebase ; sans `google-services.json`, `expo config` et les tests fonctionnent.
+- [ ] Une alerte `critical` arrive sur le téléphone de test, app fermée, dans Solar (nécessite le projet Firebase et un nouveau build : à vérifier sur le téléphone).
 
 **Dépend de :** #28, #48, #49, #76
 
@@ -957,7 +962,6 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **Critères d'acceptation :**
 - [ ] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
 - [ ] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
-- [ ] Le serveur ntfy refuse tout accès sans jeton, et les jetons de publication et de lecture sont limités à leur droit ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)).
 - [ ] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
 
 **Dépend de :** M5 et M9 terminés · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md)
@@ -983,17 +987,17 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Dépend de :** #54
 
-### #54 · Héberger l'API, la base, le broker et ntfy sur le VPS
+### #54 · Héberger l'API, la base et le broker sur le VPS
 
 **Labels :** `type:chore`, `area:infra`, `priority:core`
 
-**À faire :** choisir le fournisseur du VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) ; déployer API, base, broker et serveur ntfy avec Docker Compose derrière Caddy (HTTPS, [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) ; nom de domaine ajouté à `MQTT_TLS_HOSTS` ; pare-feu limité aux ports 443 et 8883 (SSH par clé uniquement) ; variables d'environnement, migrations et seed.
+**À faire :** choisir le fournisseur du VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) ; déployer API, base et broker avec Docker Compose derrière Caddy (HTTPS) ; nom de domaine ajouté à `MQTT_TLS_HOSTS` ; pare-feu limité aux ports 443 et 8883 (SSH par clé uniquement) ; variables d'environnement, migrations et seed.
 
 **Critères d'acceptation :**
 - [ ] `GET https://<domaine>/v1/health` renvoie 200 depuis un réseau extérieur.
 - [ ] L'ESP32 de Wokwi se connecte au broker du VPS sans tunnel.
-- [ ] Les ports 1883, 3000, 5432 et celui de ntfy ne répondent pas depuis l'extérieur.
-- [ ] Le serveur ntfy du VPS est joint en HTTPS par l'app ntfy ; un abonné sans jeton est refusé.
+- [ ] Les ports 1883, 3000 et 5432 ne répondent pas depuis l'extérieur.
+- [ ] L'API du VPS peut joindre le service Expo (sortie HTTPS) : une alerte arrive sur le téléphone de test.
 - [ ] La procédure de déploiement est documentée.
 
 **Dépend de :** M5 terminé

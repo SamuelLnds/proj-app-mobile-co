@@ -3,14 +3,14 @@ import { useEffect } from "react";
 
 import { useAuth } from "../auth/AuthProvider";
 import { dataSource } from "../data";
-import { useLocalAlertNotifications } from "./alert-notifications";
-import { loadNotifications, notificationTarget, showNotificationsInForeground } from "./local";
+import { showNotificationsInForeground, useLocalAlertNotifications } from "./alert-notifications";
+import { loadNotifications, notificationTarget } from "./local";
 
 /** Notifications déjà traitées : un appui n'ouvre l'écran qu'une fois, même après un remontage. */
 const handled = new Set<string>();
 
 /**
- * Notifications locales, tant que l'utilisateur est connecté (source `api` seulement) :
+ * Notifications (locales et push reçus app ouverte), tant que l'utilisateur est connecté (source `api` seulement) :
  * notification de chaque nouvelle alerte `warning` ou `critical`, affichage même app ouverte, et
  * appui sur une notification (app ouverte ou fermée) → écran Alertes ou détail du panneau.
  * N'affiche rien.

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-06 |
-| **Statut** | Acceptée · notifications push remplacées par [D029](D029-notifications-locales-et-ntfy.md) |
+| **Statut** | Acceptée · notifications : push Expo rétabli par [D030](D030-notifications-push-expo-et-locales.md) (qui remplace [D029](D029-notifications-locales-et-ntfy.md)) |
 | **Décideurs** | À compléter |
 | **Liens** | [Cartographie technique](../../conception/03-cartographie-technique.md), section 4 |
 
@@ -34,4 +34,4 @@ Le langage est déjà maîtrisé, le même TypeScript sert à l'API et aux sché
 
 - Un *development build* est nécessaire dès le départ : les notifications push ne fonctionnent plus dans Expo Go sur Android.
 - Distribution de l'APK par EAS ; iOS seulement si un membre dispose d'un compte Apple Developer.
-- Mise à jour du 2026-11-26 : le service de notifications push d'Expo, critère de cette comparaison, n'est plus utilisé ; voir [D029](D029-notifications-locales-et-ntfy.md). Le *development build* reste nécessaire pour `expo-notifications`.
+- Mise à jour du 2026-11-26 : le service de notifications push d'Expo, critère de cette comparaison, n'est plus utilisé ; voir [D029](D029-notifications-locales-et-ntfy.md). Le *development build* reste nécessaire pour `expo-notifications`. [D029](D029-notifications-locales-et-ntfy.md) est elle-même remplacée par [D030](D030-notifications-push-expo-et-locales.md) : le push Expo est de nouveau utilisé, avec les notifications locales.

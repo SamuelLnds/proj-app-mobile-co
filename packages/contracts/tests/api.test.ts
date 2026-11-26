@@ -162,12 +162,14 @@ describe("erreurs", () => {
 });
 
 describe("table des routes (section 7.2)", () => {
-  it("couvre les 14 routes avec méthode, chemin et rôle", () => {
+  it("couvre les 16 routes avec méthode, chemin et rôle", () => {
     const summary = Object.values(ROUTES).map((r) => `${r.method} ${r.path} ${r.role}`);
     expect(summary).toEqual([
       "GET /v1/health none",
       "POST /v1/auth/login none",
       "GET /v1/auth/me viewer",
+      "POST /v1/push-tokens viewer",
+      "DELETE /v1/push-tokens/{token} viewer",
       "GET /v1/sites viewer",
       "GET /v1/sites/{id} viewer",
       "GET /v1/sites/{id}/measurements viewer",

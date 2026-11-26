@@ -47,8 +47,8 @@ export const BATTERY_SHARE_STEP_PCT = 10;
 export const DEFAULT_PANEL_RATED_POWER_W = 200;
 /** Nombre maximal de panneaux par site (limite de la création automatique). */
 export const MAX_PANELS_PER_SITE = 200;
-/** Schéma des liens ouvrant l'app (`solar://alerts`, `solar://panel/{id}`), joints aux notifications ntfy. */
-export const APP_URL_SCHEME = "solar";
+/** Canal Android des notifications d'alerte, partagé par le push (API) et les notifications locales (app). */
+export const ALERT_NOTIFICATION_CHANNEL_ID = "alerts";
 
 // Paramètres du site de démonstration (seed et objet).
 /** Puissance crête du site de démonstration (W). */
