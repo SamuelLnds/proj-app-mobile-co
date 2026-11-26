@@ -18,6 +18,8 @@ import { historyRoutes } from "./modules/history/routes";
 import type { HistoryService } from "./modules/history/service";
 import { panelsRoutes } from "./modules/panels/routes";
 import type { PanelsService } from "./modules/panels/service";
+import { setpointsRoutes } from "./modules/setpoints/routes";
+import type { SetpointsService } from "./modules/setpoints/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import type { SitesService } from "./modules/sites/service";
 
@@ -36,6 +38,7 @@ export interface ServerDependencies {
   sites?: SitesService;
   panels?: PanelsService;
   history?: HistoryService;
+  setpoints?: SetpointsService;
 }
 
 export function buildServer({
@@ -46,6 +49,7 @@ export function buildServer({
   sites,
   panels,
   history,
+  setpoints,
 }: ServerDependencies) {
   const app = Fastify({
     logger: {
@@ -115,6 +119,7 @@ export function buildServer({
       if (sites) sitesRoutes(v1, { service: sites, authenticate: guards.viewer[0] });
       if (panels) panelsRoutes(v1, panels, guards);
       if (history) historyRoutes(v1, history, guards);
+      if (setpoints) setpointsRoutes(v1, setpoints, guards);
     },
     { prefix: "/v1" },
   );
