@@ -60,4 +60,5 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D028](decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS | 2026-11-23 | Acceptée |
 | [D029](decisions/D029-notifications-locales-et-ntfy.md) | Notifications : notifications locales dans l'app et serveur ntfy auto-hébergé, à la place du push Expo/Firebase | 2026-11-26 | Remplacée par D030 |
 | [D030](decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) et notifications locales, à la place de ntfy | 2026-11-26 | Acceptée |
+| [D031](decisions/D031-tunnel-bore-pour-wokwi.md) | Connexion de l'ESP32 de Wokwi au broker par un tunnel TCP bore, en attendant le VPS | 2026-11-26 | Acceptée |
 
