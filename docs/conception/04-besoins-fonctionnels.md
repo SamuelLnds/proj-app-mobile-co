@@ -929,9 +929,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 - Appui sur une notification, push ou locale → panneau concerné, ou écran Alertes.
 - Écran Alertes : actives puis résolues, gravité par couleur et icône.
 - Configuration Firebase dans `app.config.ts` : `android.googleServicesFile` lu dans la variable d'environnement EAS de type fichier `GOOGLE_SERVICES_JSON`, avec repli sur `./google-services.json` s'il existe ; ce fichier est ignoré par Git. Le build ne casse pas tant que le fichier n'existe pas.
-- `apps/mobile/README.md` : procédure Firebase pas à pas.
+- `apps/mobile/README.md` : procédure Firebase pas à pas ([section « Notifications d'alerte : configuration Firebase »](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase)).
 
-**À faire par le binôme (Firebase, une seule fois) :**
+**À faire par le binôme (Firebase, une seule fois ; détail et commandes vérifiées dans [la procédure](../../apps/mobile/README.md#notifications-dalerte--configuration-firebase)) :**
 1. Créer le projet Firebase et l'app Android de paquet `fr.solar.mobile`, puis télécharger `google-services.json`.
 2. Déposer ce fichier sur EAS comme variable fichier `GOOGLE_SERVICES_JSON`.
 3. Créer la clé de compte de service FCM V1 et la déposer sur EAS (`eas credentials`, Android).
