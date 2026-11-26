@@ -36,7 +36,7 @@ Si le message est émis ou lu par `tools/simulator`, l'adapter avec les mêmes f
 ## 5. Firmware
 
 Le firmware C++ ne peut pas importer les schémas :
-- reproduire exactement les noms de champs, types et bornes dans `firmware/site-device` (ArduinoJson) ;
+- reproduire exactement les noms de champs, types et bornes dans `firmware/site-device` (`include/messages.h` pour les messages publiés, `include/setpoint.h` pour la consigne reçue) ;
 - si une constante est concernée, la recopier à l'identique dans `include/config.h` ;
 - vérifier un message réel publié depuis Wokwi en le passant au schéma Zod (test ou script).
 

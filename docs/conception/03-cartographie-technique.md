@@ -139,7 +139,7 @@ flowchart BT
 | Mots de passe | **argon2** (argon2id) | Recommandé par l'OWASP | bcrypt |
 | Authentification | **JWT** via `@fastify/jwt` | Sans état, simple à vérifier | Sessions (état côté serveur) |
 | Notifications | **expo-notifications** (app : push et notifications locales) + **expo-server-sdk** (API), push Expo via Firebase Cloud Messaging | Fiable app fermée, sans friction ni coût de batterie notable, configuration unique par le développeur ; notifications locales pour l'affichage immédiat app ouverte | ntfy auto-hébergé, tâche de fond, notifications locales seules ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), qui remplace [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
-| Firmware | **PlatformIO + framework Arduino** (PubSubClient, ArduinoJson, OneWire, DallasTemperature) | Démarrage rapide, nombreux exemples Wokwi | ESP-IDF pur, MicroPython |
+| Firmware | **PlatformIO + framework Arduino** (PubSubClient, OneWire, DallasTemperature ; analyseur JSON des consignes écrit pour le projet, [D032](../journal/decisions/D032-analyseur-json-minimal-du-firmware.md)) | Démarrage rapide, nombreux exemples Wokwi | ESP-IDF pur, MicroPython |
 | Tests | **Vitest** (API, contrats, simulateur), **Jest + React Native Testing Library** (app) | Vitest rapide et compatible TypeScript ; Jest est l'outil fourni par Expo | — |
 | Qualité du code | **ESLint + Prettier**, configuration commune à la racine | Style homogène entre les membres du groupe | — |
 | CI/CD | **GitHub Actions**, **Dependabot**, **EAS Build** | Gratuits pour un dépôt public ; EAS signe et construit l'APK | — |
@@ -287,24 +287,28 @@ Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publie
 |---|---|
 | `WiFi`, `WiFiClientSecure` (fournies) | Réseau et TLS |
 | `PubSubClient` | MQTT |
-| `ArduinoJson` | Lecture et écriture des messages JSON |
 | `OneWire`, `DallasTemperature` | Sonde DS18B20 |
 
-`ArduinoJson` ne sert qu'à lire les consignes (#39) : les messages publiés sont construits sans bibliothèque (`include/messages.h`), ce qui permet de les compiler aussi sur le poste et de les valider par les schémas Zod (`tools/simulator/tests/firmware-format.test.ts`).
+Aucune bibliothèque JSON : les messages publiés sont construits dans `include/messages.h` et la consigne reçue est lue par un analyseur minimal (`include/setpoint.h`, [D032](../journal/decisions/D032-analyseur-json-minimal-du-firmware.md)). Tout ce code est sans Arduino, donc compilé aussi sur le poste : les tests le comparent aux schémas Zod (`tools/simulator/tests/firmware-format.test.ts` et `firmware-control.test.ts`) et à l'algorithme de référence du simulateur.
 
 Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de LED, bouton (voir l'étude de faisabilité, section 6). La simulation tourne dans l'extension Wokwi pour VS Code (`wokwi.toml`, `diagram.json`), avec le binaire compilé par `pio run`.
 
 ```
 firmware/site-device/
 ├── platformio.ini · wokwi.toml · diagram.json
-├── include/   config.h (constantes partagées), pins.h, readings.h et messages.h (logique pure, sans Arduino),
-│              secrets.example.h (modèle versionné) et secrets.h (ignoré par Git)
-├── src/       main.cpp, network.cpp (WiFi, NTP, MQTT TLS), sensors.cpp (capteurs, bouton, sorties)
-├── test/      format/dump_messages.cpp (messages produits sur le poste, validés par le simulateur)
+├── include/   config.h (constantes partagées), pins.h, readings.h, messages.h, control.h (algorithme de la section 7),
+│              setpoint.h (lecture de la consigne) et pilot.h (consigne en vigueur, batterie, état à publier) :
+│              logique pure, sans Arduino ; secrets.example.h (modèle versionné) et secrets.h (ignoré par Git)
+├── src/       main.cpp (boucle : pilotage chaque seconde, mesure toutes les 5 s, consigne dès réception),
+│              network.cpp (WiFi, NTP, MQTT TLS, abonnement aux consignes), sensors.cpp (capteurs, bouton, sorties)
+├── test/      format/dump_messages.cpp et control/ (dump_control.cpp, parse_setpoint.cpp) : programmes de poste
+│              dont les sorties sont validées par le simulateur
 └── README.md  Tableau des broches et procédure de test
 ```
 
-Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, mot de passe, certificat de l'autorité) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` est donc publié en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1) ; l'état appliqué de #40 aura la même limite.
+Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, mot de passe, certificat de l'autorité) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` et l'état appliqué (`state`) sont donc publiés en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1). L'abonnement aux consignes, lui, est en QoS 1 (`subscribe(topic, 1)`). Le tampon MQTT est de 512 octets (`MQTT_BUFFER_SIZE`) : un message entrant ou sortant plus grand serait ignoré, ce qui n'arrive pas avec les messages de la section 6.2 (moins de 320 octets).
+
+La boucle exécute le pilotage **chaque seconde** (`CONTROL_TICK_PERIOD_MS`) : batterie (capacité 10 000 Wh, départ à 50 %), flux, relais et barre de LED ; la mesure part toutes les 5 s avec les valeurs du dernier tick. Une consigne reçue est analysée et appliquée aussitôt (dans la seconde), et son état est publié dans la foulée. Une consigne lisible mais invalide n'est pas adoptée : l'objet répond `rejected` / `invalid_setpoint` pour son identifiant, puis republie l'état de la consigne en vigueur. Une consigne illisible (JSON cassé, identifiant qui n'est pas un UUID) est ignorée et journalisée sur le port série. La consigne retained renvoyée après une reconnexion est appliquée sans republier d'état si elle est identique à celle en vigueur.
 
 Wokwi simule l'ESP32 plus lentement que le temps réel (environ 50 %, moins si le panneau du simulateur est caché). Deux réglages propres au firmware, définis dans `include/config.h` et absents de `constants.ts`, en tiennent compte. Le maintien MQTT (`MQTT_KEEPALIVE_S`) est de 60 s : à 15 s, le PINGREQ arrivait trop tard et le broker coupait la session ; en contrepartie, le broker publie le Last Will `offline` au plus tard 1,5 × 60 = 90 s après un arrêt brutal. L'heure est resynchronisée par NTP toutes les 60 s (`NTP_RESYNC_INTERVAL_MS`, intervalle SNTP de l'ESP-IDF), sans quoi l'horloge de l'objet prendrait un retard croissant et, passé `MAX_CLOCK_DRIFT_S`, l'API remplacerait l'horodatage des mesures par l'heure de réception. Le firmware ne publie aucune mesure tant que l'heure n'est pas valide.
 
