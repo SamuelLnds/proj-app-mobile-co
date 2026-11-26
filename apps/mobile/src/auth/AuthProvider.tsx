@@ -91,7 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await dataSource.registerPushToken(registration);
         if (active) pushToken.current = registration.token;
       })
-      .catch(() => undefined);
+      .catch((error: unknown) => {
+        console.warn(
+          "[push] Enregistrement du jeton refusé :",
+          error instanceof Error ? error.message : "erreur inconnue",
+        );
+      });
     return () => {
       active = false;
     };
