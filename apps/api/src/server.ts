@@ -11,9 +11,13 @@ import { HealthResponseSchema } from "@solar/contracts";
 import type { ErrorDetail, HealthResponse } from "@solar/contracts";
 import type { Config } from "./config";
 import { AppError, errorBody } from "./errors";
-import { registerJwt, requireRole } from "./modules/auth/plugin";
+import { registerJwt, requireRole, type Guards } from "./modules/auth/plugin";
 import { authRoutes } from "./modules/auth/routes";
 import type { AuthService } from "./modules/auth/service";
+import { historyRoutes } from "./modules/history/routes";
+import type { HistoryService } from "./modules/history/service";
+import { panelsRoutes } from "./modules/panels/routes";
+import type { PanelsService } from "./modules/panels/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import type { SitesService } from "./modules/sites/service";
 
@@ -30,6 +34,8 @@ export interface ServerDependencies {
   auth?: { service: AuthService; jwtSecret: string };
   /** Services métier ; un module absent n'expose pas ses routes. */
   sites?: SitesService;
+  panels?: PanelsService;
+  history?: HistoryService;
 }
 
 export function buildServer({
@@ -38,6 +44,8 @@ export function buildServer({
   checkBroker,
   auth,
   sites,
+  panels,
+  history,
 }: ServerDependencies) {
   const app = Fastify({
     logger: {
@@ -101,8 +109,12 @@ export function buildServer({
       });
 
       if (auth) authRoutes(v1, auth.service);
-      const viewer = auth ? requireRole("viewer") : undefined;
-      if (sites) sitesRoutes(v1, { service: sites, authenticate: viewer });
+      const guards: Guards = auth
+        ? { viewer: [requireRole("viewer")], operator: [requireRole("operator")] }
+        : { viewer: [], operator: [] };
+      if (sites) sitesRoutes(v1, { service: sites, authenticate: guards.viewer[0] });
+      if (panels) panelsRoutes(v1, panels, guards);
+      if (history) historyRoutes(v1, history, guards);
     },
     { prefix: "/v1" },
   );

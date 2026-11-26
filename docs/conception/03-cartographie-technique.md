@@ -525,6 +525,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | api | `EXPO_ACCESS_TOKEN` | facultatif | **oui** |
 | api | `LOG_LEVEL` | `info` | non |
 | api (seed) | `SEED_OPERATOR_PASSWORD` / `SEED_VIEWER_PASSWORD` | `***` | **oui** |
+| api (tests) | `TEST_DATABASE_URL` | facultatif, même forme que `DATABASE_URL` : active les tests sur une base TimescaleDB réelle (transactions annulées) | **oui** |
 | simulator | `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` | | **oui** (mot de passe) |
 | simulator | `SITE_CODE` | `SITE01` | non |
 | simulator | `FAULTY_PANELS` | `P07,P12` | non |

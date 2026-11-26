@@ -1,7 +1,8 @@
 // Requêtes d'enregistrement des mesures reçues par MQTT.
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
+import { DEFAULT_PANEL_RATED_POWER_W } from "@solar/contracts";
 import type { Database } from "../../db/client";
-import { devices, siteMeasurements, sites } from "../../db/schema";
+import { panelMeasurements, panels, siteMeasurements, sites } from "../../db/schema";
 
 export interface SiteMeasurementRow {
   time: Date;
@@ -16,10 +17,24 @@ export interface SiteMeasurementRow {
   simulatedFault: boolean;
 }
 
+export interface PanelMeasurementRow {
+  time: Date;
+  panelId: string;
+  productionW: number;
+  temperatureC: number;
+}
+
 export interface MeasurementsRepository {
   findSiteIdByCode: (code: string) => Promise<string | null>;
   insertSiteMeasurement: (row: SiteMeasurementRow) => Promise<void>;
-  touchDevice: (siteId: string, seenAt: Date) => Promise<void>;
+  findPanelId: (siteId: string, code: string) => Promise<string | null>;
+  countPanels: (siteId: string) => Promise<number>;
+  /**
+   * Crée un panneau détecté (D020) : nom = code, sans position, puissance par défaut.
+   * Sans effet si le panneau existe déjà ; renvoie son identifiant dans les deux cas.
+   */
+  createDiscoveredPanel: (siteId: string, code: string) => Promise<string>;
+  insertPanelMeasurement: (row: PanelMeasurementRow) => Promise<void>;
 }
 
 export function createMeasurementsRepository({ db }: Database): MeasurementsRepository {
@@ -32,8 +47,41 @@ export function createMeasurementsRepository({ db }: Database): MeasurementsRepo
       // Une mesure déjà reçue pour le même instant (message dupliqué) est ignorée.
       await db.insert(siteMeasurements).values(row).onConflictDoNothing();
     },
-    async touchDevice(siteId, seenAt) {
-      await db.update(devices).set({ lastSeenAt: seenAt }).where(eq(devices.siteId, siteId));
+    async findPanelId(siteId, code) {
+      const [panel] = await db
+        .select({ id: panels.id })
+        .from(panels)
+        .where(and(eq(panels.siteId, siteId), eq(panels.code, code)));
+      return panel?.id ?? null;
+    },
+    async countPanels(siteId) {
+      const [row] = await db
+        .select({ value: count() })
+        .from(panels)
+        .where(eq(panels.siteId, siteId));
+      return row?.value ?? 0;
+    },
+    async createDiscoveredPanel(siteId, code) {
+      // La contrainte unique (site, code) garantit une seule création, même pour des messages
+      // simultanés : les suivants ne font rien et relisent le panneau créé.
+      await db
+        .insert(panels)
+        .values({
+          siteId,
+          code,
+          name: code,
+          ratedPowerW: DEFAULT_PANEL_RATED_POWER_W,
+          source: "discovered",
+        })
+        .onConflictDoNothing({ target: [panels.siteId, panels.code] });
+      const [panel] = await db
+        .select({ id: panels.id })
+        .from(panels)
+        .where(and(eq(panels.siteId, siteId), eq(panels.code, code)));
+      return panel!.id;
+    },
+    async insertPanelMeasurement(row) {
+      await db.insert(panelMeasurements).values(row).onConflictDoNothing();
     },
   };
 }
