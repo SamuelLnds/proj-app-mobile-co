@@ -18,6 +18,7 @@ flowchart LR
   subgraph external["Services externes"]
     TUN["Tunnel TCP<br/>(ou passerelle privée Wokwi)"]
     EXPO["Service de notifications Expo"]
+    FCM["Firebase Cloud Messaging<br/>(Google, Android)"]
     EAS["EAS Build<br/>(construction de l'APK)"]
   end
 
@@ -41,8 +42,9 @@ flowchart LR
   API <-- "SQL 5432" --> DB
   APP <-- "HTTPS REST + JWT" --> API
   APP <--> LOCAL
-  API -- "HTTPS" --> EXPO
-  EXPO -- "push" --> APP
+  API -- "HTTPS<br/>alertes warning et critical" --> EXPO
+  EXPO --> FCM
+  FCM -- "push" --> APP
   EAS -. "APK" .-> APP
 ```
 
@@ -53,7 +55,8 @@ flowchart LR
 | API ↔ broker | MQTT 3.1.1, port 1883, sur la même machine | Deux sens | Identifiant propre à l'API ; port publié sur 127.0.0.1 uniquement |
 | App ↔ API | HTTPS, JSON | Deux sens | JWT dans l'en-tête `Authorization: Bearer` |
 | App ↔ SQLite local | Appels locaux | Deux sens | Données non sensibles uniquement (le JWT est dans `expo-secure-store`) |
-| API → Expo | HTTPS | Montant | Jeton d'accès Expo (optionnel en développement) |
+| API → Expo | HTTPS (`expo-server-sdk`) | Montant | Jeton d'accès Expo facultatif (`EXPO_ACCESS_TOKEN`) ; aucune donnée personnelle dans le message : texte de l'alerte et identifiants techniques seulement ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) |
+| Expo → FCM → téléphone | Service de notifications d'Expo, puis Firebase Cloud Messaging (Google) | Montant | Canal système ; le message transite par Expo et Google ; clé de compte de service FCM V1 déposée sur EAS, jamais versionnée |
 | API ↔ base | Protocole PostgreSQL, port 5432 | Deux sens | Réseau Docker interne, utilisateur dédié |
 
 > MQTT 3.1.1 suffit pour le socle : Last Will, retained et QoS 1 en font partie. La bibliothèque de l'ESP32 (PubSubClient) ne gère pas MQTT 5 ([D006](../journal/decisions/D006-protocole-mqtt.md)).
@@ -62,8 +65,8 @@ flowchart LR
 
 | Environnement | Où tourne quoi | Usage |
 |---|---|---|
-| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
-| **Démonstration** | API, base et broker dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
+| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; notifications push via le service Expo et Firebase (aucun service local) ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
+| **Démonstration** | API, base et broker dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; notifications par le service Expo ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
 
 L'hébergement final est un VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) : seuls les ports 443 (API) et 8883 (MQTT en TLS mutuel) sont ouverts sur Internet. Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; une fois le VPS en place, l'ESP32 joint directement son broker et le tunnel n'est plus utile ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
 
@@ -83,7 +86,7 @@ proj-app-mobile-co/
 ├── firmware/
 │   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi (plus tard)
 ├── infra/
-│   └── docker-compose.yml   # PostgreSQL + TimescaleDB (+ API pour la démo)
+│   └── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto (+ API pour la démo)
 ├── docs/
 │   ├── etude-faisabilite-parc-solaire.md
 │   ├── conception/          # Ce dossier
@@ -135,7 +138,7 @@ flowchart BT
 | Client MQTT (Node) | **mqtt.js** (`mqtt`) | Référence en Node.js, reconnexion automatique | — |
 | Mots de passe | **argon2** (argon2id) | Recommandé par l'OWASP | bcrypt |
 | Authentification | **JWT** via `@fastify/jwt` | Sans état, simple à vérifier | Sessions (état côté serveur) |
-| Notifications | **expo-notifications** (app) + **expo-server-sdk** (API) | Service Expo gratuit, un seul envoi pour Android et iOS | Firebase Cloud Messaging directement |
+| Notifications | **expo-notifications** (app : push et notifications locales) + **expo-server-sdk** (API), push Expo via Firebase Cloud Messaging | Fiable app fermée, sans friction ni coût de batterie notable, configuration unique par le développeur ; notifications locales pour l'affichage immédiat app ouverte | ntfy auto-hébergé, tâche de fond, notifications locales seules ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), qui remplace [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
 | Firmware | **PlatformIO + framework Arduino** (PubSubClient, ArduinoJson, OneWire, DallasTemperature) | Démarrage rapide, nombreux exemples Wokwi | ESP-IDF pur, MicroPython |
 | Tests | **Vitest** (API, contrats, simulateur), **Jest + React Native Testing Library** (app) | Vitest rapide et compatible TypeScript ; Jest est l'outil fourni par Expo | — |
 | Qualité du code | **ESLint + Prettier**, configuration commune à la racine | Style homogène entre les membres du groupe | — |
@@ -206,7 +209,7 @@ apps/api/src/
 │   ├── measurements/         # Enregistrement des mesures reçues
 │   ├── setpoints/
 │   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
-│   └── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts)
+│   └── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
 ├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux
 └── errors.ts                 # Erreurs applicatives et format de réponse
 ```
@@ -223,7 +226,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
-| `expo-notifications`, `expo-device`, `expo-constants` | Notifications push |
+| `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo) et notifications locales ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
 | `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
 | `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
 | `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
@@ -248,7 +251,7 @@ apps/mobile/
 │   ├── storage/                  # Base SQLite locale : schéma, lecture, écriture
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
-│   ├── notifications/            # Enregistrement et réception
+│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts et alert-notifications.ts (notifications locales, pas de doublon avec le push), NotificationEffects.tsx (appui sur une notification)
 │   └── utils/
 ├── assets/                       # Polices, icône de l'app
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
@@ -296,6 +299,26 @@ Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de
 | `db` | `timescale/timescaledb` (étiquette PostgreSQL 16 ou plus) | `DB_PORT`, 5432 par défaut (développement seulement) | Base de données |
 | `mqtt` | `eclipse-mosquitto:2` | `MQTT_PORT` (1883, sur 127.0.0.1 uniquement) et `MQTTS_PORT` (8883, TLS) | Broker MQTT ; configuration dans `infra/mosquitto/config/` (`mosquitto.conf`, `acl`), mots de passe hachés et certificats générés par `pnpm mqtt:setup` dans `infra/mosquitto/generated/` (ignoré par Git) |
 | `api` | Construite depuis `apps/api` | 3000 | API (démo ; en développement l'API tourne avec `tsx`) |
+
+### 5.7 Notifications
+
+Deux mécanismes complémentaires ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)), sans service d'infrastructure.
+
+**Push Expo (app fermée).** À l'ouverture d'une alerte `warning` ou `critical`, le moteur d'alertes appelle `modules/notifications/service.ts`, qui envoie un message groupé à tous les jetons de `push_tokens` par `expo-server-sdk` (Expo relaie à Firebase Cloud Messaging sur Android). L'envoi est injectable dans les tests ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message ; un jeton refusé avec l'erreur `DeviceNotRegistered` est supprimé.
+
+| Élément | Valeur |
+|---|---|
+| Titre | `Alerte` (`warning`) ou `Alerte critique` (`critical`) |
+| Corps | Le `message` de l'alerte, en français |
+| Données (`data`) | `alertId`, `siteId`, `panelId` (ou `null`), `type` : identifiants techniques |
+| Canal Android | `ALERT_NOTIFICATION_CHANNEL_ID` (`alerts`), priorité haute |
+| Contenu interdit | Toute donnée personnelle (e-mail, nom d'utilisateur) |
+
+**Notifications locales (app ouverte).** L'app compare les alertes actives `warning` et `critical` reçues de `GET /v1/alerts?status=active` (déjà interrogé toutes les 5 s) avec les identifiants déjà notifiés, conservés dans SQLite, et affiche une notification locale pour chaque nouvelle alerte.
+
+**Pas de doublon.** Le gestionnaire de notifications (`setNotificationHandler`) n'affiche pas un push reçu app ouverte dont l'`alertId` est déjà mémorisé (déjà notifié localement) et mémorise celui d'un push qu'il affiche. En retour, l'app ne notifie localement que les alertes apparues pendant qu'elle est au premier plan : à l'ouverture et au retour au premier plan, les alertes déjà actives sont seulement mémorisées, le push les ayant signalées. Un appui sur une notification, push ou locale, ouvre le panneau concerné (`panelId`) ou l'écran Alertes.
+
+**Modules natifs et Firebase.** `expo-notifications` et `expo-device` sont chargés à la demande : une app installée avant leur ajout désactive le push en silence. L'obtention du jeton Expo exige un build contenant la configuration Firebase du projet du binôme (`google-services.json`, fourni au build par la variable fichier EAS `GOOGLE_SERVICES_JSON`, jamais versionné) ; procédure dans `apps/mobile/README.md`. Sans elle, le build reste possible, mais l'app n'obtient pas de jeton push et n'affiche que les notifications locales.
 
 ## 6. Contrat MQTT
 
@@ -506,6 +529,7 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `BATTERY_SHARE_STEP_PCT` | 10 | App, API |
 | `DEFAULT_PANEL_RATED_POWER_W` | 200 | API (panneau détecté) |
 | `MAX_PANELS_PER_SITE` | 200 | API (limite de la création automatique) |
+| `ALERT_NOTIFICATION_CHANNEL_ID` | `alerts` | API (canal du push), app (canal des notifications locales) |
 | `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
 | `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 48 | API, app (durée du certificat d'un objet) |
@@ -522,7 +546,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | api | `JWT_SECRET` | 64 caractères aléatoires | **oui** |
 | api | `MQTT_URL` | `mqtt://127.0.0.1:1883` (`127.0.0.1` plutôt que `localhost`, qui désigne d'abord `::1` sous Windows) | non |
 | api | `MQTT_USERNAME` / `MQTT_PASSWORD` | `api` / `***` | **oui** (mot de passe) |
-| api | `EXPO_ACCESS_TOKEN` | facultatif | **oui** |
+| api | `EXPO_ACCESS_TOKEN` | facultatif : jeton d'accès du compte Expo ; sans lui, les notifications partent quand même | **oui** |
 | api | `LOG_LEVEL` | `info` | non |
 | api (seed) | `SEED_OPERATOR_PASSWORD` / `SEED_VIEWER_PASSWORD` | `***` | **oui** |
 | api (tests) | `TEST_DATABASE_URL` | facultatif, même forme que `DATABASE_URL` : active les tests sur une base TimescaleDB réelle (transactions annulées) | **oui** |
@@ -537,6 +561,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
 | mobile | `EXPO_PUBLIC_DATA_SOURCE` | `mock` ou `api` | non |
 | mobile | `EXPO_PUBLIC_MOCK_SCENARIO` | `normal`, `device_offline`, `battery_full`, `no_alerts` | non |
+| mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
 Côté firmware, les identifiants WiFi et MQTT sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné.
@@ -558,6 +583,7 @@ Le détail (contexte, options comparées, justification) est dans le [journal de
 | [D014](../journal/decisions/D014-stockage-local-sqlite.md) | TanStack Query pour le réseau, SQLite pour le stockage local |
 | [D028](../journal/decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS : API, base, broker et Caddy ; Wokwi joint directement le broker |
 | [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) | Objet authentifié par certificat client délivré par enrôlement, révocable ; aucun secret dans le firmware |
+| [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) pour l'app fermée et notifications locales pour l'app ouverte, à la place de ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) remplacée) |
 
 Les versions sont fixées à l'installation et tenues à jour par Dependabot : aucune version n'est inventée dans la documentation.
 

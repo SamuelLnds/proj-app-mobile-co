@@ -42,7 +42,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 |---|---|
 | Lire une grandeur en temps réel | L'ESP32 publie ensoleillement, production, température, niveau de la batterie et répartition des flux |
 | L'afficher | Écrans Supervision, Carte et Pilotage (flux en direct, jauge de batterie) |
-| Alerter au seuil | Production anormalement basse, surchauffe, batterie faible ou pleine, consigne refusée, objet hors ligne : notification push |
+| Alerter au seuil | Production anormalement basse, surchauffe, batterie faible ou pleine, consigne refusée, objet hors ligne : notification push Expo (app fermée) et notification locale (app ouverte, [D030](journal/decisions/D030-notifications-push-expo-et-locales.md)) |
 | Synchroniser vers un back-end | L'API enregistre les mesures et l'historique des consignes ; l'app consulte l'historique |
 | Démo live | Consigne « 70 % vers la batterie » dans l'app → les relais et la barre de LED réagissent dans Wokwi → batterie à 95 % → l'objet refuse la charge, l'app affiche le refus et sa raison |
 
@@ -55,7 +55,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 | Objet | Wokwi (ESP32) | Pas de matériel à acheter |
 | Broker | Mosquitto | Auto-hébergé dans Docker Compose ; l'ESP32 de Wokwi s'y connecte par un tunnel TCP ([D023](journal/decisions/D023-broker-mosquitto-auto-heberge.md)) |
 | Rétention | TimescaleDB | PostgreSQL classique, avec une table optimisée pour les mesures |
-| Banc | Téléphone | Notifications push et conditions réelles |
+| Banc | Téléphone | Notifications (push et locales) et conditions réelles |
 | Distribution | Device de test | APK installé via EAS |
 
 > Wokwi gratuit ne peut joindre que des services sur Internet : c'est pour cela que le broker est hébergé et non lancé en local.
@@ -122,14 +122,15 @@ flowchart LR
   B -- "consignes" --> ESP
   API <--> DB[("PostgreSQL<br/>+ TimescaleDB")]
   APP["App Expo"] <-- "HTTPS" --> API
-  API -- "notification" --> APP
+  API -- "alertes" --> X["Service de notifications Expo<br/>(FCM sur Android)"]
+  X -- "notification push" --> APP
 ```
 
 | Brique | Technologie | Rôle |
 |---|---|---|
 | Objet | ESP32 sous Wokwi, PlatformIO, framework Arduino | Lire les capteurs, calculer le niveau de la batterie, appliquer les consignes avec leurs limites, publier |
 | Broker | Mosquitto (Docker Compose) | Transporter les messages MQTT |
-| API | Node.js + TypeScript (Express ou Fastify) | S'abonner au broker, écrire en base, exposer les données, valider et publier les consignes, envoyer les notifications |
+| API | Node.js + TypeScript (Express ou Fastify) | S'abonner au broker, écrire en base, exposer les données, valider et publier les consignes, envoyer les notifications push |
 | Base | PostgreSQL + TimescaleDB (Docker) | Sites, panneaux, mesures, consignes, alertes, utilisateurs |
 | App | Expo, React Native, `react-native-maps`, TanStack Query, `expo-notifications` | Supervision, carte, détail, pilotage, alertes |
 | CI | GitHub Actions, EAS Build | Lint, tests de l'API, APK |
@@ -212,7 +213,7 @@ alerte si l'objet passe hors ligne (Last Will)
 | Carte | Panneaux en marqueurs colorés par statut (avec icône, pas seulement la couleur) |
 | Détail d'un panneau | Valeurs actuelles, graphique de l'historique |
 | **Pilotage** | Interrupteur Manuel / Automatique, curseur batterie ↔ réseau avec confirmation, flux en direct, jauge de la batterie, statut de la dernière consigne, historique des consignes |
-| Alertes | Liste des alertes ; les nouvelles arrivent en notification push |
+| Alertes | Liste des alertes ; les nouvelles arrivent en notification push (app fermée) ou locale (app ouverte) |
 
 Sans réseau, l'app affiche les dernières données reçues avec leur ancienneté (« mis à jour il y a 5 min »), et le pilotage est désactivé tant que la connexion n'est pas revenue.
 
@@ -275,7 +276,7 @@ Au-delà du budget, on s'arrête là où on en est. Les bonus n'apportent aucune
 | Consigne perdue si l'objet est hors ligne | Consigne publiée en retained, statut « sans réponse » affiché dans l'app |
 | Incohérence entre la consigne et ce que fait l'objet | L'objet publie toujours ce qu'il applique réellement ; l'app affiche l'état appliqué, pas la consigne |
 | Les bonus débordent sur le socle | Commencés seulement après le socle, budget fixé |
-| Notifications push indisponibles dans Expo Go | Utiliser un development build (EAS) dès le départ |
+| Notifications push indisponibles dans Expo Go (module natif, projet Firebase requis) | Utiliser un development build (EAS) dès le départ, module chargé à la demande |
 | Absence d'un membre | Lots indépendants, code relu par au moins deux personnes |
 
 ## 12. Points à valider
