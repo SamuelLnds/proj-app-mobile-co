@@ -306,6 +306,8 @@ firmware/site-device/
 
 Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, mot de passe, certificat de l'autorité) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` est donc publié en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1) ; l'état appliqué de #40 aura la même limite.
 
+Wokwi simule l'ESP32 plus lentement que le temps réel (environ 50 %, moins si le panneau du simulateur est caché). Deux réglages propres au firmware, définis dans `include/config.h` et absents de `constants.ts`, en tiennent compte. Le maintien MQTT (`MQTT_KEEPALIVE_S`) est de 60 s : à 15 s, le PINGREQ arrivait trop tard et le broker coupait la session ; en contrepartie, le broker publie le Last Will `offline` au plus tard 1,5 × 60 = 90 s après un arrêt brutal. L'heure est resynchronisée par NTP toutes les 60 s (`NTP_RESYNC_INTERVAL_MS`, intervalle SNTP de l'ESP-IDF), sans quoi l'horloge de l'objet prendrait un retard croissant et, passé `MAX_CLOCK_DRIFT_S`, l'API remplacerait l'horodatage des mesures par l'heure de réception. Le firmware ne publie aucune mesure tant que l'heure n'est pas valide.
+
 ### 5.6 `infra`
 
 | Service Docker Compose | Image | Port exposé | Rôle |

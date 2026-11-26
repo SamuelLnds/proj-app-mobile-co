@@ -42,8 +42,17 @@ constexpr float FAULT_PRODUCTION_DIVISOR = 5.0f;
 constexpr unsigned long RECONNECT_INTERVAL_MS = 5000;
 constexpr unsigned long BUTTON_DEBOUNCE_MS = 40;
 constexpr unsigned long NTP_TIMEOUT_MS = 20000;
-// Maintien de la connexion MQTT (s) : le broker publie le Last Will après environ 1,5 fois ce délai.
-constexpr int MQTT_KEEPALIVE_S = 15;
+// Maintien de la connexion MQTT (s) : le broker publie le Last Will au plus tard 1,5 fois ce délai
+// après une coupure brutale (soit 90 s). Valeur large car Wokwi simule l'ESP32 plus lentement que le
+// temps réel (environ 50 %, moins si le panneau du simulateur est caché) : avec 15 s, le PINGREQ
+// arrivait trop tard et le broker coupait la session (« exceeded timeout »).
+constexpr int MQTT_KEEPALIVE_S = 60;
+// Délai d'attente d'une réponse du broker sur le socket (s) ; reste très inférieur au maintien ci-dessus.
+constexpr int MQTT_SOCKET_TIMEOUT_S = 10;
+// Resynchronisation NTP périodique (ms). Wokwi fait avancer l'horloge du firmware plus lentement que le
+// temps réel : sans resynchronisation, les horodatages des mesures prennent un retard croissant
+// (l'API les remplace au-delà de MAX_CLOCK_DRIFT_S). Minimum accepté par le SNTP de l'ESP-IDF : 15 s.
+constexpr unsigned long NTP_RESYNC_INTERVAL_MS = 60000;
 
 // Étalonnage de la photorésistance (module Wokwi : LDR en série avec 10 kΩ, rl10 = 50 kΩ, gamma = 0,7).
 constexpr float ADC_MAX_RAW = 4095.0f;
