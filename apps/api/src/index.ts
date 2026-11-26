@@ -11,6 +11,8 @@ import { createHistoryRepository } from "./modules/history/repository";
 import { createHistoryService } from "./modules/history/service";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
+import { createSetpointsRepository } from "./modules/setpoints/repository";
+import { createSetpointsService } from "./modules/setpoints/service";
 import { createControlStateStore } from "./modules/sites/control-states";
 import { createPanelsRepository } from "./modules/panels/repository";
 import { createPanelsService } from "./modules/panels/service";
@@ -24,6 +26,15 @@ const database = createDb(config.DATABASE_URL);
 const { pool } = database;
 let mqttClient: ApiMqttClient | null = null;
 const controlStates = createControlStateStore();
+
+// Le client MQTT est créé après le serveur : la publication passe par une fonction différée.
+const setpoints = createSetpointsService(
+  createSetpointsRepository(database),
+  (topic, message, options) =>
+    mqttClient
+      ? mqttClient.publish(topic, message, options)
+      : Promise.reject(new Error("Client MQTT non initialisé")),
+);
 
 const app = buildServer({
   config,
@@ -39,6 +50,7 @@ const app = buildServer({
   sites: createSitesService(createSitesRepository(database), controlStates),
   panels: createPanelsService(createPanelsRepository(database)),
   history: createHistoryService(createHistoryRepository(database)),
+  setpoints,
 });
 
 const devices = createDevicesService(createDevicesRepository(database), app.log);
@@ -47,7 +59,7 @@ const measurements = createMeasurementsService(
   app.log,
   devices.recordActivity,
 );
-const stopScheduler = startScheduler(devices, app.log);
+const stopScheduler = startScheduler(devices, setpoints, app.log);
 
 const handleMessage = createMessageHandler(
   {
@@ -56,6 +68,7 @@ const handleMessage = createMessageHandler(
     controlState: async (siteCode, state, receivedAt) => {
       controlStates.set(siteCode, state);
       await devices.recordActivityForSiteCode(siteCode, receivedAt);
+      await setpoints.recordState(siteCode, state, receivedAt);
     },
     deviceStatus: devices.recordStatus,
   },
