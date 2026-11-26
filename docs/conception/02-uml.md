@@ -12,7 +12,7 @@
 | **Lecteur** | rôle `viewer` | Humain | Consulte les données, sans droit de pilotage |
 | **Objet** | `device` | Système | ESP32 du site, simulé dans Wokwi : publie les mesures, applique les consignes |
 | **Simulateur** | `simulator` | Système | Script qui publie les mesures des 20 panneaux |
-| **Service de notifications Expo** | — | Système externe | Achemine les notifications push vers les téléphones |
+| **Serveur ntfy** | `ntfy` | Système (Docker Compose) | Reçoit les alertes publiées par l'API et les diffuse à l'app ntfy du téléphone, app fermée ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) |
 | **Planificateur** | `scheduler` | Interne à l'API | Tâches périodiques : délais de réponse aux consignes, détection d'objet silencieux |
 
 L'**Exploitant** hérite de toutes les capacités du **Lecteur**.
@@ -25,7 +25,7 @@ flowchart LR
   operator(["Exploitant"])
   device(["Objet ESP32"])
   simulator(["Simulateur"])
-  expo(["Service de notifications Expo"])
+  ntfy(["Serveur ntfy"])
 
   subgraph app["Système de supervision et de pilotage"]
     UC01["UC01 Se connecter"]
@@ -52,13 +52,13 @@ flowchart LR
   operator --- UC07 & UC17 & UC20
   device --- UC11 & UC12 & UC13 & UC19
   simulator --- UC14
-  UC10 --- expo
+  UC10 --- ntfy
 ```
 
 | ID | Cas d'utilisation | Acteur principal | Résumé | Priorité |
 |---|---|---|---|---|
-| UC01 | Se connecter | Lecteur | Saisie de l'e-mail et du mot de passe, obtention d'un jeton, enregistrement du jeton de notification du téléphone | Socle |
-| UC02 | Se déconnecter | Lecteur | Suppression du jeton local et du jeton de notification côté API | Socle |
+| UC01 | Se connecter | Lecteur | Saisie de l'e-mail et du mot de passe, obtention d'un jeton, demande d'autorisation des notifications locales | Socle |
+| UC02 | Se déconnecter | Lecteur | Suppression du jeton local ; l'app cesse d'afficher des notifications | Socle |
 | UC03 | Consulter la supervision | Lecteur | Production, batterie, répartition actuelle, mode, statut de l'objet, nombre d'alertes | Socle |
 | UC04 | Consulter la carte | Lecteur | Panneaux positionnés et colorés selon leur statut | Socle |
 | UC05 | Consulter le détail d'un panneau | Lecteur | Dernières valeurs et historique d'un panneau | Socle |
@@ -66,7 +66,7 @@ flowchart LR
 | UC07 | Envoyer une consigne | Exploitant | Choix du mode et de la répartition, confirmation, suivi de l'application | Socle |
 | UC08 | Consulter l'historique des consignes | Lecteur | Liste des consignes : auteur, demande, résultat | Socle |
 | UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues | Socle |
-| UC10 | Recevoir une notification | Lecteur | Notification push à l'ouverture d'une alerte `warning` ou `critical` | Socle |
+| UC10 | Recevoir une notification | Lecteur | À l'ouverture d'une alerte `warning` ou `critical` : notification locale de l'app (app active) et notification de l'app ntfy via le serveur ntfy (app fermée) | Socle |
 | UC11 | Publier les mesures du site | Objet | Toutes les 5 s | Socle |
 | UC12 | Appliquer une consigne | Objet | Application avec limites de sécurité, réponse avec l'état appliqué | Socle |
 | UC13 | Signaler sa présence | Objet | Statut `online` à la connexion, `offline` via le Last Will | Socle |
@@ -104,11 +104,6 @@ classDiagram
     +String name
     +UserRole role
     +canControl() bool
-  }
-  class PushToken {
-    +UUID id
-    +String token
-    +MobilePlatform platform
   }
   class Site {
     +UUID id
@@ -195,7 +190,6 @@ classDiagram
     no_response
   }
 
-  User "1" --> "0..*" PushToken : possède
   User "1" --> "0..*" Setpoint : émet
   Site "1" --> "1..*" Device : est équipé de
   Site "1" --> "0..*" Panel : comporte
@@ -228,10 +222,7 @@ sequenceDiagram
     API->>API: Vérification argon2id, création du JWT (8 h)
     API-->>App: 200 token, expiresAt, user
     App->>App: Stockage du jeton dans expo-secure-store
-    App->>App: Demande d'autorisation des notifications, obtention du jeton Expo
-    App->>API: POST /push-tokens
-    API->>DB: Insertion ou réattribution du jeton
-    API-->>App: 204
+    App->>App: Demande d'autorisation des notifications locales (Android 13 et plus)
     App-->>U: Écran Supervision
   else Identifiants invalides
     API-->>App: 401 INVALID_CREDENTIALS
@@ -324,7 +315,9 @@ sequenceDiagram
   participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
-  participant X as Service Expo
+  participant N as Serveur ntfy
+  participant P as App ntfy du téléphone
+  participant App as App mobile
 
   D->>B: CONNECT avec Last Will solar/SITE01/status = offline (retained)
   D->>B: PUBLISH solar/SITE01/status = online (retained)
@@ -335,7 +328,11 @@ sequenceDiagram
   B->>API: Last Will : statut offline
   API->>DB: devices.status = offline
   API->>DB: INSERT alerts device_offline
-  API->>X: Notification « L'objet du site SITE01 est hors ligne »
+  API->>N: POST /sujet (priorité urgent) « L'objet du site SITE01 est hors ligne »
+  N-->>P: Notification (app ntfy)
+  App->>API: GET /alerts?status=active (toutes les 5 s)
+  API-->>App: Nouvelle alerte device_offline
+  App->>App: Notification locale (app active)
 
   Note over D,B: Retour du réseau
   D->>B: CONNECT, abonnement à solar/SITE01/setpoint
@@ -355,7 +352,8 @@ sequenceDiagram
   autonumber
   participant API as API
   participant DB as Base
-  participant X as Service Expo
+  participant N as Serveur ntfy
+  participant P as App ntfy du téléphone
   participant App as App mobile
 
   API->>API: Une règle d'alerte se déclenche
@@ -363,14 +361,25 @@ sequenceDiagram
   alt Aucune alerte active
     API->>DB: INSERT alerts (active)
     opt Gravité warning ou critical
-      API->>DB: Lecture des jetons push de tous les utilisateurs
-      API->>X: Envoi groupé des notifications
-      X-->>App: Notification
+      API->>N: POST NTFY_URL/NTFY_TOPIC (jeton de publication, priorité high ou urgent)
+      Note over API,N: Une erreur d'envoi est journalisée, sans effet sur le traitement
+      N-->>P: Notification, même app fermée
     end
   else Alerte déjà active
     API->>API: Rien à faire (pas de doublon)
   end
+
+  loop Toutes les 5 s, app active
+    App->>API: GET /alerts?status=active
+    API-->>App: Alertes actives
+    App->>App: Alerte warning ou critical jamais notifiée ?
+    opt Nouvelle alerte
+      App->>App: Notification locale, identifiant mémorisé (SQLite)
+    end
+  end
 ```
+
+L'app n'affiche donc une notification locale que pour les alertes ouvertes **depuis son dernier passage** : au premier chargement, les alertes déjà actives sont seulement mémorisées. Un appui sur la notification de l'app (locale) ouvre le panneau concerné ou l'écran Alertes ; l'appui sur celle de l'app ntfy ouvre le lien `solar://` joint au message.
 
 ### 4.6 Détection puis positionnement d'un panneau (UC14, UC17)
 
