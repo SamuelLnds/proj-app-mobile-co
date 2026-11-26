@@ -10,6 +10,7 @@ import type {
   PanelDetail,
   PanelList,
   PanelMeasurementPoint,
+  RegisterPushTokenRequest,
   SetpointPage,
   SetpointRecord,
   SiteDetail,
@@ -37,6 +38,11 @@ export interface DataSource {
 
   /** `POST /v1/auth/login` */
   login(body: LoginRequest): Promise<LoginResponse>;
+
+  /** `POST /v1/push-tokens` */
+  registerPushToken(body: RegisterPushTokenRequest): Promise<void>;
+  /** `DELETE /v1/push-tokens/{token}` */
+  deletePushToken(token: string): Promise<void>;
 
   /** `GET /v1/sites` */
   listSites(): Promise<SiteList>;

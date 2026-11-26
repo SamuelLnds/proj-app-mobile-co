@@ -1,7 +1,10 @@
+import { ALERT_NOTIFICATION_CHANNEL_ID } from "@solar/contracts";
+import type * as ExpoDevice from "expo-device";
 import type * as ExpoNotifications from "expo-notifications";
 import { Platform } from "react-native";
 
 export type NotificationsModule = typeof ExpoNotifications;
+export type DeviceModule = typeof ExpoDevice;
 
 /**
  * Modules natifs, chargés à la demande. Remplaçables : le chargement dynamique n'existe pas
@@ -9,12 +12,14 @@ export type NotificationsModule = typeof ExpoNotifications;
  */
 export const nativeModules = {
   notifications: (): Promise<NotificationsModule> => import("expo-notifications"),
+  device: (): Promise<DeviceModule> => import("expo-device"),
 };
 
 /**
  * Charge expo-notifications à la demande. Le module contient du code natif : une version de
  * l'app installée avant son ajout ne l'a pas, et un import au chargement ferait planter le
- * démarrage. Sans le module, les notifications locales sont désactivées en silence (`null`).
+ * démarrage. Sans le module, les notifications (locales et push) sont désactivées en silence
+ * (`null`).
  */
 export async function loadNotifications(): Promise<NotificationsModule | null> {
   try {
@@ -25,12 +30,12 @@ export async function loadNotifications(): Promise<NotificationsModule | null> {
 }
 
 /** Identifiant du canal Android des notifications d'alerte. */
-export const ALERT_CHANNEL_ID = "alerts";
+export const ALERT_CHANNEL_ID = ALERT_NOTIFICATION_CHANNEL_ID;
 
 /**
  * Crée le canal Android puis demande l'autorisation d'afficher des notifications (Android 13 et
  * plus), séquence 4.1 de l'UML. Renvoie `false` quand les notifications sont indisponibles :
- * module natif absent, autorisation refusée ou erreur. Aucun jeton n'est obtenu ni envoyé.
+ * module natif absent, autorisation refusée ou erreur. Ne demande aucun jeton push (voir `push.ts`).
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
@@ -49,18 +54,6 @@ export async function requestNotificationPermission(): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/** Affiche aussi les notifications quand l'app est ouverte. */
-export function showNotificationsInForeground(Notifications: NotificationsModule): void {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
 }
 
 /** Contenu d'une notification locale : le texte de l'alerte et des identifiants techniques. */
