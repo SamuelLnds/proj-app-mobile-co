@@ -63,6 +63,7 @@ describe("constantes", () => {
       DEFAULT_PANEL_RATED_POWER_W: contracts.DEFAULT_PANEL_RATED_POWER_W,
       MAX_PANELS_PER_SITE: contracts.MAX_PANELS_PER_SITE,
       ALERT_NOTIFICATION_CHANNEL_ID: contracts.ALERT_NOTIFICATION_CHANNEL_ID,
+      PUSH_EXCLUDED_ALERT_TYPES: contracts.PUSH_EXCLUDED_ALERT_TYPES,
     }).toEqual({
       SITE_MEASUREMENT_PERIOD_S: 5,
       PANEL_MEASUREMENT_PERIOD_S: 10,
@@ -86,6 +87,7 @@ describe("constantes", () => {
       DEFAULT_PANEL_RATED_POWER_W: 200,
       MAX_PANELS_PER_SITE: 200,
       ALERT_NOTIFICATION_CHANNEL_ID: "alerts",
+      PUSH_EXCLUDED_ALERT_TYPES: ["setpoint_rejected"],
     });
   });
 });
