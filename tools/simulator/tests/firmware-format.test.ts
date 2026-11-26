@@ -2,28 +2,11 @@
 // - les messages produits par la logique du firmware (compilée sur le poste) respectent les schémas Zod ;
 // - include/config.h reprend à l'identique les constantes partagées.
 // Le simulateur joue l'objet du site : c'est lui qui porte la comparaison avec le firmware.
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import * as contracts from "@solar/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-
-const firmwareDir = resolve(__dirname, "../../../firmware/site-device");
-
-/** Premier compilateur C++ disponible (variable CXX, sinon c++, g++, clang++), ou null. */
-function findCompiler(): { command: string; baseArgs: string[] } | null {
-  const candidates = [process.env.CXX, "c++", "g++", "clang++"].filter((value): value is string =>
-    Boolean(value),
-  );
-  for (const candidate of candidates) {
-    const [command, ...baseArgs] = candidate.split(/\s+/) as [string, ...string[]];
-    if (spawnSync(command, [...baseArgs, "--version"], { stdio: "ignore" }).status === 0) {
-      return { command, baseArgs };
-    }
-  }
-  return null;
-}
+import { compileProgram, findCompiler, firmwareDir, type CompiledProgram } from "./helpers/cpp";
 
 describe("config.h du firmware", () => {
   const source = readFileSync(join(firmwareDir, "include/config.h"), "utf8");
@@ -35,6 +18,7 @@ describe("config.h du firmware", () => {
     "MESSAGE_VERSION",
     "SITE_MEASUREMENT_PERIOD_S",
     "BATTERY_TIME_FACTOR",
+    "BATTERY_SHARE_STEP_PCT",
     "BATTERY_FULL_PCT",
     "BATTERY_FULL_RESOLVED_PCT",
     "BATTERY_LOW_PCT",
@@ -60,36 +44,17 @@ describe("config.h du firmware", () => {
 
 describe("messages produits par le firmware", () => {
   const compiler = findCompiler();
-  let workDir = "";
+  let program: CompiledProgram | null = null;
   let lines: string[] = [];
 
   beforeAll(() => {
     if (!compiler) return;
-    workDir = mkdtempSync(join(tmpdir(), "firmware-format-"));
-    const { command, baseArgs } = compiler;
-    const binary = join(workDir, process.platform === "win32" ? "dump.exe" : "dump");
-    const build = spawnSync(
-      command,
-      [
-        ...baseArgs,
-        "-std=c++17",
-        "-Wall",
-        "-Wextra",
-        `-I${join(firmwareDir, "include")}`,
-        join(firmwareDir, "test/format/dump_messages.cpp"),
-        "-o",
-        binary,
-      ],
-      { encoding: "utf8" },
-    );
-    if (build.status !== 0) throw new Error(`Compilation impossible :\n${build.stderr}`);
-    const run = spawnSync(binary, [], { encoding: "utf8" });
-    if (run.status !== 0) throw new Error(`Échec du programme de test :\n${run.stderr}`);
-    lines = run.stdout.split(/\r?\n/).filter((line) => line.length > 0);
+    program = compileProgram(compiler, "test/format/dump_messages.cpp");
+    lines = program.run();
   });
 
   afterAll(() => {
-    if (workDir) rmSync(workDir, { recursive: true, force: true });
+    program?.dispose();
   });
 
   // Sans compilateur C++ (poste Windows nu), les tests de messages sont ignorés ; la CI en a un.

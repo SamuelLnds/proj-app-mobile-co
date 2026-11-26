@@ -25,9 +25,16 @@ bool wifiWasConnected = false;
 bool ntpStarted = false;
 bool timeWasValid = false;
 bool mqttWasConnected = false;
+unsigned long mqttConnectedAtMs = 0;
 unsigned long ntpStartedAtMs = 0;
 unsigned long lastWifiAttemptMs = 0;
 unsigned long lastMqttAttemptMs = 0;
+
+// Consigne reçue, en attente d'être lue par main.cpp (un seul emplacement : PubSubClient::loop() ne
+// traite qu'un paquet par appel et main.cpp vide l'emplacement entre deux appels).
+char pendingSetpoint[network::SETPOINT_SLOT_SIZE];
+size_t pendingSetpointLength = 0;
+bool hasPendingSetpoint = false;
 
 bool timeIsValid() { return time(nullptr) > MIN_VALID_EPOCH; }
 
@@ -42,6 +49,22 @@ void startNtp() {
   configTime(0, 0, "pool.ntp.org", "time.google.com");
   ntpStarted = true;
   ntpStartedAtMs = millis();
+}
+
+// Rappel de PubSubClient : le seul abonnement est celui des consignes. Le message est copié tel quel ;
+// un message plus grand que l'emplacement est ignoré (une consigne de l'API fait environ 130 octets).
+void onMessage(char *topic, uint8_t *payload, unsigned int length) {
+  char setpointTopic[64];
+  buildTopic(setpointTopic, sizeof(setpointTopic), "setpoint");
+  if (strcmp(topic, setpointTopic) != 0) return;
+  if (length >= sizeof(pendingSetpoint)) {
+    Serial.printf("Consigne ignorée : message trop long (%u octets)\n", length);
+    return;
+  }
+  memcpy(pendingSetpoint, payload, length);
+  pendingSetpoint[length] = '\0';
+  pendingSetpointLength = length;
+  hasPendingSetpoint = true;
 }
 
 // Le Last Will est enregistré auprès du broker à la connexion ; `online` est publié ensuite.
@@ -64,6 +87,16 @@ bool connectMqtt() {
   }
   mqtt.publish(statusTopic, onlinePayload, true);
   Serial.println("MQTT : connecté, statut online publié");
+
+  // Abonnement aux consignes en QoS 1 (PubSubClient accepte 0 ou 1) : le broker renvoie la dernière
+  // consigne retained, qui est ainsi appliquée après chaque (re)connexion.
+  char setpointTopic[64];
+  buildTopic(setpointTopic, sizeof(setpointTopic), "setpoint");
+  if (mqtt.subscribe(setpointTopic, 1)) {
+    Serial.printf("MQTT : abonné à %s (QoS 1)\n", setpointTopic);
+  } else {
+    Serial.printf("MQTT : abonnement à %s refusé\n", setpointTopic);
+  }
   return true;
 }
 
@@ -80,7 +113,8 @@ void begin() {
   tlsClient.setCACert(MQTT_CA_CERT);
   tlsClient.setTimeout(5);
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
-  mqtt.setBufferSize(512);
+  mqtt.setCallback(onMessage);
+  mqtt.setBufferSize(MQTT_BUFFER_SIZE);
   mqtt.setKeepAlive(MQTT_KEEPALIVE_S);
   mqtt.setSocketTimeout(MQTT_SOCKET_TIMEOUT_S);
 }
@@ -126,6 +160,7 @@ void loop() {
     if (now - lastMqttAttemptMs >= RECONNECT_INTERVAL_MS || lastMqttAttemptMs == 0) {
       lastMqttAttemptMs = now == 0 ? 1 : now;
       mqttWasConnected = connectMqtt();
+      if (mqttWasConnected) mqttConnectedAtMs = millis();
     }
     return;
   }
@@ -134,12 +169,22 @@ void loop() {
 
 bool isMqttConnected() { return mqtt.connected(); }
 
+unsigned long mqttConnectedForMs() { return mqtt.connected() ? millis() - mqttConnectedAtMs : 0; }
+
 int64_t epochSeconds() { return timeIsValid() ? static_cast<int64_t>(time(nullptr)) : 0; }
 
 bool publish(const char *subtopic, const char *payload, bool retained) {
   char topic[64];
   buildTopic(topic, sizeof(topic), subtopic);
   return mqtt.publish(topic, payload, retained);
+}
+
+bool takeSetpoint(char *out, size_t size, size_t &length) {
+  if (!hasPendingSetpoint || size <= pendingSetpointLength) return false;
+  memcpy(out, pendingSetpoint, pendingSetpointLength + 1);
+  length = pendingSetpointLength;
+  hasPendingSetpoint = false;
+  return true;
 }
 
 }  // namespace network

@@ -9,6 +9,7 @@
 #include <cstdio>
 
 #include "config.h"
+#include "pilot.h"
 
 // Taille minimale du tampon d'une date ISO 8601 UTC (« 2026-11-20T10:15:05Z » et le zéro final).
 constexpr size_t ISO_TIMESTAMP_SIZE = 21;
@@ -80,5 +81,33 @@ inline bool formatDeviceStatus(char *out, size_t size, bool online, const char *
       online ? std::snprintf(out, size, "{\"v\":%d,\"status\":\"online\",\"firmwareVersion\":\"%s\"}",
                              MESSAGE_VERSION, firmwareVersion)
              : std::snprintf(out, size, "{\"v\":%d,\"status\":\"offline\"}", MESSAGE_VERSION);
+  return written > 0 && static_cast<size_t>(written) < size;
+}
+
+// Message ControlState : état appliqué, publié en retained. Renvoie false si une valeur sort du schéma
+// (identifiant qui n'est pas un UUID, part hors de 0 à 100, raison absente pour un statut partial ou
+// rejected) : mieux vaut ne pas publier que publier un message que l'API ignorerait.
+inline bool formatControlState(char *out, size_t size, int64_t epochSeconds, const StateToPublish &state) {
+  const bool hasId = state.setpointId[0] != '\0';
+  if (hasId && !isUuid(state.setpointId)) return false;
+  if (state.appliedShare != NO_SHARE && (state.appliedShare < 0 || state.appliedShare > 100)) return false;
+  const char *reason = reasonName(state.reason);
+  if (state.status != ControlStatus::Applied && reason == nullptr) return false;
+
+  char timestamp[ISO_TIMESTAMP_SIZE];
+  if (!formatIsoTimestamp(epochSeconds, timestamp, sizeof(timestamp))) return false;
+
+  char id[UUID_LENGTH + 3] = "null";
+  if (hasId) std::snprintf(id, sizeof(id), "\"%s\"", state.setpointId);
+  char share[8] = "null";
+  if (state.appliedShare != NO_SHARE) std::snprintf(share, sizeof(share), "%d", state.appliedShare);
+  char reasonJson[24] = "null";
+  if (reason != nullptr) std::snprintf(reasonJson, sizeof(reasonJson), "\"%s\"", reason);
+
+  const int written = std::snprintf(
+      out, size,
+      "{\"v\":%d,\"setpointId\":%s,\"mode\":\"%s\",\"status\":\"%s\",\"appliedBatteryShare\":%s,"
+      "\"reason\":%s,\"timestamp\":\"%s\"}",
+      MESSAGE_VERSION, id, modeName(state.mode), statusName(state.status), share, reasonJson, timestamp);
   return written > 0 && static_cast<size_t>(written) < size;
 }
