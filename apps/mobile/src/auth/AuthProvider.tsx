@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Notifications : après la connexion (ou la restauration de la session), autorisation, jeton
   // push Expo puis `POST /push-tokens` (séquence 4.1 de l'UML). Sans module natif, sans
-  // autorisation, sans configuration Firebase ou sans réseau, l'app fonctionne avec les seules
-  // notifications locales.
+  // autorisation, sans configuration Firebase ou sans réseau, l'app fonctionne sans notification :
+  // les alertes restent visibles dans l'app.
   const userId = user?.id;
   useEffect(() => {
     if (!userId || dataSource.kind !== "api") return;

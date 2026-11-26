@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { QueryProvider } from "../src/api";
 import { AuthProvider, useAuth } from "../src/auth/AuthProvider";
-import { createMemoryStore, readResponse, saveResponse, setResponseStore } from "../src/storage";
 import type { DataSource } from "../src/data";
 import { MockDataSource } from "../src/data/mock/MockDataSource";
 import {
@@ -14,7 +13,6 @@ import {
   requestNotificationPermission,
 } from "../src/notifications/local";
 import { registerForPush } from "../src/notifications/push";
-import { NOTIFIED_KEY } from "../src/notifications/alert-notifications";
 
 const JWT = "jeton.jwt.de-test";
 const BASE_URL = "http://localhost:3000/v1";
@@ -156,7 +154,7 @@ describe("notificationTarget", () => {
   });
 });
 
-describe("session, jeton push et notifications locales", () => {
+describe("session et jeton push", () => {
   interface Call {
     method: string;
     url: string;
@@ -268,17 +266,6 @@ describe("session, jeton push et notifications locales", () => {
     notifications().requestPermissionsAsync.mockResolvedValueOnce({ status: "denied" });
     const hook = await signIn();
     await waitFor(() => expect(hook.result.current.user).not.toBeNull());
-    await hook.unmount();
-  });
-
-  it("la déconnexion efface les alertes déjà notifiées (pas de rafale à la reconnexion)", async () => {
-    const store = createMemoryStore();
-    setResponseStore(store);
-    await saveResponse(NOTIFIED_KEY, ["a1"]);
-    const hook = await signIn();
-    await act(async () => hook.result.current.logout());
-    await waitFor(() => expect(hook.result.current.user).toBeNull());
-    await waitFor(async () => expect(await readResponse(NOTIFIED_KEY)).toBeNull());
     await hook.unmount();
   });
 });
