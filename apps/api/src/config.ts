@@ -11,11 +11,6 @@ const ConfigSchema = z.object({
   MQTT_URL: z.string().min(1),
   MQTT_USERNAME: z.string().min(1),
   MQTT_PASSWORD: z.string().min(1),
-  // Facultatif : une chaîne vide (ligne laissée vide du .env) vaut « absent ».
-  EXPO_ACCESS_TOKEN: z
-    .string()
-    .optional()
-    .transform((value) => (value ? value : undefined)),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

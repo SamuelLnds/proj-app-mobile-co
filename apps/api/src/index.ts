@@ -7,9 +7,6 @@ import { createAlertEngine, type AlertEngine, type AlertSink } from "./modules/a
 import { createAlertsRepository } from "./modules/alerts/repository";
 import { createAlertsService } from "./modules/alerts/service";
 import { createAuthRepository } from "./modules/auth/repository";
-import { createPushTokensRepository } from "./modules/notifications/repository";
-import { createExpoSender } from "./modules/notifications/sender";
-import { createPushService } from "./modules/notifications/service";
 import { createAuthService } from "./modules/auth/service";
 import { createDevicesRepository } from "./modules/devices/repository";
 import { createDevicesService } from "./modules/devices/service";
@@ -49,10 +46,6 @@ const setpoints = createSetpointsService(
   alertSink,
 );
 const alertsRepository = createAlertsRepository(database);
-const pushService = createPushService(
-  createPushTokensRepository(database),
-  createExpoSender(config.EXPO_ACCESS_TOKEN),
-);
 
 const app = buildServer({
   config,
@@ -70,17 +63,9 @@ const app = buildServer({
   history: createHistoryService(createHistoryRepository(database)),
   setpoints,
   alerts: createAlertsService(alertsRepository),
-  push: pushService,
 });
 
-const engine = createAlertEngine(
-  alertsRepository,
-  async (alert) => {
-    const summary = await pushService.notifyAlert(alert);
-    app.log.info(summary, "Notifications d'alerte envoyées");
-  },
-  app.log,
-);
+const engine = createAlertEngine(alertsRepository, async () => undefined, app.log);
 alertEngine = engine;
 const devices = createDevicesService(createDevicesRepository(database), app.log, engine);
 const measurements = createMeasurementsService(

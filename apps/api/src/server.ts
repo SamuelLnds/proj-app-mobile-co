@@ -22,8 +22,6 @@ import { panelsRoutes } from "./modules/panels/routes";
 import type { PanelsService } from "./modules/panels/service";
 import { setpointsRoutes } from "./modules/setpoints/routes";
 import type { SetpointsService } from "./modules/setpoints/service";
-import { pushRoutes } from "./modules/notifications/routes";
-import type { PushService } from "./modules/notifications/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import type { SitesService } from "./modules/sites/service";
 
@@ -44,7 +42,6 @@ export interface ServerDependencies {
   history?: HistoryService;
   setpoints?: SetpointsService;
   alerts?: AlertsService;
-  push?: PushService;
 }
 
 export function buildServer({
@@ -57,7 +54,6 @@ export function buildServer({
   history,
   setpoints,
   alerts,
-  push,
 }: ServerDependencies) {
   const app = Fastify({
     logger: {
@@ -129,7 +125,6 @@ export function buildServer({
       if (history) historyRoutes(v1, history, guards);
       if (setpoints) setpointsRoutes(v1, setpoints, guards);
       if (alerts) alertsRoutes(v1, alerts, guards);
-      if (push) pushRoutes(v1, push, guards);
     },
     { prefix: "/v1" },
   );
