@@ -32,7 +32,7 @@ Les entrées analogiques sont sur l'ADC1 : l'ADC2 est inutilisable quand le WiFi
 - **Bouton de panne** : chaque appui bascule `simulatedFault` ; la production est alors divisée par 5.
 - **Température** : DS18B20 (si la sonde ne répond pas, aucune mesure n'est publiée).
 - **Messages** : `include/messages.h` construit les JSON de la section 6.2 de la [cartographie](../../docs/conception/03-cartographie-technique.md) ; une mesure hors bornes du schéma n'est pas publiée. `include/readings.h` convertit les lectures. Ces deux fichiers n'utilisent pas Arduino : ils sont aussi compilés sur le poste par le test.
-- **Réseau** : WiFi `Wokwi-GUEST`, heure NTP avant tout TLS, MQTT TLS sur le port distant du tunnel avec le certificat de l'autorité du projet, identifiant `device-site01`. Last Will `{"v":1,"status":"offline"}` retained QoS 1, puis `online` avec la version du firmware. Reconnexion automatique du WiFi et de MQTT toutes les 5 s. PubSubClient ne publie qu'en QoS 0 : `online` et les mesures sont publiés en QoS 0 (les mesures sont en QoS 0 dans la conception ; `online` est retained).
+- **Réseau** : WiFi `Wokwi-GUEST`, heure NTP avant tout TLS, MQTT TLS sur le port distant du tunnel avec le certificat de l'autorité du projet, identifiant `device-site01`. Last Will `{"v":1,"status":"offline"}` retained QoS 1, puis `online` avec la version du firmware. Reconnexion automatique du WiFi et de MQTT toutes les 5 s. Maintien MQTT de 60 s et resynchronisation NTP toutes les 60 s (voir « Dépannage »). PubSubClient ne publie qu'en QoS 0 : `online` et les mesures sont publiés en QoS 0 (les mesures sont en QoS 0 dans la conception ; `online` est retained).
 - **Constantes** : `include/config.h` reprend à l'identique celles de `packages/contracts/src/constants.ts` (vérifié par le test).
 
 ## Compiler
@@ -64,8 +64,17 @@ Prérequis : Docker, bore ([`infra/README.md`](../../infra/README.md)), Platform
    `mosquitto_sub -h bore.pub -p <port> --cafile infra/mosquitto/generated/ca.crt -u device-site01 -P <mot de passe> -t "solar/SITE01/#" -v`
    Le statut `online` (retained) arrive tout de suite, puis une mesure toutes les 5 s. Si l'API tourne, la mesure apparaît aussi dans l'app.
 7. **Capteurs** : déplacer le potentiomètre et le curseur de lux dans Wokwi : `production` et `irradiance` suivent. Appuyer sur le bouton : `simulatedFault` passe à `true` et la production est divisée par 5 ; un second appui la rétablit.
-8. **Arrêt brutal** : arrêter la simulation (Stop) ou tuer le tunnel : après environ 20 s (1,5 fois le maintien de 15 s), `solar/SITE01/status` passe à `{"v":1,"status":"offline"}`.
+8. **Arrêt brutal** : arrêter la simulation (Stop) ou tuer le tunnel : après 90 s au plus (1,5 fois le maintien de 60 s), `solar/SITE01/status` passe à `{"v":1,"status":"offline"}`.
 9. **Coupure réseau** : arrêter bore (Ctrl+C), attendre le message `MQTT : session perdue`, relancer bore. Si le port a changé, régénérer `secrets.h` et recompiler ; avec `bore local 8883 --to bore.pub --port <port>` le même port est redemandé et la simulation se reconnecte seule, `online` réapparaît.
 10. **Vérification de format sur un message réel** : copier un message reçu à l'étape 6 et le passer à `SiteMeasurementSchema.parse(...)`.
 
 Points à surveiller lors de ce test : l'étalonnage de la photorésistance et de l'ADC dans Wokwi (valeurs de `irradiance` attendues), le nom exact des broches du composant `board-esp32-devkit-c-v4` dans `diagram.json` (l'extension signale une broche inconnue au démarrage), et le temps de connexion TLS.
+
+## Dépannage
+
+Wokwi simule l'ESP32 **plus lentement que le temps réel**, environ 50 % de la vitesse, parfois moins si le panneau du simulateur est caché. Deux effets en découlent, déjà corrigés dans le firmware, mais qu'il faut connaître :
+
+- **Déconnexions MQTT** (`Client device-site01 disconnected: exceeded timeout` dans le journal de Mosquitto). Le PINGREQ partait trop tard pour un maintien de 15 s. Le maintien est maintenant de 60 s (`MQTT_KEEPALIVE_S`). Conséquence : après un arrêt brutal, `offline` n'apparaît qu'après 90 s au plus. Si les coupures reviennent, vérifier que le panneau du simulateur est visible.
+- **Horloge en retard.** L'horloge de l'ESP32 avance au rythme simulé, donc plus lentement que l'heure réelle : sans correction, les horodatages des mesures accumulent du retard (environ 2 min 30 après quelques minutes). L'heure est donc resynchronisée par NTP toutes les 60 s (`NTP_RESYNC_INTERVAL_MS`). Entre deux synchronisations, le retard reste de l'ordre de la minute. Au-delà de 300 s (`MAX_CLOCK_DRIFT_S`), l'API remplace l'horodatage par l'heure de réception.
+
+Dans les deux cas : **laisser le panneau du simulateur Wokwi visible** pendant les tests.

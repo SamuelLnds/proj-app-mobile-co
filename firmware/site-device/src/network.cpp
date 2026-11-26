@@ -4,6 +4,7 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <esp_sntp.h>
 #include <time.h>
 
 #include "config.h"
@@ -34,7 +35,10 @@ void buildTopic(char *out, size_t size, const char *subtopic) {
   snprintf(out, size, "solar/%s/%s", SITE_CODE, subtopic);
 }
 
+// L'intervalle est une variable du module SNTP, conservée par sntp_stop() : le régler avant configTime()
+// (qui appelle sntp_init()) suffit. Mode par défaut SNTP_SYNC_MODE_IMMED : l'heure est corrigée aussitôt.
 void startNtp() {
+  sntp_set_sync_interval(NTP_RESYNC_INTERVAL_MS);
   configTime(0, 0, "pool.ntp.org", "time.google.com");
   ntpStarted = true;
   ntpStartedAtMs = millis();
@@ -78,7 +82,7 @@ void begin() {
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
   mqtt.setBufferSize(512);
   mqtt.setKeepAlive(MQTT_KEEPALIVE_S);
-  mqtt.setSocketTimeout(5);
+  mqtt.setSocketTimeout(MQTT_SOCKET_TIMEOUT_S);
 }
 
 void loop() {
