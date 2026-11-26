@@ -7,6 +7,8 @@ import { createAuthRepository } from "./modules/auth/repository";
 import { createAuthService } from "./modules/auth/service";
 import { createDevicesRepository } from "./modules/devices/repository";
 import { createDevicesService } from "./modules/devices/service";
+import { createHistoryRepository } from "./modules/history/repository";
+import { createHistoryService } from "./modules/history/service";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
 import { createControlStateStore } from "./modules/sites/control-states";
@@ -36,6 +38,7 @@ const app = buildServer({
   },
   sites: createSitesService(createSitesRepository(database), controlStates),
   panels: createPanelsService(createPanelsRepository(database)),
+  history: createHistoryService(createHistoryRepository(database)),
 });
 
 const devices = createDevicesService(createDevicesRepository(database), app.log);
