@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import { openDatabase, type LocalDatabase } from "./database";
 
 /**
  * Dernière réponse reçue pour chaque ressource (D014) : l'app l'affiche au démarrage ou sans
@@ -18,20 +18,9 @@ export interface ResponseStore {
   clear: () => Promise<void>;
 }
 
-export function createSqliteStore(name = "solar.db"): ResponseStore {
-  let database: Promise<SQLite.SQLiteDatabase> | null = null;
-  const open = () =>
-    (database ??= SQLite.openDatabaseAsync(name).then(async (db) => {
-      await db.execAsync(
-        `CREATE TABLE IF NOT EXISTS responses (
-          key TEXT PRIMARY KEY NOT NULL,
-          body TEXT NOT NULL,
-          saved_at TEXT NOT NULL
-        )`,
-      );
-      return db;
-    }));
-
+export function createSqliteStore(
+  open: () => Promise<LocalDatabase> = openDatabase,
+): ResponseStore {
   return {
     async write(key, body, savedAt) {
       const db = await open();

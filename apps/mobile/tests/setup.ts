@@ -48,7 +48,13 @@ beforeEach(() => {
   nativeModules.notifications = async () => require("expo-notifications");
   nativeModules.device = async () => require("expo-device");
   // Chaque test part d'un stockage local et d'une session vides.
-  const { createMemoryStore, setResponseStore } = require("../src/storage");
+  const {
+    createMemoryStore,
+    createMemoryReadAlertStore,
+    setResponseStore,
+    setReadAlertStore,
+  } = require("../src/storage");
   setResponseStore(createMemoryStore());
+  setReadAlertStore(createMemoryReadAlertStore());
   require("expo-secure-store").__items.clear();
 });

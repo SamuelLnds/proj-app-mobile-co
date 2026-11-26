@@ -13,7 +13,7 @@ import {
 
 import { dataSource } from "../data";
 import { registerForPush } from "../notifications/push";
-import { clearResponses } from "../storage";
+import { clearLocalData } from "../storage";
 import { clearSession, loadSession, saveSession } from "./session";
 
 type AuthValue = {
@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Jeton push Expo enregistré par ce téléphone pour l'utilisateur connecté.
   const pushToken = useRef<string | null>(null);
 
-  // La déconnexion efface aussi la mémoire locale, dont les alertes déjà notifiées : à la
-  // prochaine connexion, les alertes actives seront seulement mémorisées, sans rafale.
+  // La déconnexion efface aussi la mémoire locale (dernières réponses, alertes lues) : à la
+  // prochaine connexion, toutes les alertes actives sont de nouveau non lues.
   const endSession = useCallback(
     (revokePushToken: boolean) => {
       // La suppression du jeton push part avec l'ancien JWT, avant son effacement : après la
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       client.clear();
       setUser(null);
       void clearSession();
-      void clearResponses();
+      void clearLocalData();
     },
     [client],
   );
