@@ -11,6 +11,10 @@ function setup(knownCodes: Record<string, string> = { SITE01: SITE_ID }) {
   const touched: { siteId: string; seenAt: Date }[] = [];
   const repository: MeasurementsRepository = {
     findSiteIdByCode: async (code) => knownCodes[code] ?? null,
+    findPanelId: async () => null,
+    countPanels: async () => 0,
+    createDiscoveredPanel: async () => "",
+    insertPanelMeasurement: async () => {},
     insertSiteMeasurement: async (row) => {
       rows.push(row);
     },

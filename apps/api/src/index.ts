@@ -46,6 +46,7 @@ const stopScheduler = startScheduler(devices, app.log);
 const handleMessage = createMessageHandler(
   {
     siteMeasurement: measurements.recordSiteMeasurement,
+    panelMeasurement: measurements.recordPanelMeasurement,
     controlState: async (siteCode, state, receivedAt) => {
       controlStates.set(siteCode, state);
       await devices.recordActivityForSiteCode(siteCode, receivedAt);

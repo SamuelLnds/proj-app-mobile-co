@@ -1,5 +1,10 @@
 // Enregistrement des mesures du site (séquence 4.2 de l'UML).
-import { MAX_CLOCK_DRIFT_S, type SiteMeasurement } from "@solar/contracts";
+import {
+  MAX_CLOCK_DRIFT_S,
+  MAX_PANELS_PER_SITE,
+  type PanelMeasurement,
+  type SiteMeasurement,
+} from "@solar/contracts";
 import type { FastifyBaseLogger } from "fastify";
 import type { MeasurementsRepository } from "./repository";
 
@@ -7,6 +12,12 @@ export interface MeasurementsService {
   recordSiteMeasurement: (
     siteCode: string,
     message: SiteMeasurement,
+    receivedAt: Date,
+  ) => Promise<void>;
+  recordPanelMeasurement: (
+    siteCode: string,
+    panelCode: string,
+    message: PanelMeasurement,
     receivedAt: Date,
   ) => Promise<void>;
 }
@@ -56,6 +67,35 @@ export function createMeasurementsService(
         simulatedFault: message.simulatedFault,
       });
       await recordDeviceActivity(siteId, receivedAt);
+    },
+
+    async recordPanelMeasurement(siteCode, panelCode, message, receivedAt) {
+      const siteId = await repository.findSiteIdByCode(siteCode);
+      if (!siteId) {
+        logger.warn({ siteCode, panelCode }, "Mesure de panneau ignorée : code de site inconnu");
+        return;
+      }
+
+      let panelId = await repository.findPanelId(siteId, panelCode);
+      if (!panelId) {
+        // Panneau inconnu sur un site connu : création automatique (D020), dans la limite.
+        if ((await repository.countPanels(siteId)) >= MAX_PANELS_PER_SITE) {
+          logger.warn(
+            { siteCode, panelCode, limit: MAX_PANELS_PER_SITE },
+            "Mesure de panneau ignorée : nombre maximal de panneaux atteint",
+          );
+          return;
+        }
+        panelId = await repository.createDiscoveredPanel(siteId, panelCode);
+        logger.info({ siteCode, panelCode }, "Nouveau panneau détecté, à positionner");
+      }
+
+      await repository.insertPanelMeasurement({
+        time: measurementTime(message.timestamp, receivedAt),
+        panelId,
+        productionW: message.production,
+        temperatureC: message.temperature,
+      });
     },
   };
 }
