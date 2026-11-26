@@ -151,16 +151,16 @@ describe("startSimulator", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("sans SIMULATE_DEVICE : le mode objet ne publie, ne s'abonne et n'écoute rien", () => {
+  it("sans SIMULATE_DEVICE : le mode objet ne publie rien et n'écoute pas les consignes", () => {
     const { client, emitter, published, subscriptions } = fakeClient();
     const stop = startSimulator(client, baseConfig(false));
     emitter.emit("connect");
     emitter.emit("message", "solar/SITE01/setpoint", Buffer.from(JSON.stringify(VALID_SETPOINT)));
     vi.advanceTimersByTime(60_000);
 
+    // Seul le mode panneaux tourne : il s'abonne aux mesures du site, jamais aux consignes.
     expect(published).toHaveLength(0);
-    expect(subscriptions).toHaveLength(0);
-    expect(emitter.listenerCount("connect")).toBe(0);
+    expect(subscriptions).toEqual(["solar/SITE01/measurements"]);
     stop();
   });
 
