@@ -243,6 +243,13 @@ export class MockDataSource implements DataSource {
     return this.panelDetail(panel, this.time());
   }
 
+  async deletePanel(panelId: string): Promise<void> {
+    await this.request();
+    this.requireOperator();
+    const panel = this.findPanel(panelId);
+    this.state.panels = this.state.panels.filter((p) => p !== panel);
+  }
+
   async createSetpoint(siteId: string, body: CreateSetpointRequest): Promise<SetpointRecord> {
     await this.request();
     if (siteId !== SITE.id) throw notFound();

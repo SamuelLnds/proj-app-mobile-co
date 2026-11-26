@@ -53,6 +53,8 @@ export interface DataSource {
   getPanelMeasurements(panelId: string, query: MeasurementQuery): Promise<PanelMeasurementPoint[]>;
   /** `PATCH /v1/panels/{id}` */
   updatePanel(panelId: string, body: UpdatePanelRequest): Promise<PanelDetail>;
+  /** `DELETE /v1/panels/{id}` */
+  deletePanel(panelId: string): Promise<void>;
 
   /** `POST /v1/sites/{id}/setpoints` */
   createSetpoint(siteId: string, body: CreateSetpointRequest): Promise<SetpointRecord>;

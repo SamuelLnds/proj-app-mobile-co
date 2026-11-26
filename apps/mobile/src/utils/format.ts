@@ -9,6 +9,13 @@ const decimal = (value: number, digits: number) =>
     .replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
 
 /** Puissance : en kW avec deux décimales à partir de 1 000 W, sinon en W entiers. */
+/** Puissance à lire à voix haute : unités en toutes lettres (« 2,66 kilowatts »). */
+export function speakPower(watts: number): string {
+  if (Math.abs(watts) >= 1000) return `${decimal(watts / 1000, 2)} kilowatts`;
+  const w = Math.round(watts);
+  return `${w} ${Math.abs(w) > 1 ? "watts" : "watt"}`;
+}
+
 export function formatPower(watts: number): string {
   if (Math.abs(watts) >= 1000) return `${decimal(watts / 1000, 2)}${NBSP}kW`;
   return `${Math.round(watts)}${NBSP}W`;

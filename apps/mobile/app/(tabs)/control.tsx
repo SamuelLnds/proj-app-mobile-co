@@ -21,6 +21,7 @@ import {
   Button,
   Card,
   Gauge,
+  OfflineBanner,
   Screen,
   SectionTitle,
   Segmented,
@@ -399,13 +400,7 @@ export default function ControlScreen() {
           text="Le pilotage est réservé aux exploitants. L'état appliqué et l'historique restent consultables."
         />
       ) : null}
-      {!online ? (
-        <Banner
-          tone="nodata"
-          title="Hors ligne"
-          text="Le pilotage reprendra au retour du réseau."
-        />
-      ) : null}
+      <OfflineBanner text="Le pilotage reprendra au retour du réseau." />
       {online && deviceOffline ? (
         <Banner
           tone="critical"

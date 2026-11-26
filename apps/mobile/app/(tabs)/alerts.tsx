@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAlerts } from "../../src/api";
-import { Banner, Card, Screen, Segmented, toneColors } from "../../src/components";
+import { Banner, Card, OfflineBanner, Screen, Segmented, toneColors } from "../../src/components";
 import { Icon, radius, sizes, spacing, typography, useTheme, type IconName } from "../../src/theme";
 import { formatAge, formatDateTime } from "../../src/utils/format";
 import { SEVERITY, useNow } from "../../src/utils/labels";
@@ -87,6 +87,7 @@ export default function AlertsScreen() {
       }
       onRefresh={() => alerts.refetch()}
     >
+      <OfflineBanner />
       {alerts.isError ? <Banner tone="critical" title="Alertes indisponibles" /> : null}
       {alerts.isLoading ? (
         <Text style={[typography.label, { color: colors.inkMuted }]}>Chargement des alertes…</Text>

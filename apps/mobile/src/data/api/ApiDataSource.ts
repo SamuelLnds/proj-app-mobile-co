@@ -134,6 +134,10 @@ export class ApiDataSource implements DataSource {
     return this.request("PATCH", ROUTES.updatePanel, { params: { id: panelId }, body });
   }
 
+  deletePanel(panelId: string): Promise<void> {
+    return this.request("DELETE", ROUTES.deletePanel, { params: { id: panelId } });
+  }
+
   createSetpoint(siteId: string, body: CreateSetpointRequest): Promise<SetpointRecord> {
     return this.request("POST", ROUTES.createSetpoint, { params: { id: siteId }, body });
   }
