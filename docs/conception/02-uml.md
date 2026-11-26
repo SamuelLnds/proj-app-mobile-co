@@ -65,7 +65,7 @@ flowchart LR
 | UC06 | Consulter l'historique du site | Lecteur | Graphiques de production, batterie et flux sur une période | Socle |
 | UC07 | Envoyer une consigne | Exploitant | Choix du mode et de la répartition, confirmation, suivi de l'application | Socle |
 | UC08 | Consulter l'historique des consignes | Lecteur | Liste des consignes : auteur, demande, résultat | Socle |
-| UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues | Socle |
+| UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues ; marquer une alerte active comme lue (appui sur l'alerte ou « Tout marquer comme lu »), état propre au téléphone : la pastille de l'onglet compte les alertes actives non lues ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)) | Socle |
 | UC10 | Recevoir une notification | Lecteur | À l'ouverture d'une alerte `warning` ou `critical` (sauf `setpoint_rejected`) : notification push Expo affichée par le système quand l'app est fermée ou en arrière-plan ; rien au premier plan, l'alerte étant déjà visible dans l'app ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) | Socle |
 | UC11 | Publier les mesures du site | Objet | Toutes les 5 s | Socle |
 | UC12 | Appliquer une consigne | Objet | Application avec limites de sécurité, réponse avec l'état appliqué | Socle |
@@ -482,6 +482,36 @@ sequenceDiagram
 ```
 
 La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas.
+
+### 4.8 Marquer une alerte comme lue (UC09)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Utilisateur
+  participant App as App mobile
+  participant L as SQLite local
+  participant API as API
+
+  App->>API: GET /alerts?status=active (toutes les 5 s)
+  API-->>App: Alertes actives
+  App->>L: Lecture des alertes lues (table read_alerts)
+  L-->>App: Identifiants lus
+  App->>App: Pastille = alertes actives dont l'identifiant n'est pas lu
+  App->>L: Retrait des identifiants qui ne sont plus actifs
+
+  U->>App: Appui sur une alerte non lue (ou « Tout marquer comme lu »)
+  App->>App: État partagé mis à jour : pastille et liste changent aussitôt
+  App->>L: INSERT read_alerts (alert_id, read_at)
+
+  U->>App: Appui sur « Voir le panneau »
+  App->>App: Ouverture du détail du panneau (l'état lu ne change pas)
+
+  U->>App: Déconnexion
+  App->>L: Effacement de la mémoire locale, dont read_alerts
+```
+
+L'état « lu » n'est jamais envoyé à l'API : aucune route, aucune colonne ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). Il ne concerne que les alertes **actives** ; une alerte résolue puis rouverte reçoit un nouvel identifiant et redevient non lue. Au premier lancement après la mise à jour, la table est vide : toutes les alertes actives sont non lues. Les identifiants qui ne figurent plus dans la liste des alertes actives sont retirés de la table, qui ne grossit donc pas.
 
 ## 5. Diagrammes d'états
 
