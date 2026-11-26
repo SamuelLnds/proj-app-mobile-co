@@ -66,7 +66,7 @@ Une issue n'est fermée que si **tous** ces points sont vrais :
 | **M8 · Intégration de l'interface** | Toute l'app conforme aux maquettes, sur des données d'exemple | L'app complète est consultable sur le téléphone, dans les deux thèmes et tous ses états, sans API |
 | **M3 · Supervision** | Toutes les fonctions de consultation | Connexion, supervision, carte, détail, historiques, affichage sans réseau |
 | **M4 · Pilotage** | Communication bidirectionnelle complète | Une consigne envoyée depuis l'app est appliquée ou refusée par l'objet, et l'app l'affiche |
-| **M5 · Alertes et notifications** | Règles d'alerte, notifications locales de l'app et serveur ntfy ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) | Panne injectée → notification sur le téléphone |
+| **M5 · Alertes et notifications** | Règles d'alerte et notifications push | Panne injectée → notification sur le téléphone |
 | **M9 · Sécurité de l'objet** | L'objet s'authentifie par certificat, sans secret dans son code | Un objet accepté dans l'app se connecte ; un objet révoqué est refusé par le broker |
 | **M6 · Livraison** | Projet prêt pour la soutenance | APK installé, démo hébergée, dossier et documentation complets |
 | **M7 · Bonus** | Améliorations facultatives | Vue 3D, rotation des panneaux, flux temps réel |
@@ -149,12 +149,12 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #46 | Mobile : brancher l'historique des consignes | M4 | mobile |
 | #47 | API : moteur de règles d'alerte | M5 | api |
 | #48 | API : route de consultation des alertes | M5 | api |
-| #49 | API et infra : notifications d'alerte par ntfy | M5 | api, infra |
-| #50 | Mobile : notifications locales et branchement de l'écran Alertes | M5 | mobile |
+| #49 | API : jetons et envoi des notifications push | M5 | api |
+| #50 | Mobile : notifications et branchement de l'écran Alertes | M5 | mobile |
 | #51 | Revue de sécurité et dossier sécurité | M6 | docs |
 | #52 | Compléter les tests | M6 | test |
 | #53 | Construire et distribuer l'APK | M6 | mobile |
-| #54 | Héberger l'API, la base, le broker et ntfy sur le VPS | M6 | infra |
+| #54 | Héberger l'API, la base et le broker sur le VPS | M6 | infra |
 | #55 | Documentation technique | M6 | docs |
 | #56 | Scénario de démonstration et répétition | M6 | docs |
 | #57 | Point final du journal | M6 | docs |
@@ -892,57 +892,32 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Dépend de :** #47
 
-### #49 · API et infra : notifications d'alerte par ntfy
+### #49 · API : jetons et envoi des notifications push
 
-**Labels :** `type:feature`, `area:api`, `area:infra`, `priority:core`
+**Labels :** `type:feature`, `area:api`, `priority:core`
 
-**Contexte :** pas de push Expo ni de Firebase : l'API publie les alertes sur un serveur ntfy auto-hébergé, que le téléphone lit par l'app ntfy, app fermée ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)).
-
-**À faire :**
-- Service `ntfy` (`binwiederhier/ntfy`, commande `serve`) dans `infra/docker-compose.yml` : port publié sur `127.0.0.1` uniquement (`NTFY_PORT`, 8090 par défaut). Configuration versionnée dans `infra/ntfy/config/server.yml` : `base-url`, `auth-file`, `auth-default-access: deny-all`, `behind-proxy`, cache de messages court.
-- Script `pnpm ntfy:setup` (sur le modèle de `pnpm mqtt:setup`) : crée dans `infra/ntfy/generated/` (ignoré par Git) un jeton de **publication** en écriture seule sur le sujet pour l'API et un jeton de **lecture** en lecture seule pour le téléphone, et affiche une seule fois les valeurs à recopier. Scripts `pnpm ntfy:up` ; `pnpm dev` démarre aussi ntfy.
-- Sujet `solar-{siteCode en minuscules}-alerts` (`solar-site01-alerts`).
-- `infra/README.md` : procédure pas à pas pour le téléphone (installer l'app ntfy, ajouter le serveur auto-hébergé et le jeton de lecture, s'abonner au sujet, retirer l'optimisation de batterie, `adb reverse` en développement).
-- API : service de notification (`modules/notifications/service.ts`, sans route ni requête à la base) appelé par le moteur d'alertes à l'ouverture d'une alerte `warning` ou `critical` : `POST {NTFY_URL}/{NTFY_TOPIC}` avec `Authorization: Bearer {NTFY_TOKEN}`, titre `Alerte` ou `Alerte critique`, corps = message de l'alerte, priorité `high` (`warning`) ou `urgent` (`critical`), étiquettes, lien d'action `solar://panel/{id}` ou `solar://alerts`. Fonction d'envoi injectable. Variables `NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN`.
-- Retirer le push Expo : table `push_tokens` et enum `mobile_platform` (documentation, schéma Drizzle, nouvelle migration), routes `POST /v1/push-tokens` et `DELETE /v1/push-tokens/{token}` et leurs schémas, dépendance `expo-server-sdk`, variable `EXPO_ACCESS_TOKEN`.
+**À faire :** `POST /v1/push-tokens` (insertion ou réattribution), `DELETE /v1/push-tokens/{token}` ; envoi groupé via `expo-server-sdk` à l'ouverture d'une alerte `warning` ou `critical` ; suppression des jetons signalés invalides par Expo.
 
 **Critères d'acceptation :**
-- [ ] Un abonné sans jeton au sujet est refusé ; le jeton de lecture ne permet pas de publier et le jeton de publication ne permet pas de lire.
-- [ ] Une alerte `critical` (par exemple `device_offline`) arrive à un abonné en lecture avec le titre « Alerte critique » et la priorité `urgent` ; une alerte `warning` arrive avec le titre « Alerte » et la priorité `high`.
-- [ ] Une alerte `info` n'envoie rien.
-- [ ] Le message ne contient aucune donnée personnelle (test : ni e-mail ni nom d'utilisateur).
-- [ ] Tests avec la fonction d'envoi simulée, sans appel réseau ; une erreur d'envoi est journalisée et ne perturbe jamais le traitement d'un message (test).
-- [ ] Sans `NTFY_URL`, l'envoi est désactivé avec un seul avertissement au démarrage.
-- [ ] Aucun jeton ni mot de passe n'est versionné ; `infra/ntfy/generated/` est ignoré par Git.
-- [ ] La table `push_tokens`, les routes `push-tokens`, `expo-server-sdk` et `EXPO_ACCESS_TOKEN` n'existent plus ; `db:migrate` passe sur une base vide.
-- [ ] Une alerte arrive sur le téléphone de test, app fermée, par l'app ntfy.
+- [ ] Une alerte `critical` déclenche une notification sur le téléphone de test.
+- [ ] Une alerte `info` n'en déclenche pas.
+- [ ] Tests avec le service Expo simulé.
 
-**Dépend de :** #11, #47 · **Références :** [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md), [UML, séquences 4.4 et 4.5](02-uml.md), [Cartographie, sections 5.6, 5.7 et 9](03-cartographie-technique.md)
+**Dépend de :** #27, #47 · **Références :** [UML, séquence 4.5](02-uml.md)
 
-### #50 · Mobile : notifications locales et branchement de l'écran Alertes
+### #50 · Mobile : notifications et branchement de l'écran Alertes
 
 **Labels :** `type:feature`, `area:mobile`, `priority:core`
 
 **Interface :** réalisée avec des données d'exemple dans #76 ([D025](../journal/decisions/D025-integration-interface.md)). Cette issue remplace la source `mock` par les données réelles (source `api` de `src/data/`), sans refaire l'écran.
 
-**À faire :**
-- Notifications locales ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) : quand l'app est active, comparer les alertes actives `warning` et `critical` reçues par `useAlerts("active")` avec celles déjà notifiées, et afficher une notification locale (`expo-notifications`) pour chaque nouvelle alerte. Les identifiants déjà notifiés sont conservés dans SQLite, même après un redémarrage de l'app. Au premier chargement, les alertes déjà actives sont seulement mémorisées.
-- Demande d'autorisation des notifications après la connexion (Android 13 et plus), canal Android. Module `expo-notifications` chargé à la demande : sans lui, les notifications locales sont désactivées en silence.
-- Appui sur une notification → panneau concerné, ou écran Alertes.
-- Écran Alertes : actives puis résolues, gravité par couleur et icône.
-- Retirer le push Expo : plus de jeton push, d'appel à `/push-tokens`, de `getExpoPushTokenAsync` ni de dépendance `expo-device`.
-- Facultatif : une ligne dans l'app qui explique comment recevoir les alertes app fermée (abonnement ntfy, voir `infra/README.md`).
+**À faire :** demande d'autorisation et enregistrement du jeton après connexion, suppression à la déconnexion ; écran Alertes (actives puis résolues, gravité par couleur et icône) ; appui sur une notification → écran Alertes.
 
 **Critères d'acceptation :**
-- [ ] Une nouvelle alerte `warning` ou `critical` reçue app active affiche une notification locale ; une alerte `info` n'en affiche pas.
-- [ ] Une alerte déjà notifiée ne l'est jamais deux fois, y compris après un redémarrage de l'app (test).
-- [ ] Au premier chargement, les alertes déjà actives ne déclenchent aucune notification (test).
-- [ ] Sans le module natif `expo-notifications`, l'app ne plante pas et les notifications locales sont désactivées (test).
-- [ ] L'appui sur une notification ouvre le panneau concerné ou l'écran Alertes.
-- [ ] L'écran Alertes affiche les alertes actives puis résolues, la gravité étant indiquée par une couleur, une icône et un texte.
-- [ ] La connexion et la déconnexion ne font aucun appel de jeton push.
+- [ ] La notification arrive app fermée et app ouverte.
+- [ ] Après déconnexion, le téléphone ne reçoit plus de notification.
 
-**Dépend de :** #28, #48, #49, #76
+**Dépend de :** #28, #48, #49, #76 
 
 ---
 
@@ -957,7 +932,6 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **Critères d'acceptation :**
 - [ ] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
 - [ ] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
-- [ ] Le serveur ntfy refuse tout accès sans jeton, et les jetons de publication et de lecture sont limités à leur droit ([D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)).
 - [ ] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
 
 **Dépend de :** M5 et M9 terminés · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md)
@@ -983,17 +957,16 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Dépend de :** #54
 
-### #54 · Héberger l'API, la base, le broker et ntfy sur le VPS
+### #54 · Héberger l'API, la base et le broker sur le VPS
 
 **Labels :** `type:chore`, `area:infra`, `priority:core`
 
-**À faire :** choisir le fournisseur du VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) ; déployer API, base, broker et serveur ntfy avec Docker Compose derrière Caddy (HTTPS, [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md)) ; nom de domaine ajouté à `MQTT_TLS_HOSTS` ; pare-feu limité aux ports 443 et 8883 (SSH par clé uniquement) ; variables d'environnement, migrations et seed.
+**À faire :** choisir le fournisseur du VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) ; déployer API, base et broker avec Docker Compose derrière Caddy (HTTPS) ; nom de domaine ajouté à `MQTT_TLS_HOSTS` ; pare-feu limité aux ports 443 et 8883 (SSH par clé uniquement) ; variables d'environnement, migrations et seed.
 
 **Critères d'acceptation :**
 - [ ] `GET https://<domaine>/v1/health` renvoie 200 depuis un réseau extérieur.
 - [ ] L'ESP32 de Wokwi se connecte au broker du VPS sans tunnel.
-- [ ] Les ports 1883, 3000, 5432 et celui de ntfy ne répondent pas depuis l'extérieur.
-- [ ] Le serveur ntfy du VPS est joint en HTTPS par l'app ntfy ; un abonné sans jeton est refusé.
+- [ ] Les ports 1883, 3000 et 5432 ne répondent pas depuis l'extérieur.
 - [ ] La procédure de déploiement est documentée.
 
 **Dépend de :** M5 terminé

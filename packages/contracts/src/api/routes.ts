@@ -2,7 +2,14 @@
 // le rôle requis et les schémas d'entrée (chemin, requête, corps) et de sortie.
 // Une réponse sans corps (204) a un `response` à `null`.
 import type { z } from "zod";
-import { LoginRequestSchema, LoginResponseSchema, HealthResponseSchema, UserSchema } from "./auth";
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  PushTokenParamsSchema,
+  RegisterPushTokenRequestSchema,
+  HealthResponseSchema,
+  UserSchema,
+} from "./auth";
 import { AlertPageSchema, AlertsQuerySchema } from "./alerts";
 import { IdParamsSchema, MeasurementQuerySchema, PageQuerySchema } from "./common";
 import {
@@ -53,6 +60,22 @@ export const ROUTES = {
     role: "viewer",
     status: 200,
     response: UserSchema,
+  },
+  registerPushToken: {
+    method: "POST",
+    path: "/v1/push-tokens",
+    role: "viewer",
+    body: RegisterPushTokenRequestSchema,
+    status: 204,
+    response: null,
+  },
+  deletePushToken: {
+    method: "DELETE",
+    path: "/v1/push-tokens/{token}",
+    role: "viewer",
+    params: PushTokenParamsSchema,
+    status: 204,
+    response: null,
   },
   listSites: {
     method: "GET",

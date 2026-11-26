@@ -3,9 +3,11 @@
 | | |
 |---|---|
 | **Date** | 2026-11-26 |
-| **Statut** | Acceptée |
+| **Statut** | Remplacée par [D030](D030-notifications-push-expo-et-locales.md) |
 | **Décideurs** | Le binôme |
 | **Liens** | Issues [#49](https://github.com/SamuelLnds/proj-app-mobile-co/issues/49) et [#50](https://github.com/SamuelLnds/proj-app-mobile-co/issues/50) · PR #94 · Remplace en partie [D005](D005-framework-mobile.md) (notifications push) · [D023](D023-broker-mosquitto-auto-heberge.md) · [D028](D028-hebergement-vps.md) · [Cartographie, sections 1, 2, 8 et 9](../../conception/03-cartographie-technique.md) |
+
+Cette décision est remplacée par [D030](D030-notifications-push-expo-et-locales.md) : le serveur ntfy est retiré au profit du push Expo (Firebase), les notifications locales étant conservées.
 
 ## Contexte
 

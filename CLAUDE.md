@@ -80,7 +80,7 @@ Ces commandes sont mises en place par les issues du socle (#5 à #18) : vérifie
 
 - Aucun secret dans le dépôt : `.env` et `secrets.h` sont ignorés par Git ; seuls `.env.example` et `secrets.example.h` sont versionnés, sans valeur réelle.
 - Ne jamais lire, afficher ni recopier le contenu d'un fichier `.env` ou `secrets.h`.
-- Mots de passe hachés en argon2id ; jamais de donnée personnelle dans une notification (locale ou ntfy) ni dans les logs.
+- Mots de passe hachés en argon2id ; jamais de donnée personnelle dans une notification push ni dans les logs.
 
 ## Git et GitHub
 
