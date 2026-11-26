@@ -1,5 +1,5 @@
 // Jetons push et notifications d'alerte (séquences 4.1 et 4.5 de l'UML).
-import type { RegisterPushTokenRequest } from "@solar/contracts";
+import { PUSH_EXCLUDED_ALERT_TYPES, type RegisterPushTokenRequest } from "@solar/contracts";
 import type { AlertRow } from "../alerts/repository";
 import type { PushTokensRepository } from "./repository";
 import { DEVICE_NOT_REGISTERED, type PushMessage, type PushSender } from "./sender";
@@ -10,8 +10,9 @@ export interface PushService {
   /** `DELETE /v1/push-tokens/{token}` : sans effet si le jeton n'existe pas ou n'est plus le sien. */
   remove: (userId: string, token: string) => Promise<void>;
   /**
-   * Notifie tous les téléphones enregistrés de l'ouverture d'une alerte `warning` ou `critical`.
-   * Renvoie le nombre de notifications envoyées et de jetons supprimés.
+   * Notifie tous les téléphones enregistrés de l'ouverture d'une alerte `warning` ou `critical`,
+   * sauf pour les types de `PUSH_EXCLUDED_ALERT_TYPES` (`setpoint_rejected`, D033) : l'alerte est
+   * créée et visible dans l'app, mais sans push. Renvoie le nombre de notifications envoyées et de jetons supprimés.
    */
   notifyAlert: (alert: AlertRow) => Promise<{ sent: number; removed: number }>;
 }
@@ -41,6 +42,10 @@ export function createPushService(repository: PushTokensRepository, send: PushSe
 
     async notifyAlert(alert) {
       if (alert.severity === "info") return { sent: 0, removed: 0 };
+      // Le refus d'une consigne est déjà affiché à l'exploitant par l'écran Pilotage (D033).
+      if ((PUSH_EXCLUDED_ALERT_TYPES as readonly string[]).includes(alert.type)) {
+        return { sent: 0, removed: 0 };
+      }
       const tokens = await repository.listTokens();
       if (tokens.length === 0) return { sent: 0, removed: 0 };
 

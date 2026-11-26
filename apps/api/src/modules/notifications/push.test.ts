@@ -80,6 +80,30 @@ describe("notification d'une alerte", () => {
     expect(t.sent[0]?.[0]?.title).toBe("Alerte");
   });
 
+  it("setpoint_rejected : aucun push, même en warning", async () => {
+    const t = setupService();
+    await t.service.register(id(10), { token: TOKEN_A, platform: "android" });
+    expect(
+      await t.service.notifyAlert(alert({ severity: "warning", type: "setpoint_rejected" })),
+    ).toEqual({ sent: 0, removed: 0 });
+    expect(t.sender).not.toHaveBeenCalled();
+  });
+
+  it("setpoint_no_response et device_offline : notifient en critique", async () => {
+    const t = setupService();
+    await t.service.register(id(10), { token: TOKEN_A, platform: "android" });
+    await t.service.notifyAlert(alert({ type: "setpoint_no_response" }));
+    await t.service.notifyAlert(alert({ type: "device_offline" }));
+    expect(t.sent.map((messages) => messages[0]?.title)).toEqual([
+      "Alerte critique",
+      "Alerte critique",
+    ]);
+    expect(t.sent.map((messages) => messages[0]?.data.type)).toEqual([
+      "setpoint_no_response",
+      "device_offline",
+    ]);
+  });
+
   it("info : aucune notification", async () => {
     const t = setupService();
     await t.service.register(id(10), { token: TOKEN_A, platform: "android" });
