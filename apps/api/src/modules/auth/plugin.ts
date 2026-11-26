@@ -23,6 +23,12 @@ export function registerJwt(app: FastifyInstance, secret: string) {
   });
 }
 
+/** Contrôles d'accès à placer en `preHandler` ; vides quand l'authentification est absente (tests). */
+export interface Guards {
+  viewer: preHandlerAsyncHookHandler[];
+  operator: preHandlerAsyncHookHandler[];
+}
+
 /**
  * Vérifie le jeton puis le rôle. Le rôle `operator` hérite des droits du rôle `viewer`.
  * Erreurs : 401 `UNAUTHENTICATED` (jeton absent, invalide ou expiré), 403 `FORBIDDEN`.

@@ -10,6 +10,8 @@ import { createDevicesService } from "./modules/devices/service";
 import { createMeasurementsRepository } from "./modules/measurements/repository";
 import { createMeasurementsService } from "./modules/measurements/service";
 import { createControlStateStore } from "./modules/sites/control-states";
+import { createPanelsRepository } from "./modules/panels/repository";
+import { createPanelsService } from "./modules/panels/service";
 import { createSitesRepository } from "./modules/sites/repository";
 import { createSitesService } from "./modules/sites/service";
 import { startScheduler } from "./scheduler";
@@ -33,6 +35,7 @@ const app = buildServer({
     jwtSecret: config.JWT_SECRET,
   },
   sites: createSitesService(createSitesRepository(database), controlStates),
+  panels: createPanelsService(createPanelsRepository(database)),
 });
 
 const devices = createDevicesService(createDevicesRepository(database), app.log);
