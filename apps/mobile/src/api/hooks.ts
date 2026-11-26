@@ -1,11 +1,12 @@
 import {
+  DEFAULT_PAGE_LIMIT,
   SITE_MEASUREMENT_PERIOD_S,
   type AlertStatus,
   type CreateSetpointRequest,
   type MeasurementInterval,
   type UpdatePanelRequest,
 } from "@solar/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { dataSource, DataSourceError } from "../data";
 import { readResponse, saveResponse } from "../storage";
@@ -15,6 +16,8 @@ import { setLastSync } from "./last-sync";
 const REFRESH_MS = SITE_MEASUREMENT_PERIOD_S * 1000;
 /** Rafraîchissement rapide pendant l'attente de la réponse de l'objet à une consigne. */
 const PENDING_REFRESH_MS = 2000;
+/** Durée maximale de ce rafraîchissement rapide (l'API passe la consigne en `no_response` à 30 s). */
+const PENDING_MAX_MS = 60_000;
 
 export type Period = "1h" | "24h" | "7d";
 const PERIODS: Record<Period, { ms: number; interval: MeasurementInterval }> = {
@@ -40,7 +43,8 @@ export const queryKeys = {
   panel: (id: string) => ["panels", id] as const,
   panelMeasurements: (id: string, period: Period) =>
     ["panels", id, "measurements", period] as const,
-  setpoints: (siteId: string) => ["sites", siteId, "setpoints"] as const,
+  // Hors de la branche `sites` : une page de l'historique ne doit jamais être rechargée seule.
+  setpoints: (siteId: string) => ["setpoints", siteId] as const,
   alerts: (status?: AlertStatus) => ["alerts", status ?? "all"] as const,
 };
 
@@ -87,8 +91,12 @@ export function useSite(siteId: string | undefined) {
     queryKey: queryKeys.site(siteId ?? ""),
     queryFn: () => withLocalCopy(queryKeys.site(siteId ?? ""), () => dataSource.getSite(siteId!)),
     enabled: !!siteId,
-    refetchInterval: (query) =>
-      query.state.data?.currentSetpoint?.status === "sent" ? PENDING_REFRESH_MS : REFRESH_MS,
+    refetchInterval: (query) => {
+      const current = query.state.data?.currentSetpoint;
+      const waiting =
+        current?.status === "sent" && Date.now() - Date.parse(current.createdAt) < PENDING_MAX_MS;
+      return waiting ? PENDING_REFRESH_MS : REFRESH_MS;
+    },
   });
 }
 
@@ -132,14 +140,28 @@ export function usePanelMeasurements(panelId: string, period: Period) {
   });
 }
 
+/**
+ * Historique des consignes, page par page (curseur `before`). Il n'est pas rafraîchi à
+ * intervalle fixe : une nouvelle consigne décale les pages, l'écran le recharge depuis la
+ * première page (`useResetSetpoints`) quand la consigne en vigueur change.
+ */
 export function useSetpoints(siteId: string | undefined) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.setpoints(siteId ?? ""),
-    queryFn: () =>
-      withLocalCopy(queryKeys.setpoints(siteId ?? ""), () => dataSource.listSetpoints(siteId!)),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      withLocalCopy([...queryKeys.setpoints(siteId ?? ""), pageParam ?? "first"], () =>
+        dataSource.listSetpoints(siteId!, { limit: DEFAULT_PAGE_LIMIT, before: pageParam }),
+      ),
+    getNextPageParam: (last) => last.next ?? undefined,
     enabled: !!siteId,
-    refetchInterval: REFRESH_MS,
   });
+}
+
+/** Recharge l'historique des consignes depuis la première page. */
+export function useResetSetpoints(siteId: string | undefined) {
+  const client = useQueryClient();
+  return () => client.resetQueries({ queryKey: queryKeys.setpoints(siteId ?? "") });
 }
 
 export function useAlerts(status?: AlertStatus) {
@@ -164,6 +186,7 @@ export function useCreateSetpoint(siteId: string | undefined) {
     mutationFn: (body: CreateSetpointRequest) => dataSource.createSetpoint(siteId!, body),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ["sites"] });
+      void client.resetQueries({ queryKey: ["setpoints"] });
       void client.invalidateQueries({ queryKey: ["alerts"] });
     },
   });

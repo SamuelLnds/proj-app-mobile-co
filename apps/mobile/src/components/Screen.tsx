@@ -20,7 +20,12 @@ type ScreenProps = {
   onRefresh?: () => Promise<unknown>;
   /** Élément superposé (feuille du bas, dialogue). */
   overlay?: ReactNode;
+  /** Appelé quand le défilement approche du bas de l'écran (chargement de la page suivante). */
+  onEndReached?: () => void;
 };
+
+/** Distance du bas (px) à partir de laquelle `onEndReached` est appelé. */
+const END_REACHED_THRESHOLD = 200;
 
 /** Gabarit d'écran : marges de la charte, titre, défilement, tirer pour rafraîchir. */
 export function Screen({
@@ -32,6 +37,7 @@ export function Screen({
   scroll = true,
   onRefresh,
   overlay,
+  onEndReached,
 }: ScreenProps) {
   const { colors } = useTheme();
   const [pulling, setPulling] = useState(false);
@@ -58,6 +64,19 @@ export function Screen({
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
+          scrollEventThrottle={100}
+          onScroll={
+            onEndReached
+              ? ({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
+                  if (
+                    contentOffset.y + layoutMeasurement.height >=
+                    contentSize.height - END_REACHED_THRESHOLD
+                  ) {
+                    onEndReached();
+                  }
+                }
+              : undefined
+          }
           refreshControl={
             onRefresh ? (
               <RefreshControl refreshing={pulling} onRefresh={refresh} tintColor={colors.primary} />

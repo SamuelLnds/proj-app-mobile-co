@@ -4,13 +4,14 @@ import {
   type SetpointRecord,
   type SiteDetail,
 } from "@solar/contracts";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
   useConnectivity,
   useCreateSetpoint,
   useCurrentSiteId,
+  useResetSetpoints,
   useSetpoints,
   useSite,
 } from "../../src/api";
@@ -259,7 +260,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function History({ items }: { items: SetpointRecord[] }) {
+function History({ items, loadingMore }: { items: SetpointRecord[]; loadingMore: boolean }) {
   const { colors } = useTheme();
   return (
     <View style={{ gap: spacing[2] }}>
@@ -294,6 +295,16 @@ function History({ items }: { items: SetpointRecord[] }) {
             </View>
           );
         })}
+        {items.length === 0 ? (
+          <Text style={[typography.body, styles.listEmpty, { color: colors.inkMuted }]}>
+            Aucune consigne envoyée pour le moment.
+          </Text>
+        ) : null}
+        {loadingMore ? (
+          <Text style={[typography.label, styles.listEmpty, { color: colors.inkMuted }]}>
+            Chargement des consignes précédentes…
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -307,6 +318,7 @@ export default function ControlScreen() {
   const site = useSite(siteId);
   const setpoints = useSetpoints(siteId);
   const create = useCreateSetpoint(siteId);
+  const resetSetpoints = useResetSetpoints(siteId);
 
   const [mode, setMode] = useState<ControlMode>("manual");
   const [share, setShare] = useState(70);
@@ -316,9 +328,30 @@ export default function ControlScreen() {
 
   const data = site.data;
   const viewer = user?.role !== "operator";
-  const deviceOffline = data?.deviceStatus === "offline";
+  // L'API n'accepte une consigne que si l'objet est en ligne (409 sinon).
+  const deviceOffline = !!data && data.deviceStatus !== "online";
   const pending = data?.currentSetpoint?.status === "sent";
   const disabled = viewer || !online || deviceOffline || pending || !data;
+
+  // L'historique repart de la première page quand la consigne en vigueur change (nouvelle
+  // consigne, réponse de l'objet) : les pages déjà chargées seraient décalées.
+  const currentKey = data?.currentSetpoint
+    ? `${data.currentSetpoint.id}:${data.currentSetpoint.status}`
+    : null;
+  const lastKey = useRef(currentKey);
+  useEffect(() => {
+    if (lastKey.current !== currentKey) {
+      lastKey.current = currentKey;
+      void resetSetpoints();
+    }
+  }, [currentKey, resetSetpoints]);
+
+  const history = setpoints.data?.pages.flatMap((page) => page.items);
+  const loadMore = () => {
+    if (setpoints.hasNextPage && !setpoints.isFetchingNextPage && !setpoints.isFetchNextPageError) {
+      void setpoints.fetchNextPage();
+    }
+  };
 
   const submitted =
     submittedId && data?.currentSetpoint?.id === submittedId ? data.currentSetpoint : null;
@@ -353,7 +386,8 @@ export default function ControlScreen() {
     <Screen
       title="Pilotage"
       subtitle={data?.name ?? "Parc solaire"}
-      onRefresh={() => site.refetch()}
+      onRefresh={() => Promise.all([site.refetch(), resetSetpoints()])}
+      onEndReached={loadMore}
       overlay={
         <BottomSheet
           visible={confirming}
@@ -442,7 +476,7 @@ export default function ControlScreen() {
         ) : null}
       </Card>
 
-      {setpoints.data ? <History items={setpoints.data.items} /> : null}
+      {history ? <History items={history} loadingMore={setpoints.isFetchingNextPage} /> : null}
     </Screen>
   );
 }
@@ -472,6 +506,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: { flexShrink: 1, textAlign: "right" },
   list: { borderRadius: radius.md, overflow: "hidden" },
+  listEmpty: { padding: spacing[4] },
   listRow: {
     flexDirection: "row",
     alignItems: "center",
