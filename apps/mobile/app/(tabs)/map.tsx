@@ -24,13 +24,14 @@ import {
   TextField,
   toneColors,
 } from "../../src/components";
+import { Park3D } from "../../src/components/Park3D";
 import { PANEL_STATUS, ParkPlan } from "../../src/components/ParkPlan";
 import { dataSource, DataSourceError } from "../../src/data";
 import { Icon, radius, sizes, spacing, typography, useTheme } from "../../src/theme";
 import { formatPower } from "../../src/utils/format";
 import { locatePhone, type Position } from "../../src/utils/location";
 
-type View_ = "map" | "list";
+type View_ = "map" | "3d" | "list";
 
 function Legend({ panels }: { panels: PanelSummary[] }) {
   const { colors } = useTheme();
@@ -212,6 +213,7 @@ export default function MapScreen() {
           onChange={setView}
           options={[
             { value: "map", label: "Carte" },
+            { value: "3d", label: "3D" },
             { value: "list", label: "Liste" },
           ]}
         />
@@ -282,9 +284,11 @@ export default function MapScreen() {
       {panels.isError ? (
         <Banner tone="critical" title="Panneaux indisponibles" text={panels.error?.message} />
       ) : null}
-      {view === "map" ? (
+      {view === "map" || view === "3d" ? (
         <>
-          {placed.length ? (
+          {placed.length && view === "3d" ? (
+            <Park3D panels={placed} selectedId={selectedPanel?.id ?? null} onSelect={setSelected} />
+          ) : placed.length ? (
             <ParkPlan
               panels={placed}
               selectedId={selectedPanel?.id ?? null}

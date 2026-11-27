@@ -242,8 +242,10 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo, réception, appui) ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
 | `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
+| `three`, `@react-three/fiber`, `expo-gl` (+ `expo-asset`, `expo-file-system`, requis par la version native de React Three Fiber) | Vue 3D du parc (bonus #58, [D013](../journal/decisions/D013-vue-3d-bonus.md)) ; la scène est chargée à la demande |
 | `expo-font` + `@expo-google-fonts/red-hat-*` | Typographie Red Hat, polices embarquées par ces paquets ([D016](../journal/decisions/D016-typographie-red-hat.md)) |
 | `jest`, `jest-expo`, `@testing-library/react-native`, `react-test-renderer` (dév.) | Tests |
+| `@types/three` (dév.) | Types de three.js |
 | `@solar/contracts` (interne) | Schémas et types partagés |
 
 ```
@@ -265,10 +267,10 @@ apps/mobile/
 │   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active ; connectivity.ts (réseau), app-focus.ts (premier plan, #111), last-sync.ts (ancienneté des données), read-alerts.ts (alertes lues), live.ts (flux d'événements : relecture ciblée, interrogation espacée, reconnexion, #60)
 │   ├── auth/                     # Contexte d'authentification, stockage du jeton
 │   ├── storage/                  # Base SQLite locale `solar.db` : database.ts (ouverture et tables), responses.ts (dernières réponses de l'API), read-alerts.ts (alertes lues)
-│   ├── components/               # Composants réutilisables
+│   ├── components/               # Composants réutilisables ; Park3D.tsx (vue 3D : chargement à la demande, repli, résumé accessible) et Park3DScene.tsx (scène three.js), #58
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
 │   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification), alert-banner.ts et AlertBanner.tsx (bandeau d'alerte app ouverte, #108)
-│   └── utils/
+│   └── utils/                    # dont park-layout.ts (positions des panneaux en mètres pour la vue 3D, #58)
 ├── assets/images/                # Icône de l'app et écran de lancement (les polices viennent des paquets @expo-google-fonts)
 ├── tests/                        # Tests Jest (jest.config.js) : écrans, composants, sources de données, stockage
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
@@ -279,7 +281,7 @@ apps/mobile/
 |---|---|---|
 | Connexion | `app/login.tsx` | UC01 |
 | Supervision | `app/(tabs)/index.tsx` | UC03, UC06 |
-| Carte | `app/(tabs)/map.tsx` | UC04 |
+| Carte (vues Plan, 3D et Liste) | `app/(tabs)/map.tsx` | UC04 |
 | Pilotage | `app/(tabs)/control.tsx` | UC07, UC08 |
 | Alertes | `app/(tabs)/alerts.tsx` | UC09 |
 | Détail d'un panneau | `app/panel/[id].tsx` | UC05 |

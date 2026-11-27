@@ -1120,7 +1120,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Critères d'acceptation :**
 - [ ] Fluide sur le téléphone de test avec les 20 panneaux.
-- [ ] Aucune information n'est disponible uniquement en 3D.
+- [x] Aucune information n'est disponible uniquement en 3D.
 
 **Dépend de :** M6 terminé · **Références :** [D013](../journal/decisions/D013-vue-3d-bonus.md)
 

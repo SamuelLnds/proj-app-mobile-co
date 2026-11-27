@@ -17,6 +17,10 @@ Avec la source `api`, les routes `/v1/enrollments` de l'API sont utilisées (#81
 
 Écran **Carte**, bouton « Ajouter un panneau » (exploitant seulement, bonus #63). La caméra lit le QR code collé sur le panneau (`solar:panel:P21`, ou le code seul) ; la position est celle du téléphone. Si la caméra ou la localisation est refusée, l'écran explique à quoi elles servent et propose de saisir le code ou les coordonnées à la main. Un code déjà présent sur le site est refusé avec un message clair. `expo-camera` est un module natif : il faut **un nouveau build de développement** pour l'utiliser. Avec la source `mock`, la caméra n'est pas utilisée (saisie du code) et la position est simulée.
 
+## Vue 3D du parc
+
+Écran **Carte**, choix « 3D » (bonus #58, [D013](../../docs/journal/decisions/D013-vue-3d-bonus.md)) : les panneaux positionnés en 3D, colorés selon leur statut ; toucher un panneau le sélectionne. Elle utilise `expo-gl`, module natif : il faut **un nouveau build de développement**. Un build plus ancien affiche « La vue 3D n'est pas disponible dans cette version de l'app » sans planter.
+
 ## Mise à jour en direct (flux d'événements)
 
 Avec la source `api`, l'app ouvre le flux `GET /v1/events` de l'API (bonus #60, [D037](../../docs/journal/decisions/D037-flux-evenements-sse.md)) tant que l'utilisateur est connecté, l'app au premier plan et le téléphone en ligne. Chaque signal fait relire aussitôt les données concernées ; les interrogations périodiques passent alors à 60 s. Si le flux se coupe (réseau, redémarrage de l'API, deux battements manqués), elles reprennent aussitôt et l'app rouvre le flux, de 3 s à 30 s d'attente entre deux essais. Avec la source `mock`, aucun flux : l'app interroge comme avant.

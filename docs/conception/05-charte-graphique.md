@@ -160,6 +160,15 @@ Quand une nouvelle alerte s'ouvre alors que l'app est au premier plan, aucune no
 - **Refus de la localisation** : bandeau `neutral` « Localisation non autorisée » : « La position du téléphone place le panneau sur la carte. Vous pouvez saisir ses coordonnées, ou l'autoriser dans les réglages. » et les deux champs ouverts.
 - **Erreurs** : code déjà présent (« Un panneau P21 existe déjà sur ce site. Placez-le depuis la liste « à positionner » s'il vient d'être détecté. »), code invalide, hors ligne (bouton désactivé). **Lecteur** : bandeau « Réservé aux exploitants », aucun champ.
 
+### Vue 3D du parc (bonus #58)
+
+Troisième choix du sélecteur de l'écran Carte : « Plan », « 3D », « Liste ». Aucune maquette dédiée : la vue reprend les éléments du plan.
+
+- **Scène** (360 px de haut, coins `radius.lg`) : sol `mapGround`, vue en plongée depuis le sud-est ; chaque panneau positionné est une plaque inclinée colorée selon son statut (`status-normal`, `status-warning`, `status-nodata`). Les panneaux à positionner n'y figurent pas.
+- **Sélection** : toucher un panneau le sélectionne comme dans le plan (même fiche sous la vue, même accès au détail) ; il est surélevé, un peu agrandi et éclairé de `focus`.
+- **États** : « Chargement de la vue 3D… » pendant le chargement de la scène ; « La vue 3D n'est pas disponible dans cette version de l'app. Les mêmes informations sont dans les vues Plan et Liste. » si le module 3D manque.
+- **Accessibilité** : la scène n'est pas parcourable au lecteur d'écran ; elle est annoncée par un résumé (« Vue 3D du parc : 20 panneaux, dont 1 en alerte et 0 sans données. Les mêmes informations sont dans la vue Liste. »). Aucune information n'est propre à la 3D, et le statut est aussi donné par la fiche du panneau sélectionné (icône et mot).
+
 ### Graphique de courbe (lecture d'une valeur)
 
 Le graphique de production (écran Supervision, détail d'un panneau) se lit au toucher ([#106](04-besoins-fonctionnels.md)) :
