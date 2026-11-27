@@ -41,6 +41,8 @@ Au premier plan, l'alerte est déjà visible dans l'app : la notifier ajoute du 
 - Aucun nouveau build n'est nécessaire : le changement est en JavaScript.
 - Documents mis à jour : modèle de données, étude de faisabilité, UML (UC10, séquence 4.5, règles d'alerte), cartographie technique, besoins fonctionnels (jalon M5, issues #49 et #50), `apps/mobile/README.md`.
 
+**Suivi (2026-11-27) :** sans notification au premier plan, une nouvelle alerte ne se voyait plus qu'à la pastille de l'onglet Alertes. Un bandeau dans l'app la signale désormais ([#108](https://github.com/SamuelLnds/proj-app-mobile-co/issues/108), [charte, « Bandeau d'alerte »](../../conception/05-charte-graphique.md)). Ce n'est pas une notification système : la décision ci-dessus reste valable. Le bandeau applique les mêmes exclusions que le push (`info`, `PUSH_EXCLUDED_ALERT_TYPES`).
+
 ## Sources
 
 - [Expo : `setNotificationHandler`](https://docs.expo.dev/versions/latest/sdk/notifications/#setnotificationhandlerhandler)

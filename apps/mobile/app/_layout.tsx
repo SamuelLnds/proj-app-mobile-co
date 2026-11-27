@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { QueryProvider } from "../src/api";
 import { AuthProvider } from "../src/auth/AuthProvider";
+import { AlertBanner } from "../src/notifications/AlertBanner";
 import { NotificationEffects } from "../src/notifications/NotificationEffects";
 import { appFonts, ThemeProvider, useTheme } from "../src/theme";
 
@@ -46,6 +47,7 @@ export default function RootLayout() {
       <AuthProvider>
         <ThemeProvider>
           <ThemedStack />
+          <AlertBanner />
           <NotificationEffects />
         </ThemeProvider>
       </AuthProvider>

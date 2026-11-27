@@ -2,6 +2,7 @@ import type { AlertSeverity, ControlMode, RejectionReason, SetpointStatus } from
 import { useEffect, useState } from "react";
 
 import type { Tone } from "../components";
+import type { IconName } from "../theme";
 import { formatPercent } from "./format";
 
 // Libellés français affichés à l'utilisateur (charte, section « Contenu et ton »).
@@ -43,6 +44,13 @@ export const SEVERITY: Record<AlertSeverity, { label: string; tone: Tone }> = {
   info: { label: "Information", tone: "neutral" },
   warning: { label: "Avertissement", tone: "warning" },
   critical: { label: "Critique", tone: "critical" },
+};
+
+/** Icône de chaque gravité : la gravité n'est jamais portée par la couleur seule. */
+export const SEVERITY_ICON: Record<AlertSeverity, IconName> = {
+  info: "Info",
+  warning: "Warning",
+  critical: "WarningOctagon",
 };
 
 /** Heure courante, mise à jour régulièrement (ancienneté des données). */
