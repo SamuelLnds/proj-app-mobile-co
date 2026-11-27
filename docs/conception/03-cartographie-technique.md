@@ -86,7 +86,8 @@ proj-app-mobile-co/
 ├── firmware/
 │   └── site-device/         # Projet PlatformIO de l'ESP32 + diagram.json Wokwi
 ├── infra/
-│   └── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto (+ API pour la démo)
+│   ├── docker-compose.yml   # PostgreSQL + TimescaleDB, Mosquitto (+ API pour la démo)
+│   └── perf/                # Indicateurs de performance : indicators.sql (lecture seule), report.mjs (pnpm perf:report)
 ├── docs/
 │   ├── etude-faisabilite-parc-solaire.md
 │   ├── conception/          # Ce dossier

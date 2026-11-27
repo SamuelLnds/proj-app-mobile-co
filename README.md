@@ -237,16 +237,17 @@ git checkout -- apps/mobile/tsconfig.json
 
 ### 3.3 Autres scripts utiles
 
-| Commande                                                        | Effet                                                                               |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm db:up` · `pnpm db:down`                                   | Démarre ou arrête la base et le broker (Docker Compose, `infra/docker-compose.yml`) |
-| `pnpm mqtt:setup` · `pnpm mqtt:up`                              | Prépare puis démarre le broker                                                      |
-| `pnpm mqtt:reload`                                              | Fait relire l'ACL des objets et la liste de révocation au broker                    |
-| `pnpm mqtt:check-devices`                                       | Vérifie le TLS mutuel de l'écoute 8883 sur le broker démarré                        |
-| `pnpm firmware:secrets --host <hôte> --port <port>`             | Génère `firmware/site-device/include/secrets.h` (ignoré par Git)                    |
-| `pnpm --filter api dev`                                         | API seule (rechargement automatique)                                                |
-| `pnpm --filter simulator dev` · `pnpm --filter simulator start` | Simulateur seul (avec ou sans rechargement)                                         |
-| `pnpm --filter api db:generate`                                 | Génère une migration Drizzle après modification de `schema.ts`                      |
+| Commande                                                        | Effet                                                                                                 |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm db:up` · `pnpm db:down`                                   | Démarre ou arrête la base et le broker (Docker Compose, `infra/docker-compose.yml`)                   |
+| `pnpm mqtt:setup` · `pnpm mqtt:up`                              | Prépare puis démarre le broker                                                                        |
+| `pnpm mqtt:reload`                                              | Fait relire l'ACL des objets et la liste de révocation au broker                                      |
+| `pnpm mqtt:check-devices`                                       | Vérifie le TLS mutuel de l'écoute 8883 sur le broker démarré                                          |
+| `pnpm perf:report -- --from <date> --to <date> --log <journal>` | Indicateurs de performance d'une période ([dossier technique](docs/dossier-technique.md#performance)) |
+| `pnpm firmware:secrets --host <hôte> --port <port>`             | Génère `firmware/site-device/include/secrets.h` (ignoré par Git)                                      |
+| `pnpm --filter api dev`                                         | API seule (rechargement automatique)                                                                  |
+| `pnpm --filter simulator dev` · `pnpm --filter simulator start` | Simulateur seul (avec ou sans rechargement)                                                           |
+| `pnpm --filter api db:generate`                                 | Génère une migration Drizzle après modification de `schema.ts`                                        |
 
 ## 4. Build de développement de l'app et notifications push
 
@@ -525,6 +526,7 @@ Le détail, issue par issue, est dans [`docs/synthese-projet.md`](docs/synthese-
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Règles de travail (langue, Git, commandes, sécurité)                                       | [`CLAUDE.md`](CLAUDE.md)                                                                                                                                                                          |
 | Présenter le projet à l'oral                                                               | [`docs/synthese-projet.md`](docs/synthese-projet.md)                                                                                                                                              |
+| Indicateurs de performance et autres éléments techniques                                   | [`docs/dossier-technique.md`](docs/dossier-technique.md)                                                                                                                                          |
 | Périmètre et contexte                                                                      | [`docs/etude-faisabilite-parc-solaire.md`](docs/etude-faisabilite-parc-solaire.md)                                                                                                                |
 | Tables, colonnes, enums, SQL                                                               | [`docs/conception/01-modele-donnees.md`](docs/conception/01-modele-donnees.md)                                                                                                                    |
 | Comportements, séquences, règles d'alerte, algorithme                                      | [`docs/conception/02-uml.md`](docs/conception/02-uml.md)                                                                                                                                          |
