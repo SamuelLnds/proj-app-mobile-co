@@ -1033,11 +1033,11 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 - Une fiche de décision pour tout choix structurant qui n'en a pas encore.
 
 **Critères d'acceptation :**
-- [ ] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
-- [ ] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
-- [ ] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
-- [ ] Chaque thème du chapitre 6 (au repos, mise à jour du firmware, tests d'intrusion, RGPD, ETSI EN 303 645) a une partie qui dit ce qui est fait et pourquoi ce choix.
-- [ ] Le rapport MobSF de l'APK est résumé dans le dossier, avec la suite donnée à chaque point élevé.
+- [x] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
+- [x] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
+- [x] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
+- [x] Chaque thème du chapitre 6 (au repos, mise à jour du firmware, tests d'intrusion, RGPD, ETSI EN 303 645) a une partie qui dit ce qui est fait et pourquoi ce choix.
+- [x] Le rapport MobSF de l'APK est résumé dans le dossier, avec la suite donnée à chaque point élevé.
 
 **Dépend de :** M5 et M9 terminés, #53 · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md), [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)
 
