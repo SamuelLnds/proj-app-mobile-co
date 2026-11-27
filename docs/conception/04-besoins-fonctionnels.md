@@ -1440,6 +1440,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - [ ] Une connexion sur 8883 sans certificat client, avec un certificat expiré ou avec un certificat d'une autre autorité est refusée.
 - [ ] Un certificat valide de nom commun `device-site01` se connecte et n'a que les droits de l'objet (section 6.3 de la cartographie).
 - [ ] Après retrait de l'ACL, les publications de l'objet sont refusées ; après ajout à la liste de révocation, sa reconnexion est refusée.
+- [ ] Documentation mise à jour : `README.md` (création de l'autorité des objets, `pnpm mqtt:setup`, révocation, problèmes connus), `infra/README.md` et la partie sécurité de `docs/synthese-projet.md`.
 
 **Dépend de :** #11, #65 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Cartographie, sections 5.6 et 6.3](03-cartographie-technique.md)
 
@@ -1463,6 +1464,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - [ ] Le nom commun du certificat est le nom approuvé, quel que soit celui du CSR.
 - [ ] Aucune requête ni réponse d'enrôlement ne contient de clé privée (test : le mot `PRIVATE` n'y apparaît pas) ; la clé de l'autorité n'apparaît ni dans le dépôt ni dans les logs.
 - [ ] Tests : demande, empreinte, expiration de la demande, doublon de nom, acceptation, refus, révocation, CSR invalide.
+- [ ] Documentation mise à jour : routes et codes d'erreur dans la cartographie, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #13, #27, #80 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md), [Cartographie, sections 7 et 8](03-cartographie-technique.md)
 
@@ -1481,6 +1483,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - [ ] Conforme à la maquette, clair et sombre.
 - [ ] L'empreinte est affichée en entier et lisible à voix haute ; l'acceptation rappelle de la comparer.
 - [ ] La révocation demande une confirmation explicite ; un lecteur ne voit aucune action.
+- [ ] Documentation mise à jour : `apps/mobile/README.md`, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #69, #70 ; #81 pour le branchement · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Charte graphique](05-charte-graphique.md)
 
@@ -1501,6 +1504,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - [ ] Le projet Wokwi ne contient ni mot de passe MQTT ni clé privée.
 - [ ] L'empreinte affichée par l'objet est celle que montre l'app ; après acceptation, l'objet publie `online` puis ses mesures.
 - [ ] Après révocation, l'objet est refusé par le broker et refait une demande.
+- [ ] Documentation mise à jour : `README.md` et `firmware/site-device/README.md` (enrôlement dans Wokwi, plus de mot de passe dans `secrets.h`, problèmes connus), partie sécurité de `docs/synthese-projet.md`.
 
 **Dépend de :** #20, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)
 
@@ -1515,5 +1519,6 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 **Critères d'acceptation :**
 - [ ] Le parcours complet (demande, comparaison de l'empreinte et acceptation dans l'app, connexion, révocation, refus) fonctionne en local.
 - [ ] Aucun mot de passe MQTT n'est utilisé en mode objet du site, et aucune clé privée ne transite.
+- [ ] Documentation mise à jour : `README.md` (variables d'enrôlement du simulateur), « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #64, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)
