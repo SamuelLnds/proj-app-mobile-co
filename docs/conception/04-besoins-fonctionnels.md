@@ -163,6 +163,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #60 | Bonus : flux temps réel poussé (SSE) | M7 | api, mobile |
 | #61 | API : positionnement, modification et suppression d'un panneau | M3 | api |
 | #62 | Mobile : brancher les panneaux à positionner | M3 | mobile |
+| #106 | Mobile : lecture du graphique de production et carte des panneaux à positionner | M3 | mobile |
 | #63 | Bonus : ajout d'un panneau sur le terrain par QR code | M7 | api, mobile |
 | #64 | Simulateur : mode objet du site | M2 | simulator |
 | #65 | Infra : connexion de l'ESP32 de Wokwi au broker | M2 | infra |
@@ -1146,6 +1147,29 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - [ ] Conforme à la maquette « Carte · liste et panneaux à positionner ».
 
 **Dépend de :** #35, #61, #73 · **Références :** [UML, UC17](02-uml.md), maquettes (#2)
+
+### #106 · Mobile : lecture du graphique de production et carte des panneaux à positionner
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Contexte :** le graphique de production de l'écran Supervision (et celui du détail d'un panneau) ne se lit pas : l'axe du temps affiche toujours des heures, quelle que soit la période, aucune valeur n'est lisible au toucher, et une période sans mesure laisse une zone vide. Dans la liste de l'écran Carte, la puissance d'un panneau à positionner sort de la carte quand le texte de détection est long.
+
+**À faire :**
+- Axe du temps selon la période : `HH:MM` sur 1 h, `HH h` sur 24 h, jour abrégé et date (`lun. 23`) sur 7 jours, par une fonction pure.
+- Lecture d'une valeur : un appui ou un glissement horizontal sur la zone de tracé affiche un trait vertical au point le plus proche de la courbe réelle, ce point mis en valeur, et une bulle avec l'heure complète, la valeur réelle et, si elle existe, la valeur attendue. La bulle reste dans les bords du graphique. Le geste ne bloque pas le défilement vertical de l'écran. La recherche du point le plus proche est une fonction pure.
+- État vide : une phrase en français à la place de la zone vide quand la période n'a aucune mesure (« Aucune mesure sur la dernière heure », etc.), sur l'écran Supervision et sur le détail d'un panneau.
+- Carte « Panneaux à positionner » : la colonne de gauche rétrécit et passe à la ligne, la puissance reste entièrement visible ; la puissance par défaut vient de `DEFAULT_PANEL_RATED_POWER_W`.
+- Description de l'interaction dans la charte graphique.
+
+**Critères d'acceptation :**
+- [ ] Les graduations de l'axe du temps suivent la période : `HH:MM` (1 h), `HH h` (24 h), jour abrégé et date (7 j) (tests de la fonction de formatage).
+- [ ] Un appui ou un glissement sur la courbe affiche un trait vertical, un point mis en valeur et une bulle avec l'heure, la valeur réelle et la valeur attendue ; la bulle ne sort pas du graphique (tests de la recherche du point le plus proche et du placement de la bulle).
+- [ ] Le graphique garde son résumé d'accessibilité ; la bulle utilise les jetons de thème et reste lisible en clair et en sombre.
+- [ ] Le défilement vertical de l'écran n'est pas bloqué par le graphique (à vérifier sur le téléphone).
+- [ ] Sans mesure sur la période, un texte en français remplace la zone vide, sur l'écran Supervision et sur le détail d'un panneau (test).
+- [ ] Dans « Panneaux à positionner », la puissance reste visible dans la carte, quelle que soit la longueur du texte (à vérifier sur le téléphone) ; « 200 W par défaut » n'est plus écrit en dur.
+
+**Dépend de :** #62, #73, #74 · **Références :** [Charte graphique](05-charte-graphique.md), [D025](../journal/decisions/D025-integration-interface.md)
 
 ## 11. Ajouts suite au changement de broker
 

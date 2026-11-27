@@ -13,6 +13,7 @@ import {
 } from "../../src/components";
 import { PANEL_STATUS } from "../../src/components/ParkPlan";
 import { Icon, sizes, spacing, typography, useTheme } from "../../src/theme";
+import { emptyChartMessage } from "../../src/utils/chart";
 import { formatPercent, formatPower, formatTemperature, formatTime } from "../../src/utils/format";
 import { SEVERITY } from "../../src/utils/labels";
 
@@ -121,10 +122,17 @@ export default function PanelScreen() {
               <LineChart
                 series={history.data.map((pt) => ({ time: pt.time, value: pt.production }))}
                 formatValue={(v) => formatPower(v)}
+                period="24h"
                 accessibilityLabel={`Production du panneau sur 24 heures : maximum ${formatPower(
                   Math.max(...history.data.map((pt) => pt.production)),
                 )}`}
               />
+            ) : history.data ? (
+              <View style={styles.chartEmpty}>
+                <Text style={[typography.label, { color: colors.inkMuted }]}>
+                  {emptyChartMessage("24h")}
+                </Text>
+              </View>
             ) : (
               <View style={{ height: 150 }} />
             )}
@@ -136,6 +144,7 @@ export default function PanelScreen() {
 }
 
 const styles = StyleSheet.create({
+  chartEmpty: { height: 150, alignItems: "center", justifyContent: "center" },
   headerBelow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   back: {
     flexDirection: "row",

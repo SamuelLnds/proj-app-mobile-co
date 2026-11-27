@@ -123,6 +123,16 @@ Dans l'onglet « Actives », une alerte non lue ([D034](../journal/decisions/D03
 
 Une alerte de panneau a, sous son texte, un contrôle **« Voir le panneau »** (icône `CaretRight`, couleur `primary`, hauteur d'au moins 48 px) ; une alerte du site n'a pas de navigation. Le bouton secondaire **« Tout marquer comme lu »** est à droite du titre de l'écran tant qu'il existe des alertes non lues.
 
+### Graphique de courbe (lecture d'une valeur)
+
+Le graphique de production (écran Supervision, détail d'un panneau) se lit au toucher ([#106](04-besoins-fonctionnels.md)) :
+
+- **Appui ou glissement** sur la zone de tracé : un **trait vertical** (`lineStrong`) se place au point le plus proche de la courbe réelle, ce point est mis en valeur (disque `ink` bordé de `surface`), et une **bulle** (fond `surfaceRaised`, bordure `lineStrong`, texte `ink`) affiche l'heure complète (`14:35` sur 1 h et 24 h, `lun. 23 · 14:35` sur 7 jours), « Réelle : X » et, si la courbe attendue existe, « Attendue : Y ». La bulle reste dans les bords du graphique.
+- **Relâchement** : la sélection reste affichée 1,5 s puis disparaît ; un nouvel appui la replace aussitôt. Le geste n'est pris que s'il est plutôt horizontal : un glissement vertical fait défiler l'écran.
+- **Axe du temps** selon la période : `HH:MM` sur 1 h, `HH h` sur 24 h, jour abrégé et date (`lun. 23`) sur 7 jours.
+- **Sans donnée** (aucune mesure ou une seule sur la période) : à la place de la zone vide, une phrase en `inkMuted` (« Aucune mesure sur la dernière heure », « … sur les dernières 24 heures », « … sur les 7 derniers jours »).
+- Le résumé d'accessibilité du graphique (valeur actuelle, maximum) est conservé ; la valeur lue au toucher est un complément visuel.
+
 ## 7. Écarts et points ouverts
 
 - Le design system ne contient pas encore de composants réutilisables (boutons, pastilles, cartes) : ils seront écrits directement en React Native à partir des jetons.

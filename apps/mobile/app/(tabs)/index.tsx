@@ -32,6 +32,7 @@ import {
   formatPower,
   speakPower,
 } from "../../src/utils/format";
+import { emptyChartMessage } from "../../src/utils/chart";
 import { modeDescription, useNow } from "../../src/utils/labels";
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -299,6 +300,7 @@ export default function SupervisionScreen() {
                   value: p.irradiance * DEMO_SITE_PRODUCTION_FACTOR,
                 }))}
                 formatValue={(v) => formatPower(v).replace(",00", "")}
+                period={period}
                 accessibilityLabel={`Production sur la période : maximum ${formatPower(
                   Math.max(...history.data.map((p) => p.production)),
                 )}, actuelle ${formatPower(m.production)}`}
@@ -307,6 +309,12 @@ export default function SupervisionScreen() {
               <View style={styles.chartEmpty}>
                 <Text style={[typography.label, { color: colors.inkMuted }]}>
                   Historique indisponible pour le moment.
+                </Text>
+              </View>
+            ) : history.data ? (
+              <View style={styles.chartEmpty}>
+                <Text style={[typography.label, { color: colors.inkMuted }]}>
+                  {emptyChartMessage(period)}
                 </Text>
               </View>
             ) : (

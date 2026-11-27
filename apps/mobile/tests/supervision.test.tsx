@@ -6,7 +6,7 @@ import { QueryProvider, withLocalCopy } from "../src/api";
 import { resetLastSync, setLastSync } from "../src/api/last-sync";
 import { AuthProvider } from "../src/auth/AuthProvider";
 import { OfflineBanner } from "../src/components";
-import { ApiDataSource, DataSourceError } from "../src/data";
+import { ApiDataSource, DataSourceError, dataSource } from "../src/data";
 import { saveResponse } from "../src/storage";
 import { ThemeProvider } from "../src/theme";
 import { speakPower } from "../src/utils/format";
@@ -34,6 +34,9 @@ describe("Supervision (#34)", () => {
 });
 
 describe("affichage sans réseau (#37)", () => {
+  // La date de synchronisation est globale : les tests précédents ont déjà reçu des réponses.
+  beforeEach(() => resetLastSync());
+
   afterEach(() => {
     resetLastSync();
     jest.restoreAllMocks();
@@ -74,5 +77,15 @@ describe("suppression d'un panneau (#62)", () => {
       "http://localhost:3000/v1/panels/00000000-0000-4000-8000-000000000121",
       expect.objectContaining({ method: "DELETE" }),
     );
+  });
+});
+
+describe("graphique de production sans mesure (#106)", () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it("affiche une phrase selon la période au lieu d'une zone vide", async () => {
+    jest.spyOn(dataSource, "getSiteMeasurements").mockResolvedValue([]);
+    await render(providers(<SupervisionScreen />));
+    expect(await screen.findByText("Aucune mesure sur les dernières 24 heures")).toBeTruthy();
   });
 });

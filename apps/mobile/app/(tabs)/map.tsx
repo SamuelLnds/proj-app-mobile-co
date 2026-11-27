@@ -1,4 +1,4 @@
-import type { PanelSummary } from "@solar/contracts";
+import { DEFAULT_PANEL_RATED_POWER_W, type PanelSummary } from "@solar/contracts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import type * as ExpoLocation from "expo-location";
@@ -335,13 +335,13 @@ export default function MapScreen() {
                   style={{ borderWidth: 1, borderStyle: "dashed", borderColor: colors.lineStrong }}
                 >
                   <View style={[styles.row, styles.between]}>
-                    <View>
+                    <View style={styles.detected}>
                       <Text style={[typography.bodyBold, { color: colors.ink }]}>{panel.code}</Text>
                       <Text style={[typography.label, { color: colors.inkMuted }]}>
-                        Détecté automatiquement · 200 W par défaut
+                        {`Détecté automatiquement · ${formatPower(DEFAULT_PANEL_RATED_POWER_W)} par défaut`}
                       </Text>
                     </View>
-                    <Text style={[typography.value, { color: colors.ink }]}>
+                    <Text style={[typography.value, styles.detectedPower, { color: colors.ink }]}>
                       {panel.latestProduction !== null ? formatPower(panel.latestProduction) : "—"}
                     </Text>
                   </View>
@@ -394,6 +394,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: spacing[3] },
   between: { justifyContent: "space-between" },
   flex: { flex: 1 },
+  detected: { flex: 1, minWidth: 0, gap: spacing[1] },
+  detectedPower: { flexShrink: 0 },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: spacing[3] },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   empty: { height: 360, borderRadius: radius.lg },
