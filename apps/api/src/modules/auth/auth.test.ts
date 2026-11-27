@@ -159,3 +159,38 @@ describe("routes protégées", () => {
     expect(response.statusCode).toBe(200);
   });
 });
+
+describe("service d'authentification", () => {
+  const repository = (users: UserRow[]): AuthRepository => ({
+    findUserByEmail: async (email) => users.find((u) => u.email === email) ?? null,
+    findUserById: async (id) => users.find((u) => u.id === id) ?? null,
+  });
+
+  it("refuse un e-mail inconnu avec la même erreur qu'un mauvais mot de passe", async () => {
+    const service = createAuthService(repository([OPERATOR]));
+    await expect(
+      service.verifyCredentials({ email: "inconnu@demo.local", password: PASSWORD }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    await expect(
+      service.verifyCredentials({ email: OPERATOR.email, password: "faux" }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+  });
+
+  it("ne renvoie jamais le haché du mot de passe", async () => {
+    const user = await createAuthService(repository([OPERATOR])).verifyCredentials({
+      email: OPERATOR.email,
+      password: PASSWORD,
+    });
+    expect(user).toEqual({
+      id: OPERATOR.id,
+      email: OPERATOR.email,
+      name: OPERATOR.name,
+      role: "operator",
+    });
+  });
+
+  it("refuse le jeton d'un compte supprimé depuis (401 UNAUTHENTICATED)", async () => {
+    const service = createAuthService(repository([]));
+    await expect(service.getUser(OPERATOR.id)).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+  });
+});

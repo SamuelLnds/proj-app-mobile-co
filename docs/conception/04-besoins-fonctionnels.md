@@ -1044,9 +1044,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **Labels :** `type:test`, `priority:core`
 
 **Critères d'acceptation :**
-- [ ] Les services de l'API (`setpoints`, `alerts`, `measurements`, `auth`) sont couverts à 80 % au moins.
-- [ ] Tous les schémas de `contracts` ont un test d'acceptation et un test de refus.
-- [ ] Les composants principaux de l'app (jauge, sélecteur de mode, marqueur de carte) ont un test de rendu.
+- [x] Les services de l'API (`setpoints`, `alerts`, `measurements`, `auth`) sont couverts à 80 % au moins.
+- [x] Tous les schémas de `contracts` ont un test d'acceptation et un test de refus.
+- [x] Les composants principaux de l'app (jauge, sélecteur de mode, marqueur de carte) ont un test de rendu.
 
 **Dépend de :** M5 terminé
 
