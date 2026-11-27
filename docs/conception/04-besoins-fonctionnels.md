@@ -1518,7 +1518,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 
 **Critères d'acceptation :**
 - [ ] Le parcours complet (demande, comparaison de l'empreinte et acceptation dans l'app, connexion, révocation, refus) fonctionne en local.
-- [ ] Aucun mot de passe MQTT n'est utilisé en mode objet du site, et aucune clé privée ne transite.
-- [ ] Documentation mise à jour : `README.md` (variables d'enrôlement du simulateur), « Où on en est » de `docs/synthese-projet.md`.
+- [x] Aucun mot de passe MQTT n'est utilisé en mode objet du site, et aucune clé privée ne transite.
+- [x] Documentation mise à jour : `README.md` (variables d'enrôlement du simulateur), « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #64, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)

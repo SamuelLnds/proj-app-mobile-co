@@ -1,13 +1,19 @@
 // Aiguillage des modes du simulateur selon la configuration.
 import type { Config } from "./config";
-import { startDeviceMode, type DeviceClient } from "./device/run-device";
+import type { DeviceClient } from "./device/run-device";
+import { startEnrolledDevice } from "./device/run-enrolled-device";
 import { startPanelsMode } from "./panels/run-panels";
 
 /**
  * Démarre les modes ; renvoie la fonction qui les arrête.
- * Le mode panneaux tourne toujours ; le mode objet du site seulement avec `SIMULATE_DEVICE`.
+ * Le mode panneaux tourne toujours, sur la connexion du simulateur ; le mode objet du site
+ * seulement avec `SIMULATE_DEVICE`, sur sa propre connexion obtenue par enrôlement (#84).
  */
-export function startSimulator(client: DeviceClient, config: Config): () => void {
+export function startSimulator(
+  client: DeviceClient,
+  config: Config,
+  startDevice: (config: Config) => () => void = startEnrolledDevice,
+): () => void {
   const stoppers: Array<() => void> = [
     startPanelsMode(client, {
       siteCode: config.SITE_CODE,
@@ -16,7 +22,7 @@ export function startSimulator(client: DeviceClient, config: Config): () => void
     }),
   ];
   if (config.SIMULATE_DEVICE) {
-    stoppers.push(startDeviceMode(client, config.SITE_CODE));
+    stoppers.push(startDevice(config));
   }
   return () => stoppers.forEach((stop) => stop());
 }

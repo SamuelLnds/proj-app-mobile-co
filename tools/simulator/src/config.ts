@@ -4,6 +4,8 @@ import { PANEL_CODE_PATTERN, SITE_CODE_PATTERN } from "@solar/contracts";
 import { z } from "zod";
 
 /** Découpe une liste séparée par des virgules (ex. `P07,P12`) ; une valeur absente donne une liste vide. */
+const emptyToUndefined = (value: unknown) => (value === "" ? undefined : value);
+
 const panelListSchema = z
   .string()
   .optional()
@@ -42,9 +44,37 @@ const ConfigSchema = z.object({
     .transform((value) => value === "true"),
   FAULTY_PANELS: panelListSchema,
   EXTRA_PANELS: panelListSchema,
+  // Mode objet du site : enrôlement auprès de l'API puis TLS mutuel sur 8883 (D027, #84).
+  // Valeurs par défaut pour le développement, le simulateur étant lancé depuis tools/simulator.
+  /** Nom de l'objet, identique à son identifiant MQTT (défaut : `device-` suivi du code du site). */
+  DEVICE_NAME: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .regex(/^[a-z0-9-]{3,64}$/, "nom d'objet attendu (ex. device-site01)")
+      .optional(),
+  ),
+  API_URL: z.preprocess(
+    emptyToUndefined,
+    z
+      .url({ protocol: /^https?$/, message: "doit commencer par http:// ou https://" })
+      .default("http://127.0.0.1:3000/v1"),
+  ),
+  DEVICE_MQTT_URL: z.preprocess(
+    emptyToUndefined,
+    z
+      .url({ protocol: /^mqtts$/, message: "doit commencer par mqtts://" })
+      .default("mqtts://localhost:8883"),
+  ),
+  /** Certificat de l'autorité du serveur (public), pour vérifier le broker. */
+  BROKER_CA_PATH: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("../../infra/mosquitto/generated/ca.crt"),
+  ),
 });
 
-export type Config = z.infer<typeof ConfigSchema>;
+type ParsedConfig = z.infer<typeof ConfigSchema>;
+export type Config = Omit<ParsedConfig, "DEVICE_NAME"> & { DEVICE_NAME: string };
 
 /** Valide les variables d'environnement ; lève une erreur listant chaque variable en défaut. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -55,5 +85,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .join("\n");
     throw new Error(`Configuration invalide, variables d'environnement à corriger :\n${problems}`);
   }
-  return result.data;
+  return {
+    ...result.data,
+    DEVICE_NAME: result.data.DEVICE_NAME ?? `device-${result.data.SITE_CODE.toLowerCase()}`,
+  };
 }
