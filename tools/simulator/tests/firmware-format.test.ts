@@ -28,6 +28,7 @@ describe("config.h du firmware", () => {
     "DEMO_SITE_BATTERY_CAPACITY_WH",
     "DEMO_SITE_MAX_CHARGE_POWER_W",
     "DEMO_SITE_PRODUCTION_FACTOR",
+    "ENROLLMENT_POLL_PERIOD_S",
   ] as const;
 
   it.each(shared)("%s est identique à celle de @solar/contracts", (name) => {

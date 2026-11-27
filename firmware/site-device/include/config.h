@@ -3,6 +3,8 @@
 // et doivent rester IDENTIQUES (un test de tools/simulator le vérifie).
 #pragma once
 
+#include <cstdint>
+
 // --- Constantes partagées (section 8 de docs/conception/03-cartographie-technique.md) ---
 
 // Version du format des messages MQTT.
@@ -23,6 +25,8 @@ constexpr int DEMO_SITE_PEAK_POWER_W = 4000;
 constexpr int DEMO_SITE_BATTERY_CAPACITY_WH = 10000;
 constexpr int DEMO_SITE_MAX_CHARGE_POWER_W = 3000;
 constexpr float DEMO_SITE_PRODUCTION_FACTOR = 4.0f;
+// Période de suivi d'une demande d'enrôlement (s), D027.
+constexpr int ENROLLMENT_POLL_PERIOD_S = 3;
 
 // --- Propres au firmware ---
 
@@ -62,6 +66,14 @@ constexpr int MQTT_SOCKET_TIMEOUT_S = 10;
 // temps réel : sans resynchronisation, les horodatages des mesures prennent un retard croissant
 // (l'API les remplace au-delà de MAX_CLOCK_DRIFT_S). Minimum accepté par le SNTP de l'ESP-IDF : 15 s.
 constexpr unsigned long NTP_RESYNC_INTERVAL_MS = 60000;
+
+// Enrôlement (D027) : nouvel essai d'une demande refusée par l'API (autre demande en attente, API
+// injoignable), contrôle du certificat une fois connecté (une révocation ne coupe pas la connexion),
+// refus de connexion du broker avant de vérifier le certificat auprès de l'API, délai d'une requête HTTP.
+constexpr unsigned long ENROLLMENT_RETRY_MS = 15000;
+constexpr unsigned long CERTIFICATE_CHECK_PERIOD_MS = 30000;
+constexpr int MQTT_FAILURES_BEFORE_CHECK = 3;
+constexpr uint16_t ENROLLMENT_HTTP_TIMEOUT_MS = 8000;
 
 // Étalonnage de la photorésistance (module Wokwi : LDR en série avec 10 kΩ, rl10 = 50 kΩ, gamma = 0,7).
 constexpr float ADC_MAX_RAW = 4095.0f;

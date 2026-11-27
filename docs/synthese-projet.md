@@ -114,7 +114,9 @@ Ce qui est en place :
 
 - le simulateur, en mode objet du site, suit exactement ce parcours : il n'a plus de mot de passe pour jouer l'objet et se connecte avec le certificat obtenu par enrôlement.
 
-Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'objet. Le broker, l'API, l'app et le simulateur sont prêts. Il reste l'enrôlement dans le firmware de l'ESP32 : d'ici là, l'ESP32 de Wokwi ne peut plus se connecter, et le simulateur joue l'objet du site.
+- le firmware de l'ESP32 suit le même parcours : clé générée en mémoire au démarrage, empreinte affichée sur le moniteur série, certificat demandé à l'API puis vérifié, connexion par certificat ; le projet Wokwi ne contient plus ni mot de passe ni clé privée.
+
+Ce qui reste à faire : vérifier dans Wokwi le parcours complet de l'ESP32 (empreinte, acceptation dans l'app, connexion, révocation) ; il est écrit et compilé, mais pas encore exécuté dans la simulation.
 
 ## Limites
 
@@ -126,11 +128,10 @@ Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'obj
 
 ## Où on en est
 
-Fait : l'API, la base, le simulateur, le firmware, tous les écrans de l'app branchés sur l'API, le mode hors ligne, les alertes, les notifications et le pilotage, vérifiés de bout en bout dans Wokwi ; le bandeau d'alerte app ouverte (#108) et l'arrêt des rafraîchissements en arrière-plan (#111) ; côté sécurité de l'objet, le TLS mutuel du broker (#80), l'enrôlement par l'API (#81), l'écran « Objets » de l'app (#82, maquette à ajouter au canevas) et l'enrôlement du simulateur (#84).
+Fait : l'API, la base, le simulateur, le firmware, tous les écrans de l'app branchés sur l'API, le mode hors ligne, les alertes, les notifications et le pilotage, vérifiés de bout en bout dans Wokwi ; le bandeau d'alerte app ouverte (#108) et l'arrêt des rafraîchissements en arrière-plan (#111) ; côté sécurité de l'objet, le TLS mutuel du broker (#80), l'enrôlement par l'API (#81), l'écran « Objets » de l'app (#82, maquette à ajouter au canevas), l'enrôlement du simulateur (#84) et du firmware (#83, à vérifier dans Wokwi).
 
 Reste à faire, dans l'ordre :
-1. finir les vérifications dans Wokwi (#20, #38 à #40) et sur le téléphone (#62, #108, #111) ;
-2. la fin de la sécurité de l'objet : enrôlement du firmware (#83) ;
+1. finir les vérifications dans Wokwi (#20, #38 à #40, #83) et sur le téléphone (#62, #82, #84, #108, #111) ;
 4. la livraison : VPS (#54), APK (#53), dossier sécurité (#51), mesures de performance (#110), tests (#52), documentation (#55), démonstration (#56), bilan (#57).
 
 Les bonus (vue 3D, rotation des panneaux, temps réel poussé, ajout par QR code) viennent ensuite. Le détail de chaque issue est dans [les besoins fonctionnels](conception/04-besoins-fonctionnels.md).

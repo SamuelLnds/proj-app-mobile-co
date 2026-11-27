@@ -88,6 +88,8 @@ C'est la seule option qui ne laisse **aucun secret** dans un projet Wokwi public
 
 **Suivi (2026-11-27, #80) :** le broker est en place. Mosquitto 2.1.4 relit l'ACL des objets **et** la liste de révocation sur `SIGHUP`, sans redémarrage : le rechargement retenu est donc le signal (`reload.sh`, `pnpm mqtt:reload`), pas le redémarrage du conteneur. Vérifié par `pnpm mqtt:check-devices` : le retrait de l'ACL refuse aussitôt les publications d'une connexion déjà ouverte ; la révocation refuse la reconnexion. Le mot de passe de `device-site01` est supprimé dès #80 (choix du binôme) : l'ESP32 de Wokwi ne se connecte plus jusqu'à #83, le simulateur joue l'objet du site en attendant. Point ouvert pour le VPS (#54) : l'API y tournera dans un conteneur et devra pouvoir déclencher ce rechargement (accès à `docker compose exec` ou espace de processus partagé avec le broker).
 
+**Suivi (2026-11-27, #83, #84) :** le simulateur et le firmware s'enrôlent. En développement, l'ESP32 de Wokwi joint l'API par un second tunnel bore, en **HTTP** : la demande et le certificat sont publics et l'objet vérifie le certificat reçu (nom et clé publique), un intermédiaire ne peut donc que bloquer l'enrôlement, pas obtenir de certificat utilisable. Le firmware gère aussi HTTPS (`ENROLLMENT_CA_CERT`), à utiliser sur le VPS (#54). Une révocation est détectée par l'objet en 30 s au plus (contrôle périodique auprès de l'API), ses publications étant refusées dès la révocation.
+
 ## Sources
 
 - B. Boussemart, « lab-secured-v3 — enrôlement par CSR », support de cours ESPL / MyDigitalSchool, 2026 (non diffusé).
