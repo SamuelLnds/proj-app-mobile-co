@@ -1437,10 +1437,10 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - Mécanisme de rechargement du broker par l'API après modification de l'ACL ou de la liste de révocation (signal ou redémarrage du conteneur), avec vérification de son effet sur une connexion déjà ouverte.
 
 **Critères d'acceptation :**
-- [ ] Une connexion sur 8883 sans certificat client, avec un certificat expiré ou avec un certificat d'une autre autorité est refusée.
-- [ ] Un certificat valide de nom commun `device-site01` se connecte et n'a que les droits de l'objet (section 6.3 de la cartographie).
-- [ ] Après retrait de l'ACL, les publications de l'objet sont refusées ; après ajout à la liste de révocation, sa reconnexion est refusée.
-- [ ] Documentation mise à jour : `README.md` (création de l'autorité des objets, `pnpm mqtt:setup`, révocation, problèmes connus), `infra/README.md` et la partie sécurité de `docs/synthese-projet.md`.
+- [x] Une connexion sur 8883 sans certificat client, avec un certificat expiré ou avec un certificat d'une autre autorité est refusée.
+- [x] Un certificat valide de nom commun `device-site01` se connecte et n'a que les droits de l'objet (section 6.3 de la cartographie).
+- [x] Après retrait de l'ACL, les publications de l'objet sont refusées ; après ajout à la liste de révocation, sa reconnexion est refusée.
+- [x] Documentation mise à jour : `README.md` (création de l'autorité des objets, `pnpm mqtt:setup`, révocation, problèmes connus), `infra/README.md` et la partie sécurité de `docs/synthese-projet.md`.
 
 **Dépend de :** #11, #65 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Cartographie, sections 5.6 et 6.3](03-cartographie-technique.md)
 

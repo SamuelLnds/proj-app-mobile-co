@@ -1,0 +1,35 @@
+# Configuration OpenSSL de l'autorité des objets (D027), copiée dans infra/mosquitto/device-ca/
+# par « pnpm mqtt:setup ». Les chemins sont relatifs au dossier de l'autorité, monté sur /work.
+
+[ ca ]
+default_ca = devices
+
+[ devices ]
+dir = /work
+database = $dir/index.txt
+new_certs_dir = $dir/newcerts
+certificate = $dir/devices-ca.crt
+private_key = $dir/devices-ca.key
+serial = $dir/serial
+crlnumber = $dir/crlnumber
+default_md = sha256
+# Le nom commun d'un objet est réutilisé d'un enrôlement à l'autre : l'ancien certificat est
+# révoqué, il n'est pas refusé à la signature.
+unique_subject = no
+policy = policy_device
+# Seul le nom imposé par le serveur compte : les extensions de la demande sont ignorées.
+copy_extensions = none
+x509_extensions = device_cert
+# La liste de révocation est regénérée à chaque révocation ; sa durée doit couvrir les périodes
+# sans révocation, sinon le broker refuserait tous les objets.
+default_crl_days = 825
+
+[ policy_device ]
+commonName = supplied
+
+[ device_cert ]
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature
+extendedKeyUsage = clientAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid

@@ -86,6 +86,8 @@ C'est la seule option qui ne laisse **aucun secret** dans un projet Wokwi public
 - **Limites assumées** *(comme dans le cours)* : la clé est en mémoire vive, pas dans un élément sécurisé, donc un firmware modifié pourrait la divulguer ; quiconque atteint l'API peut déposer une demande, d'où l'expiration des demandes et la limitation de débit. Le rechargement exact de Mosquitto (signal `SIGHUP` ou redémarrage du conteneur) et son effet sur une connexion déjà ouverte sont à vérifier à la mise en œuvre.
 - Risque principal : la clé de l'autorité des objets devient le secret le plus sensible du projet.
 
+**Suivi (2026-11-27, #80) :** le broker est en place. Mosquitto 2.1.4 relit l'ACL des objets **et** la liste de révocation sur `SIGHUP`, sans redémarrage : le rechargement retenu est donc le signal (`reload.sh`, `pnpm mqtt:reload`), pas le redémarrage du conteneur. Vérifié par `pnpm mqtt:check-devices` : le retrait de l'ACL refuse aussitôt les publications d'une connexion déjà ouverte ; la révocation refuse la reconnexion. Le mot de passe de `device-site01` est supprimé dès #80 (choix du binôme) : l'ESP32 de Wokwi ne se connecte plus jusqu'à #83, le simulateur joue l'objet du site en attendant. Point ouvert pour le VPS (#54) : l'API y tournera dans un conteneur et devra pouvoir déclencher ce rechargement (accès à `docker compose exec` ou espace de processus partagé avec le broker).
+
 ## Sources
 
 - B. Boussemart, « lab-secured-v3 — enrôlement par CSR », support de cours ESPL / MyDigitalSchool, 2026 (non diffusé).
