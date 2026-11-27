@@ -508,15 +508,14 @@ Cela peut masquer quel contrôle échoue : lancer `pnpm lint`, `pnpm typecheck`,
 
 ## 9. État d'avancement et suite
 
-Socle, supervision, interface, pilotage côté API et app, alertes et notifications : réalisés (milestones « Conception », « Socle technique », « Intégration de l'interface » fermées). Restent des vérifications sur Wokwi, la sécurité de l'objet, la livraison puis les bonus.
+Socle, supervision, interface, pilotage, alertes et notifications, et sécurité de l'objet (TLS mutuel du broker, enrôlement par l'API, écran « Objets », enrôlement du simulateur et du firmware) : réalisés. Les tests complets (#52), les indicateurs de performance (#110, valeurs du VPS à mesurer) et la documentation technique (#55) aussi.
 
-Ordre conseillé (une ligne par issue, spécifications dans [`docs/conception/04-besoins-fonctionnels.md`](docs/conception/04-besoins-fonctionnels.md)) :
+Reste à faire, dans l'ordre (spécifications dans [`docs/conception/04-besoins-fonctionnels.md`](docs/conception/04-besoins-fonctionnels.md)) :
 
-1. **Vérifications restantes** : #62 (placement GPS d'un panneau détecté, par exemple P21), #38 à #40 (lignes du scénario de pilotage dans Wokwi), #20 (coupure et retour du réseau).
-2. **#108** : bandeau d'alerte dans l'app ouverte (aucune notification système au premier plan).
-3. **Sécurité de l'objet** ([D027](docs/journal/decisions/D027-certificat-objet-et-enrolement.md)) : #80, #81, puis #84 et #83, et #82 (maquette de la section « Objets » d'abord).
-4. **Livraison** : #54 (VPS), #53 (APK), #51 (dossier sécurité), #52 (tests), #55 (documentation), #56 (démonstration), #57 (point final du journal).
-5. **Bonus** : #58 à #60, #63.
+1. **Vérifications sur Wokwi et le téléphone** : #83 (enrôlement de l'ESP32 : empreinte, acceptation dans l'app, révocation), #38 à #40 (scénario de pilotage), #20 (coupure et retour du réseau), #62, #82, #84, #108 et #111 (écrans et comportements de l'app sur le téléphone, clair et sombre).
+2. **Maquettes à ajouter au canevas** : bandeau d'alerte (#108) et section « Objets » (#82), décrits dans la charte.
+3. **Livraison** : #54 (VPS, enrôlement en HTTPS), #53 (APK), #51 (dossier sécurité, avec l'analyse MobSF de l'APK), puis #110 (valeurs d'une session sur le VPS), #56 (démonstration), #57 (point final du journal).
+4. **Bonus** : #58 à #60, #63.
 
 Le détail, issue par issue, est dans [`docs/synthese-projet.md`](docs/synthese-projet.md) (section « État d'avancement et suite »). L'état à jour : `gh issue list --state open --limit 100`.
 
