@@ -11,6 +11,15 @@ import {
   UserSchema,
 } from "./auth";
 import { AlertPageSchema, AlertsQuerySchema } from "./alerts";
+import {
+  AcceptEnrollmentRequestSchema,
+  EnrollmentPageSchema,
+  EnrollmentRequestSchema,
+  EnrollmentSchema,
+  EnrollmentsQuerySchema,
+  EnrollmentStatusResponseSchema,
+  FingerprintParamsSchema,
+} from "./enrollments";
 import { IdParamsSchema, MeasurementQuerySchema, PageQuerySchema } from "./common";
 import {
   PanelDetailSchema,
@@ -168,6 +177,55 @@ export const ROUTES = {
     query: AlertsQuerySchema,
     status: 200,
     response: AlertPageSchema,
+  },
+  requestEnrollment: {
+    method: "POST",
+    path: "/v1/enrollments",
+    role: "none",
+    body: EnrollmentRequestSchema,
+    status: 202,
+    response: EnrollmentStatusResponseSchema,
+  },
+  getEnrollmentStatus: {
+    method: "GET",
+    path: "/v1/enrollments/{fingerprint}",
+    role: "none",
+    params: FingerprintParamsSchema,
+    status: 200,
+    response: EnrollmentStatusResponseSchema,
+  },
+  listEnrollments: {
+    method: "GET",
+    path: "/v1/enrollments",
+    role: "operator",
+    query: EnrollmentsQuerySchema,
+    status: 200,
+    response: EnrollmentPageSchema,
+  },
+  acceptEnrollment: {
+    method: "POST",
+    path: "/v1/enrollments/{id}/accept",
+    role: "operator",
+    params: IdParamsSchema,
+    body: AcceptEnrollmentRequestSchema,
+    status: 200,
+    response: EnrollmentSchema,
+  },
+  rejectEnrollment: {
+    method: "POST",
+    path: "/v1/enrollments/{id}/reject",
+    role: "operator",
+    params: IdParamsSchema,
+    status: 200,
+    response: EnrollmentSchema,
+  },
+  revokeEnrollment: {
+    method: "POST",
+    path: "/v1/enrollments/{id}/revoke",
+    role: "operator",
+    params: IdParamsSchema,
+    status: 200,
+    response: EnrollmentSchema,
   },
 } as const satisfies Record<string, RouteContract>;
 

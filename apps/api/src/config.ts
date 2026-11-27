@@ -16,6 +16,29 @@ const ConfigSchema = z.object({
   // Facultatif : jeton d'accès au compte Expo, qui renforce la sécurité de l'envoi des
   // notifications push. Une chaîne vide (ligne laissée vide du .env) vaut « absent ».
   EXPO_ACCESS_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // Enrôlement des objets (D035). Valeurs par défaut pour le développement, l'API étant lancée
+  // depuis apps/api. La clé de l'autorité n'est lue qu'au moment de signer.
+  DEVICE_CA_CERT_PATH: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("../../infra/mosquitto/device-ca/devices-ca.crt"),
+  ),
+  DEVICE_CA_KEY_PATH: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("../../infra/mosquitto/device-ca/devices-ca.key"),
+  ),
+  BROKER_DEVICES_DIR: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("../../infra/mosquitto/devices"),
+  ),
+  BROKER_RELOAD_COMMAND: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .min(1)
+      .default(
+        "docker compose -f ../../infra/docker-compose.yml exec -T mqtt sh /src/config/reload.sh",
+      ),
+  ),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

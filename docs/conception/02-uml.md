@@ -481,7 +481,7 @@ sequenceDiagram
   B-->>D: Refus pendant la négociation TLS
 ```
 
-La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas.
+La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas : une nouvelle demande d'une autre clé est refusée (`409 ENROLLMENT_PENDING`) tant que l'exploitant n'a pas refusé la première ou qu'elle n'a pas expiré ; la même demande renvoyée (même empreinte) reçoit la réponse de la première ([D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)).
 
 ### 4.8 Marquer une alerte comme lue (UC09)
 
@@ -559,6 +559,23 @@ stateDiagram-v2
 ```
 
 Une alerte résolue n'est jamais rouverte : si la condition réapparaît, une **nouvelle** alerte est créée.
+
+### 5.4 Enrôlement d'un objet (`enrollment_status`)
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending : demande reçue (CSR valide, objet connu)
+  pending --> active : acceptée par un exploitant, certificat signé
+  pending --> rejected : refusée par un exploitant
+  pending --> expired : non traitée en 30 min
+  active --> revoked : révoquée par un exploitant, ou nouvel enrôlement accepté pour le même objet
+  active --> expired : fin de validité du certificat
+  rejected --> [*]
+  revoked --> [*]
+  expired --> [*]
+```
+
+À chaque entrée ou sortie de l'état `active`, l'API regénère l'ACL des objets ; à chaque entrée dans `revoked`, la liste de révocation ; puis elle fait recharger le broker. Un certificat expiré n'est pas ajouté à la liste de révocation : le broker le refuse de lui-même.
 
 ## 6. Règles d'alerte
 

@@ -36,6 +36,13 @@
       "when": 1795687194942,
       "tag": "0004_restore_push_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795779035346,
+      "tag": "0005_device_enrollments",
+      "breakpoints": true
     }
   ]
 }

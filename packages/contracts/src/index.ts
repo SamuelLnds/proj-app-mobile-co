@@ -11,4 +11,5 @@ export * from "./api/sites";
 export * from "./api/panels";
 export * from "./api/setpoints";
 export * from "./api/alerts";
+export * from "./api/enrollments";
 export * from "./api/routes";

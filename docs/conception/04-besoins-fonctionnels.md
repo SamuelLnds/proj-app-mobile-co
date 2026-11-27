@@ -1460,11 +1460,11 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - Limitation du débit des routes publiques.
 
 **Critères d'acceptation :**
-- [ ] Aucun certificat n'est délivré avant l'acceptation par un exploitant ; un lecteur reçoit `403 FORBIDDEN` sur les routes d'administration.
-- [ ] Le nom commun du certificat est le nom approuvé, quel que soit celui du CSR.
-- [ ] Aucune requête ni réponse d'enrôlement ne contient de clé privée (test : le mot `PRIVATE` n'y apparaît pas) ; la clé de l'autorité n'apparaît ni dans le dépôt ni dans les logs.
-- [ ] Tests : demande, empreinte, expiration de la demande, doublon de nom, acceptation, refus, révocation, CSR invalide.
-- [ ] Documentation mise à jour : routes et codes d'erreur dans la cartographie, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
+- [x] Aucun certificat n'est délivré avant l'acceptation par un exploitant ; un lecteur reçoit `403 FORBIDDEN` sur les routes d'administration.
+- [x] Le nom commun du certificat est le nom approuvé, quel que soit celui du CSR.
+- [x] Aucune requête ni réponse d'enrôlement ne contient de clé privée (test : le mot `PRIVATE` n'y apparaît pas) ; la clé de l'autorité n'apparaît ni dans le dépôt ni dans les logs.
+- [x] Tests : demande, empreinte, expiration de la demande, doublon de nom, acceptation, refus, révocation, CSR invalide.
+- [x] Documentation mise à jour : routes et codes d'erreur dans la cartographie, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #13, #27, #80 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md), [Cartographie, sections 7 et 8](03-cartographie-technique.md)
 

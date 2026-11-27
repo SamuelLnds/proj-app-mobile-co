@@ -26,9 +26,15 @@ export const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   FORBIDDEN: "Vous n'avez pas les droits nécessaires pour cette action.",
   NOT_FOUND: "La ressource demandée est introuvable.",
   DEVICE_OFFLINE: "L'objet du site est hors ligne, la consigne ne peut pas être envoyée.",
+  ENROLLMENT_PENDING:
+    "Une autre demande d'enrôlement est déjà en attente pour cet objet : refusez-la ou attendez son expiration.",
+  INVALID_ENROLLMENT_STATE: "Cette action n'est pas possible dans l'état actuel de la demande.",
   INVALID_REQUEST: "La requête est invalide.",
+  INVALID_CSR: "La demande de certificat est invalide.",
   TOO_MANY_ATTEMPTS: "Trop de tentatives, réessayez dans une minute.",
   INTERNAL_ERROR: "Une erreur inattendue est survenue.",
+  BROKER_UNAVAILABLE:
+    "Décision enregistrée, mais le broker n'a pas pu être rechargé : relancez « pnpm mqtt:reload ».",
 };
 
 /** Construit le corps d'une réponse d'erreur. */

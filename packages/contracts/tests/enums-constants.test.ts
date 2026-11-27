@@ -31,6 +31,13 @@ describe("enums", () => {
     ]);
     expect(contracts.AlertSeveritySchema.options).toEqual(["info", "warning", "critical"]);
     expect(contracts.AlertStatusSchema.options).toEqual(["active", "resolved"]);
+    expect(contracts.EnrollmentStatusSchema.options).toEqual([
+      "pending",
+      "active",
+      "rejected",
+      "revoked",
+      "expired",
+    ]);
   });
 
   it("refusent une valeur inconnue", () => {
@@ -64,6 +71,10 @@ describe("constantes", () => {
       MAX_PANELS_PER_SITE: contracts.MAX_PANELS_PER_SITE,
       ALERT_NOTIFICATION_CHANNEL_ID: contracts.ALERT_NOTIFICATION_CHANNEL_ID,
       PUSH_EXCLUDED_ALERT_TYPES: contracts.PUSH_EXCLUDED_ALERT_TYPES,
+      ENROLLMENT_PENDING_TTL_MIN: contracts.ENROLLMENT_PENDING_TTL_MIN,
+      ENROLLMENT_POLL_PERIOD_S: contracts.ENROLLMENT_POLL_PERIOD_S,
+      DEVICE_CERT_DEFAULT_TTL_H: contracts.DEVICE_CERT_DEFAULT_TTL_H,
+      DEVICE_CERT_MAX_TTL_H: contracts.DEVICE_CERT_MAX_TTL_H,
     }).toEqual({
       SITE_MEASUREMENT_PERIOD_S: 5,
       PANEL_MEASUREMENT_PERIOD_S: 10,
@@ -88,6 +99,10 @@ describe("constantes", () => {
       MAX_PANELS_PER_SITE: 200,
       ALERT_NOTIFICATION_CHANNEL_ID: "alerts",
       PUSH_EXCLUDED_ALERT_TYPES: ["setpoint_rejected"],
+      ENROLLMENT_PENDING_TTL_MIN: 30,
+      ENROLLMENT_POLL_PERIOD_S: 3,
+      DEVICE_CERT_DEFAULT_TTL_H: 8,
+      DEVICE_CERT_MAX_TTL_H: 48,
     });
   });
 });

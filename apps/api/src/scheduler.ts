@@ -1,6 +1,8 @@
-// Planificateur : tâches périodiques de l'API (objets silencieux, délai de réponse aux consignes).
+// Planificateur : tâches périodiques de l'API (objets silencieux, délai de réponse aux consignes,
+// expiration des demandes d'enrôlement et des certificats des objets).
 import type { FastifyBaseLogger } from "fastify";
 import type { DevicesService } from "./modules/devices/service";
+import type { EnrollmentService } from "./modules/enrollment/service";
 import type { SetpointsService } from "./modules/setpoints/service";
 
 /** Fréquence de vérification : bien plus courte que les délais de 30 s et 60 s surveillés. */
@@ -11,6 +13,7 @@ export function startScheduler(
   setpoints: SetpointsService,
   logger: FastifyBaseLogger,
   now: () => Date = () => new Date(),
+  enrollment?: EnrollmentService,
 ): () => void {
   const tick = () => {
     const report = (error: unknown) => logger.error({ err: error }, "Erreur du planificateur");
@@ -21,6 +24,8 @@ export function startScheduler(
         if (count > 0) logger.warn({ count }, "Consignes sans réponse de l'objet");
       })
       .catch(report);
+    // Demandes d'enrôlement et certificats échus (l'ACL du broker suit).
+    enrollment?.expireStale().catch(report);
   };
   // Premier passage immédiat : rattrape les consignes restées `sent` pendant un arrêt de l'API.
   tick();
