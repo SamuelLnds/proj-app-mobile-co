@@ -1234,8 +1234,8 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - Section « Performance » du dossier technique avec les valeurs d'une session de démonstration (date, durée, conditions : Wokwi par tunnel ou VPS) et la commande pour les recalculer.
 
 **Critères d'acceptation :**
-- [ ] Une commande documentée dans le README recalcule tous les indicateurs pour une période donnée.
-- [ ] Aucune nouvelle table, route ni dépendance : seulement des requêtes sur les données existantes.
+- [x] Une commande documentée dans le README recalcule tous les indicateurs pour une période donnée.
+- [x] Aucune nouvelle table, route ni dépendance : seulement des requêtes sur les données existantes.
 - [ ] Le dossier technique donne les valeurs d'une vraie session et les compare aux délais attendus (consigne appliquée en moins de 30 s, objet hors ligne détecté en moins de 70 s).
 
 **Dépend de :** #54 pour les valeurs finales · **Références :** [Modèle de données](01-modele-donnees.md), [Cartographie](03-cartographie-technique.md)
