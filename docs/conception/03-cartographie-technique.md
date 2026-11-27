@@ -189,6 +189,7 @@ packages/contracts/src/
 | `pino-pretty` (dév.) | Logs lisibles en développement (Fastify utilise `pino`) |
 | `tsx` (dév.) | Exécution TypeScript en développement |
 | `vitest` (dév.) | Tests |
+| `@vitest/coverage-v8` (dév.) | Couverture des services, mesurée à chaque `pnpm test` : moins de 80 % sur `setpoints`, `alerts`, `measurements` ou `auth` fait échouer les tests (#52) |
 | `@solar/contracts` (interne) | Schémas partagés |
 
 ```
