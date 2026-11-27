@@ -67,3 +67,4 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D034](decisions/D034-alertes-lues-par-telephone.md) | Alertes lues : état propre à chaque téléphone | 2026-11-26 | Acceptée |
 | [D035](decisions/D035-signature-des-certificats-par-l-api.md) | Signature des certificats des objets par l'API (`@peculiar/x509`), base de données comme référence, seconde demande refusée | 2026-11-27 | Proposée |
 | [D036](decisions/D036-suppression-compte-par-anonymisation.md) | Suppression d'un compte par anonymisation, pour garder l'auteur des consignes | 2026-11-27 | Proposée |
+| [D037](decisions/D037-flux-evenements-sse.md) | Flux temps réel par Server-Sent Events, qui signale les changements à l'app (bonus #60) | 2026-11-27 | Proposée |

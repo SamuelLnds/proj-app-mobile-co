@@ -12,6 +12,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { dataSource, DataSourceError } from "../data";
 import { readResponse, saveResponse } from "../storage";
 import { setLastSync } from "./last-sync";
+import { liveInterval } from "./live";
 
 /** Rafraîchissement des écrans visibles : au rythme des mesures du site. */
 const REFRESH_MS = SITE_MEASUREMENT_PERIOD_S * 1000;
@@ -97,7 +98,7 @@ export function useSite(siteId: string | undefined) {
       const current = query.state.data?.currentSetpoint;
       const waiting =
         current?.status === "sent" && Date.now() - Date.parse(current.createdAt) < PENDING_MAX_MS;
-      return waiting ? PENDING_REFRESH_MS : REFRESH_MS;
+      return waiting ? PENDING_REFRESH_MS : liveInterval(REFRESH_MS);
     },
   });
 }
@@ -110,7 +111,7 @@ export function useSiteMeasurements(siteId: string | undefined, period: Period) 
         dataSource.getSiteMeasurements(siteId!, measurementQuery(period)),
       ),
     enabled: !!siteId,
-    refetchInterval: REFRESH_MS * 6,
+    refetchInterval: () => liveInterval(REFRESH_MS * 6),
   });
 }
 
@@ -120,7 +121,7 @@ export function usePanels(siteId: string | undefined) {
     queryFn: () =>
       withLocalCopy(queryKeys.panels(siteId ?? ""), () => dataSource.listPanels(siteId!)),
     enabled: !!siteId,
-    refetchInterval: REFRESH_MS * 2,
+    refetchInterval: () => liveInterval(REFRESH_MS * 2),
   });
 }
 
@@ -128,7 +129,7 @@ export function usePanel(panelId: string) {
   return useQuery({
     queryKey: queryKeys.panel(panelId),
     queryFn: () => withLocalCopy(queryKeys.panel(panelId), () => dataSource.getPanel(panelId)),
-    refetchInterval: REFRESH_MS * 2,
+    refetchInterval: () => liveInterval(REFRESH_MS * 2),
   });
 }
 
@@ -174,7 +175,7 @@ export function useAlerts(status?: AlertStatus, options?: { enabled?: boolean })
       withLocalCopy(queryKeys.alerts(status), () =>
         dataSource.listAlerts(status ? { status, limit: 50 } : { limit: 50 }),
       ),
-    refetchInterval: REFRESH_MS,
+    refetchInterval: () => liveInterval(REFRESH_MS),
   });
 }
 
@@ -188,7 +189,7 @@ export function useEnrollments(options?: { enabled?: boolean }) {
     enabled: options?.enabled ?? true,
     queryKey: queryKeys.enrollments,
     queryFn: () => dataSource.listEnrollments({ limit: 50 }),
-    refetchInterval: REFRESH_MS,
+    refetchInterval: () => liveInterval(REFRESH_MS),
   });
 }
 

@@ -26,6 +26,8 @@ import { pushRoutes } from "./modules/notifications/routes";
 import type { PushService } from "./modules/notifications/service";
 import { sitesRoutes } from "./modules/sites/routes";
 import { enrollmentRoutes } from "./modules/enrollment/routes";
+import { eventsRoutes, type EventsRouteOptions } from "./modules/events/routes";
+import type { EventBus } from "./modules/events/service";
 import type { EnrollmentService } from "./modules/enrollment/service";
 import type { SitesService } from "./modules/sites/service";
 
@@ -48,6 +50,8 @@ export interface ServerDependencies {
   alerts?: AlertsService;
   push?: PushService;
   enrollment?: EnrollmentService;
+  /** Flux d'événements (bonus #60) ; absent, la route n'existe pas. */
+  events?: { bus: EventBus; options?: EventsRouteOptions };
 }
 
 export function buildServer({
@@ -62,6 +66,7 @@ export function buildServer({
   alerts,
   push,
   enrollment,
+  events,
 }: ServerDependencies) {
   const app = Fastify({
     logger: {
@@ -135,6 +140,7 @@ export function buildServer({
       if (alerts) alertsRoutes(v1, alerts, guards);
       if (push) pushRoutes(v1, push, guards);
       if (enrollment) enrollmentRoutes(v1, enrollment, guards);
+      if (events) eventsRoutes(v1, events.bus, guards, events.options);
     },
     { prefix: "/v1" },
   );

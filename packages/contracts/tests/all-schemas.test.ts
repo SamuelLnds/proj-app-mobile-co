@@ -298,6 +298,19 @@ const EXAMPLES: Record<string, Examples> = {
     invalid: [{ status: "closed" }, { siteId: "x" }],
   },
 
+  // API : flux d'événements (bonus #60)
+  StreamTopicSchema: { valid: ["site", "enrollments"], invalid: ["measurements"] },
+  StreamEventSchema: {
+    valid: [
+      { v: 1, topic: "site", siteCode: "SITE01", at: NOW },
+      { v: 1, topic: "alerts", siteCode: null, at: NOW },
+    ],
+    invalid: [
+      { v: 2, topic: "site", siteCode: null, at: NOW },
+      { v: 1, topic: "x", siteCode: null, at: NOW },
+    ],
+  },
+
   // API : enrôlement des objets
   EnrollmentRequestSchema: {
     valid: [{ deviceName: "device-site01", csr }],

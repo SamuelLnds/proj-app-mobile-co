@@ -24,6 +24,7 @@ import {
   type UpdatePanelRequest,
 } from "@solar/contracts";
 import { DataSourceError, type DataSource } from "../DataSource";
+import { openEventStream, type EventStreamHandlers } from "./event-stream";
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 type Query = Record<string, string | number | undefined>;
@@ -177,5 +178,18 @@ export class ApiDataSource implements DataSource {
 
   revokeEnrollment(enrollmentId: string): Promise<Enrollment> {
     return this.request("POST", ROUTES.revokeEnrollment, { params: { id: enrollmentId } });
+  }
+
+  openEventStream(handlers: EventStreamHandlers): (() => void) | null {
+    if (!this.token) return null;
+    const url = `${this.baseUrl.replace(/\/$/, "")}${ROUTES.events.path.replace(/^\/v1/, "")}`;
+    return openEventStream(url, this.token, {
+      ...handlers,
+      onClose: (reason) => {
+        // Jeton refusé : même traitement qu'une requête REST (fin de session).
+        if (reason.includes("401")) this.unauthorizedListener?.();
+        handlers.onClose(reason);
+      },
+    });
   }
 }

@@ -58,4 +58,6 @@ Fréquences relevées dans le code ([`apps/mobile/src/api/hooks.ts`](../apps/mob
 
 Expo Router garde montés les onglets déjà visités : app ouverte, un exploitant qui a parcouru tous les onglets consomme environ 90 kB par minute, soit environ 5,4 MB par heure. **En arrière-plan, rien** : TanStack Query suit l'état de l'app et suspend toute interrogation (#111).
 
+**Avec le flux d'événements** (bonus #60, [D037](journal/decisions/D037-flux-evenements-sse.md)), ces interrogations passent à 60 s tant que le flux est ouvert : l'app ne relit une donnée que lorsqu'un signal annonce son changement, et l'affiche moins de 2 s après sa réception par l'API (mesuré : 289 ms entre la publication MQTT d'une mesure et l'arrivée du signal, dont 250 ms de regroupement). Si le flux se coupe, les fréquences du tableau reprennent aussitôt.
+
 Pistes d'économie, non retenues pour le socle : interroger les demandes d'enrôlement toutes les 30 s plutôt que 5 s (une demande reste valable 30 min) ; ne rafraîchir la courbe de 24 h qu'au quart d'heure, son pas d'agrégation ; ne pas interroger les onglets masqués ; un flux poussé (bonus #60) supprimerait l'essentiel de ces interrogations.

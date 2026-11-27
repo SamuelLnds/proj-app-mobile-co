@@ -28,6 +28,9 @@ import { createFileAuthority } from "./modules/enrollment/authority";
 import { createBrokerAccess } from "./modules/enrollment/broker";
 import { createEnrollmentsRepository } from "./modules/enrollment/repository";
 import { createEnrollmentService } from "./modules/enrollment/service";
+import { createEventBus } from "./modules/events/service";
+import type { EnrollmentService } from "./modules/enrollment/service";
+import type { SetpointsService } from "./modules/setpoints/service";
 import { startScheduler } from "./scheduler";
 import { buildServer } from "./server";
 
@@ -36,6 +39,8 @@ const database = createDb(config.DATABASE_URL);
 const { pool } = database;
 let mqttClient: ApiMqttClient | null = null;
 const controlStates = createControlStateStore();
+// Flux d'événements (bonus #60, D037) : chaque changement est signalé aux apps connectées.
+const events = createEventBus();
 
 // Le client MQTT et le moteur d'alertes (qui journalise par le logger du serveur) sont créés
 // après le serveur : les modules qui en dépendent passent par des fonctions différées.
@@ -66,6 +71,33 @@ const enrollment = createEnrollmentService(
   { error: (details, message) => app.log.error(details, message) },
 );
 
+// Les routes signalent leurs changements : nouvelle consigne, décision d'enrôlement. Le signal
+// part même après une erreur (décision enregistrée mais broker non rechargé, par exemple).
+const setpointsWithEvents: SetpointsService = {
+  ...setpoints,
+  create: async (...args) => {
+    const created = await setpoints.create(...args);
+    events.publish("site");
+    return created;
+  },
+};
+const signalEnrollments =
+  <A extends unknown[], R>(call: (...args: A) => Promise<R>) =>
+  async (...args: A): Promise<R> => {
+    try {
+      return await call(...args);
+    } finally {
+      events.publish("enrollments");
+    }
+  };
+const enrollmentWithEvents: EnrollmentService = {
+  ...enrollment,
+  request: signalEnrollments(enrollment.request),
+  accept: signalEnrollments(enrollment.accept),
+  reject: signalEnrollments(enrollment.reject),
+  revoke: signalEnrollments(enrollment.revoke),
+};
+
 const app = buildServer({
   config,
   checkDatabase: async () => {
@@ -80,10 +112,11 @@ const app = buildServer({
   sites: createSitesService(createSitesRepository(database), controlStates),
   panels: createPanelsService(createPanelsRepository(database)),
   history: createHistoryService(createHistoryRepository(database)),
-  setpoints,
+  setpoints: setpointsWithEvents,
   alerts: createAlertsService(alertsRepository),
   push: pushService,
-  enrollment,
+  enrollment: enrollmentWithEvents,
+  events: { bus: events },
 });
 
 const engine = createAlertEngine(
@@ -93,6 +126,11 @@ const engine = createAlertEngine(
     app.log.info(summary, "Notifications d'alerte envoyées");
   },
   app.log,
+  // Une alerte change aussi le nombre d'alertes actives du site (et l'objet hors ligne, son statut).
+  () => {
+    events.publish("alerts");
+    events.publish("site");
+  },
 );
 alertEngine = engine;
 const devices = createDevicesService(createDevicesRepository(database), app.log, engine);
@@ -118,18 +156,24 @@ const handleMessage = createMessageHandler(
     // Chaque mesure est enregistrée, puis évaluée par les règles d'alerte.
     siteMeasurement: async (siteCode, message, receivedAt) => {
       await measurements.recordSiteMeasurement(siteCode, message, receivedAt);
+      events.publish("site", siteCode);
       await engine.evaluateSiteMeasurement(siteCode, message, receivedAt);
     },
     panelMeasurement: async (siteCode, panelCode, message, receivedAt) => {
       await measurements.recordPanelMeasurement(siteCode, panelCode, message, receivedAt);
+      events.publish("panels", siteCode);
       await engine.evaluatePanelMeasurement(siteCode, panelCode, message, receivedAt);
     },
     controlState: async (siteCode, state, receivedAt) => {
       controlStates.set(siteCode, state);
       await devices.recordActivityForSiteCode(siteCode, receivedAt);
       await setpoints.recordState(siteCode, state, receivedAt);
+      events.publish("site", siteCode);
     },
-    deviceStatus: devices.recordStatus,
+    deviceStatus: async (siteCode, message, receivedAt) => {
+      await devices.recordStatus(siteCode, message, receivedAt);
+      events.publish("site", siteCode);
+    },
   },
   app.log,
 );

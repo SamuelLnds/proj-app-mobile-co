@@ -218,6 +218,7 @@ apps/api/src/
 │   ├── setpoints/
 │   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
 │   ├── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
+│   ├── events/               # Flux d'événements GET /v1/events (bonus #60) : bus en mémoire, regroupement, format SSE (service.ts, routes.ts)
 │   └── enrollment/           # Enrôlement des objets (routes.ts, service.ts, repository.ts), signature (authority.ts) et fichiers du broker (broker.ts, injectable dans les tests)
 ├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux, demandes et certificats échus
 └── errors.ts                 # Erreurs applicatives et format de réponse
@@ -258,8 +259,8 @@ apps/mobile/
 │   ├── panel/[id].tsx            # Détail d'un panneau
 │   └── devices.tsx               # Objets : demandes d'enrôlement, certificats, révocation (exploitant)
 ├── src/
-│   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE
-│   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active ; connectivity.ts (réseau), app-focus.ts (premier plan, #111), last-sync.ts (ancienneté des données), read-alerts.ts (alertes lues)
+│   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE ; api/event-stream.ts (client SSE minimal sur XMLHttpRequest, #60)
+│   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active ; connectivity.ts (réseau), app-focus.ts (premier plan, #111), last-sync.ts (ancienneté des données), read-alerts.ts (alertes lues), live.ts (flux d'événements : relecture ciblée, interrogation espacée, reconnexion, #60)
 │   ├── auth/                     # Contexte d'authentification, stockage du jeton
 │   ├── storage/                  # Base SQLite locale `solar.db` : database.ts (ouverture et tables), responses.ts (dernières réponses de l'API), read-alerts.ts (alertes lues)
 │   ├── components/               # Composants réutilisables
@@ -550,6 +551,7 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | POST | `/v1/sites/{id}/setpoints` | **operator** | `{ mode, batteryShare }` | 202 `Setpoint` |
 | GET | `/v1/sites/{id}/setpoints` | viewer | `limit`, `before` | 200 page de `Setpoint` |
 | GET | `/v1/alerts` | viewer | `status` (`active`, `resolved`), `siteId`, `limit`, `before` | 200 page d'`Alert` |
+| GET | `/v1/events` | viewer | | 200 flux `text/event-stream` d'événements `StreamEvent` (section 7.4, bonus #60) |
 | POST | `/v1/enrollments` | aucun (objet) | `{ deviceName, csr }` (CSR en PEM) | 202 `EnrollmentStatus` (`pending` et empreinte) |
 | GET | `/v1/enrollments/{fingerprint}` | aucun (objet) | | 200 `EnrollmentStatus` de la demande la plus récente pour cette empreinte |
 | GET | `/v1/enrollments` | **operator** | `status`, `limit`, `before` | 200 page d'`Enrollment` |
@@ -571,10 +573,31 @@ Les deux routes de l'objet sont publiques (l'objet n'a pas de compte) et limité
 | `PanelDetail` | Champs de `PanelSummary` + `ratedPowerW`, `expectedProduction`, `activeAlerts` |
 | `Setpoint` | `id`, `mode`, `requestedBatteryShare`, `status`, `appliedBatteryShare`, `rejectionReason`, `author` (`{ id, name }`), `createdAt`, `respondedAt` |
 | `Alert` | `id`, `type`, `severity`, `message`, `status`, `site` (`{ id, name }`), `panel` (`{ id, name }` ou `null`), `startedAt`, `endedAt` |
+| `StreamEvent` (flux) | `v`, `topic` (`site`, `panels`, `alerts`, `enrollments`), `siteCode` (ou `null`), `at` |
 | `EnrollmentStatus` (objet) | `fingerprint`, `status`, `pendingExpiresAt`, `certificate` (PEM, seulement si `active`, sinon `null`), `certificateExpiresAt` (ou `null`) |
 | `Enrollment` (app) | `id`, `deviceName`, `fingerprint`, `status`, `requestedAt`, `pendingExpiresAt`, `decidedAt`, `decidedBy` (`{ id, name }` ou `null`), `serialNumber`, `certificateExpiresAt`, `revokedAt` |
 
 L'état appliqué courant (`controlState`) est conservé **en mémoire** par l'API (dernier message `state` reçu par site). Au redémarrage de l'API, il est récupéré grâce au message retained du broker.
+
+### 7.4 Flux d'événements (bonus #60)
+
+`GET /v1/events` ([D037](../journal/decisions/D037-flux-evenements-sse.md)) ouvre un flux Server-Sent Events. Le JWT passe dans l'en-tête `Authorization`, comme pour les autres routes. Chaque événement est un **signal de changement**, pas la donnée elle-même : l'app relit aussitôt les requêtes concernées par les routes REST habituelles.
+
+```
+event: change
+data: {"v":1,"topic":"site","siteCode":"SITE01","at":"2026-11-27T10:00:05.000Z"}
+```
+
+| `topic` | Émis quand | L'app relit |
+|---|---|---|
+| `site` | Mesure du site enregistrée, état appliqué reçu, statut de l'objet changé, consigne envoyée | Sites (`/v1/sites`, `/v1/sites/{id}`, courbes du site) |
+| `panels` | Mesure d'un panneau enregistrée | Panneaux du site et détail des panneaux |
+| `alerts` | Alerte ouverte ou résolue | Alertes |
+| `enrollments` | Demande d'enrôlement reçue, acceptée, refusée ou révoquée | Demandes d'enrôlement |
+
+Les événements d'un même `topic` sont regroupés par fenêtres de 250 ms (les 20 panneaux publient au même instant). Toutes les `STREAM_HEARTBEAT_S` secondes, le serveur envoie un commentaire `: ping`. Sans octet reçu pendant deux fois ce délai, l'app considère le flux coupé.
+
+Tant que le flux est ouvert, l'app espace ses interrogations périodiques à 60 s, en simple filet de sécurité ; l'interrogation rapide pendant l'attente d'une consigne est conservée. Si le flux se coupe, l'app reprend aussitôt les interrogations de la section 5.3 et tente de rouvrir le flux (3 s, puis jusqu'à 30 s d'attente entre deux essais). Le flux n'est ouvert qu'avec la source `api`, l'app au premier plan, connectée au réseau et à un compte.
 
 ## 8. Constantes partagées
 
@@ -604,6 +627,7 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
 | `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 168 | API, app (durée du certificat d'un objet : 8 h, 24 h ou une semaine) |
+| `STREAM_HEARTBEAT_S` | 15 | API, app (battement du flux d'événements, section 7.4) |
 | Paramètres du site de démo | crête 4 000 W, batterie 10 000 Wh, charge max 3 000 W, facteur 4.0 | Seed, objet |
 
 ## 9. Variables d'environnement

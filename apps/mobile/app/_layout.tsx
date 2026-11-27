@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 
-import { QueryProvider } from "../src/api";
+import { LiveUpdates, QueryProvider } from "../src/api";
 import { AuthProvider } from "../src/auth/AuthProvider";
 import { AlertBanner } from "../src/notifications/AlertBanner";
 import { NotificationEffects } from "../src/notifications/NotificationEffects";
@@ -49,6 +49,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <ThemedStack />
           <AlertBanner />
+          <LiveUpdates />
           <NotificationEffects />
         </ThemeProvider>
       </AuthProvider>

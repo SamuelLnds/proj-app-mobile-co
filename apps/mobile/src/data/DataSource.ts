@@ -23,6 +23,8 @@ import type {
   UpdatePanelRequest,
 } from "@solar/contracts";
 
+import type { EventStreamHandlers } from "./api/event-stream";
+
 /**
  * Contrat entre l'app et ses données (D025). Une méthode par route de l'API REST
  * (section 7.2 de la cartographie) utilisée par l'app, avec les types de @solar/contracts.
@@ -82,6 +84,12 @@ export interface DataSource {
   rejectEnrollment(enrollmentId: string): Promise<Enrollment>;
   /** `POST /v1/enrollments/{id}/revoke` (exploitant) */
   revokeEnrollment(enrollmentId: string): Promise<Enrollment>;
+
+  /**
+   * `GET /v1/events` (bonus #60) : ouvre le flux d'événements et renvoie la fonction qui le
+   * ferme, ou `null` si la source n'en a pas (données d'exemple, pas de session).
+   */
+  openEventStream(handlers: EventStreamHandlers): (() => void) | null;
 }
 
 /** Erreur renvoyée par une source, au format des erreurs de l'API (section 7.1). */

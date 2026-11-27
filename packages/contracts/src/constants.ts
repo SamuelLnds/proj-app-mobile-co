@@ -69,6 +69,10 @@ export const DEVICE_CERT_DEFAULT_TTL_H = 8;
 /** Durée maximale du certificat d'un objet (h) : une semaine. */
 export const DEVICE_CERT_MAX_TTL_H = 168;
 
+// Flux d'événements (bonus #60, D037).
+/** Battement du flux GET /v1/events (s) : sans octet reçu pendant deux battements, le flux est coupé. */
+export const STREAM_HEARTBEAT_S = 15;
+
 // Paramètres du site de démonstration (seed et objet).
 /** Puissance crête du site de démonstration (W). */
 export const DEMO_SITE_PEAK_POWER_W = 4000;
