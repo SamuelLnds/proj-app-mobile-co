@@ -8,6 +8,7 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 |---|---|---|
 | [`points/`](points/) | **Points d'étape** : synthèse datée de l'état du projet, des études menées et des décisions de la période | Au démarrage, à chaque jalon important, et à la fin du projet |
 | [`decisions/`](decisions/) | **Fiches de décision** (une par décision) : contexte, options comparées, choix, conséquences | Dès qu'un choix engage le projet (technologie, périmètre, architecture, organisation) |
+| [`../synthese-projet.md`](../synthese-projet.md) | **Synthèse du projet** : support d'oral (architecture, choix, mécanismes, état d'avancement, questions du jury) | À relire et mettre à jour à chaque jalon, avant la soutenance |
 
 ## Règles
 
