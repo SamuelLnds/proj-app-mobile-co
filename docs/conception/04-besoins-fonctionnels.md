@@ -183,6 +183,8 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #84 | Simulateur : enrôlement en mode objet du site | M9 | simulator |
 | #104 | Mobile : marquer les alertes comme lues | M5 | mobile |
 | #108 | Mobile : bandeau d'alerte quand l'app est ouverte | M5 | mobile, design |
+| #110 | Performance : indicateurs tirés de la télémétrie | M6 | api, infra, docs |
+| #111 | Mobile : suspendre les rafraîchissements en arrière-plan | M3 | mobile |
 
 ---
 
@@ -1016,14 +1018,26 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 
 **Labels :** `type:docs`, `priority:core`
 
-**À faire :** vérifier les points de la section 9 de l'étude (TLS, identifiants par client, JWT, rôles, double validation, secrets, validation des entrées) ; rédiger `docs/dossier-securite.md` (menaces identifiées, mesures en place, limites assumées, pistes d'évolution).
+**Contexte :** le chapitre 6 du module (« Sécuriser la chaîne ») cite le TLS en transit, le stockage sécurisé au repos, l'OTA signée, les tests d'intrusion (MobSF, Frida), le RGPD et la norme ETSI EN 303 645. Le projet en garde le cœur, la sécurité de l'objet ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)), sans aller jusqu'à une démarche d'audit complète. Le dossier explique, pour chaque thème, ce qui est fait et le choix retenu, avec sa raison.
+
+**À faire :**
+- Vérifier les mesures en place (section 9 de l'étude) : TLS, identifiants et droits par client sur le broker, TLS mutuel et enrôlement de l'objet, JWT et rôles, double validation, secrets hors dépôt, validation des entrées, mots de passe en argon2id.
+- Rédiger `docs/dossier-securite.md` : actifs et menaces (STRIDE simple sur la chaîne objet → broker → API → app), mesures et preuves, puis une partie par thème du chapitre 6, chacune présentée comme un choix argumenté :
+  - **Au repos** : jeton dans `expo-secure-store` ; copie locale SQLite non chiffrée, car elle ne contient que des mesures et des alertes du parc, sans donnée personnelle ; secrets du serveur dans les variables d'environnement.
+  - **Mise à jour du firmware** : pas d'OTA dans Wokwi, mise à jour par recompilation ; sur un ESP32 réel, la voie retenue serait le démarrage sécurisé et l'OTA signée d'ESP-IDF avec retour arrière.
+  - **Tests d'intrusion** : analyse statique de l'APK de démonstration avec MobSF (Docker), résultats commentés et corrections éventuelles ; Frida écarté, avec la raison.
+  - **RGPD** : inventaire des données personnelles (adresse e-mail, nom, jeton push, auteur d'une consigne), finalité, minimisation, durée de conservation, aucune donnée personnelle dans les notifications ni les journaux, procédure de suppression d'un compte.
+  - **ETSI EN 303 645** : tableau des 13 dispositions et de la réponse du projet à chacune.
+- Une fiche de décision pour tout choix structurant qui n'en a pas encore.
 
 **Critères d'acceptation :**
 - [ ] Chaque mesure de sécurité est vérifiée et sa preuve indiquée (test, capture, configuration).
 - [ ] Aucun secret dans l'historique Git (vérifié avec un outil de détection).
 - [ ] Connexion sans certificat, certificat révoqué et demande d'enrôlement non acceptée : chaque refus est vérifié ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
+- [ ] Chaque thème du chapitre 6 (au repos, mise à jour du firmware, tests d'intrusion, RGPD, ETSI EN 303 645) a une partie qui dit ce qui est fait et pourquoi ce choix.
+- [ ] Le rapport MobSF de l'APK est résumé dans le dossier, avec la suite donnée à chaque point élevé.
 
-**Dépend de :** M5 et M9 terminés · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md)
+**Dépend de :** M5 et M9 terminés, #53 · **Références :** [Étude, section 9](../etude-faisabilite-parc-solaire.md), [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)
 
 ### #52 · Compléter les tests
 
@@ -1201,6 +1215,48 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - [ ] Dans « Panneaux à positionner », la puissance reste visible dans la carte, quelle que soit la longueur du texte (à vérifier sur le téléphone) ; « 200 W par défaut » n'est plus écrit en dur.
 
 **Dépend de :** #62, #73, #74 · **Références :** [Charte graphique](05-charte-graphique.md), [D025](../journal/decisions/D025-integration-interface.md)
+
+### #110 · Performance : indicateurs tirés de la télémétrie
+
+**Labels :** `type:feature`, `area:api`, `area:infra`, `type:docs`, `priority:core`
+
+**Contexte :** la soutenance attend un dossier technique qui couvre la performance. Les mesures, les consignes, les alertes et l'état de l'objet sont déjà horodatés en base : la télémétrie existante suffit à calculer des indicateurs, à condition de pouvoir les retrouver et les recalculer pour n'importe quelle période.
+
+**À faire :**
+- Requêtes SQL versionnées (dans `infra/`, documentées dans la cartographie) qui calculent pour une période donnée :
+  - latence d'une consigne : `responded_at - created_at`, médiane, 95e centile et maximum, par statut ;
+  - régularité des mesures : écart entre deux mesures du site (attendu : 5 s) et des panneaux (attendu : 10 s), taux de mesures manquantes ;
+  - délai de détection d'un objet hors ligne : dernier message reçu → ouverture de l'alerte `device_offline` ;
+  - nombre d'alertes ouvertes et durée moyenne avant résolution, par type ;
+  - volume stocké : lignes et taille des hypertables.
+- Temps de réponse des routes principales de l'API, retrouvé dans les journaux de Fastify (`responseTime`) : médiane et 95e centile.
+- Côté app : fréquence des interrogations de l'API par écran et taille des réponses, calculées depuis le code.
+- Section « Performance » du dossier technique avec les valeurs d'une session de démonstration (date, durée, conditions : Wokwi par tunnel ou VPS) et la commande pour les recalculer.
+
+**Critères d'acceptation :**
+- [ ] Une commande documentée dans le README recalcule tous les indicateurs pour une période donnée.
+- [ ] Aucune nouvelle table, route ni dépendance : seulement des requêtes sur les données existantes.
+- [ ] Le dossier technique donne les valeurs d'une vraie session et les compare aux délais attendus (consigne appliquée en moins de 30 s, objet hors ligne détecté en moins de 70 s).
+
+**Dépend de :** #54 pour les valeurs finales · **Références :** [Modèle de données](01-modele-donnees.md), [Cartographie](03-cartographie-technique.md)
+
+### #111 · Mobile : suspendre les rafraîchissements en arrière-plan
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Contexte :** l'app interroge l'API à intervalle régulier (TanStack Query, `refetchInterval`). Le chapitre 5 du module demande d'éviter les interrogations inutiles pour économiser la batterie. TanStack Query n'est pas relié à l'état de l'app (`AppState`) : rien ne garantit l'arrêt quand l'app passe en arrière-plan.
+
+**À faire :**
+- Relier le `focusManager` de TanStack Query à `AppState` dans `src/api/` (comme `onlineManager` l'est déjà à l'état du réseau).
+- App en arrière-plan : aucune interrogation ; retour au premier plan : rafraîchissement immédiat des requêtes de l'écran affiché.
+- Les notifications push continuent d'arriver, puisqu'elles ne dépendent pas de l'app.
+
+**Critères d'acceptation :**
+- [ ] Aucune requête réseau pendant que l'app est en arrière-plan (test).
+- [ ] Au retour au premier plan, les données de l'écran affiché sont rafraîchies aussitôt (test).
+- [ ] Vérifié sur le téléphone dans le journal de l'API : plus de requêtes de l'app une fois en arrière-plan.
+
+**Références :** [Cartographie, section 5.3](03-cartographie-technique.md)
 
 ## 11. Ajouts suite au changement de broker
 
