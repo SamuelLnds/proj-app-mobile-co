@@ -177,7 +177,7 @@ packages/contracts/src/
 | Dépendance | Rôle |
 |---|---|
 | `fastify` | Serveur HTTP |
-| `fastify-type-provider-zod` | Validation des requêtes et réponses par les schémas Zod |
+| `fastify-type-provider-zod`, `zod` | Validation des requêtes et réponses par les schémas Zod |
 | `@fastify/jwt` | Création et vérification des JWT |
 | `@fastify/rate-limit` | Limitation des tentatives de connexion |
 | `drizzle-orm`, `pg` | Accès à PostgreSQL |
@@ -201,31 +201,38 @@ apps/api/src/
 ├── db/
 │   ├── schema.ts             # Schéma Drizzle (reflet exact de 01-modele-donnees.md)
 │   ├── client.ts
-│   ├── migrations/
-│   └── seed.ts               # Données de démonstration
+│   ├── migrations/           # Migrations Drizzle, complétées à la main pour TimescaleDB
+│   ├── migrate.ts            # Application des migrations (pnpm --filter api db:migrate)
+│   ├── seed.ts               # Données de démonstration
+│   └── seed-schema.ts        # Validation du fichier de seed avant insertion
 ├── mqtt/
 │   ├── client.ts             # Connexion, abonnements, publication
 │   └── handlers.ts           # Aiguillage des messages reçus vers les services
 ├── modules/
-│   ├── auth/                 # routes.ts, service.ts
-│   ├── sites/                # routes.ts, service.ts, repository.ts
+│   ├── auth/                 # routes.ts, service.ts, repository.ts, plugin.ts (JWT et contrôle du rôle)
+│   ├── sites/                # routes.ts, service.ts, repository.ts, control-states.ts (dernier état appliqué, en mémoire)
 │   ├── panels/
-│   ├── measurements/         # Enregistrement des mesures reçues
+│   ├── history/              # Courbes agrégées des sites et des panneaux (routes .../measurements)
+│   ├── measurements/         # Enregistrement des mesures reçues (sans route)
+│   ├── devices/              # Statut des objets : service.ts, repository.ts, status.ts (diagramme 5.2 de 02-uml.md, sans route)
 │   ├── setpoints/
 │   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
 │   ├── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
 │   └── enrollment/           # Enrôlement des objets (routes.ts, service.ts, repository.ts), signature (authority.ts) et fichiers du broker (broker.ts, injectable dans les tests)
-├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux
+├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux, demandes et certificats échus
 └── errors.ts                 # Erreurs applicatives et format de réponse
 ```
 
-Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.ts` (règles métier), `repository.ts` (requêtes à la base). Une route n'accède jamais directement à la base.
+Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.ts` (règles métier), `repository.ts` (requêtes à la base) ; `measurements/` et `devices/` n'ont pas de route, ils traitent les messages MQTT. Une route n'accède jamais directement à la base.
 
 ### 5.3 `apps/mobile`
 
 | Dépendance | Rôle |
 |---|---|
-| `expo`, `expo-router` | Socle de l'app et navigation |
+| `expo`, `expo-router`, `react`, `react-native` | Socle de l'app et navigation |
+| `react-native-screens`, `react-native-safe-area-context`, `expo-linking` | Écrans natifs, marges de sécurité, liens (exigés par Expo Router) |
+| `expo-splash-screen`, `expo-status-bar`, `expo-system-ui` | Écran de lancement, barre d'état et fond suivant le thème |
+| `expo-dev-client` | Build de développement (modules natifs : SQLite, notifications) |
 | `@tanstack/react-query` | Appels à l'API, rafraîchissement périodique |
 | `expo-sqlite` | Stockage local des dernières données (disponibles sans réseau) |
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
@@ -233,8 +240,8 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo, réception, appui) ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
 | `react-native-svg` | Plan du parc, courbes, icônes Phosphor (tracés embarqués, [D026](../journal/decisions/D026-icones-phosphor-embarquees.md)) |
-| `expo-font` + polices Red Hat | Typographie (choix confirmé à l'étape 3) |
-| `jest-expo`, `@testing-library/react-native` (dév.) | Tests |
+| `expo-font` + `@expo-google-fonts/red-hat-*` | Typographie Red Hat, polices embarquées par ces paquets ([D016](../journal/decisions/D016-typographie-red-hat.md)) |
+| `jest`, `jest-expo`, `@testing-library/react-native`, `react-test-renderer` (dév.) | Tests |
 | `@solar/contracts` (interne) | Schémas et types partagés |
 
 ```
@@ -252,14 +259,15 @@ apps/mobile/
 │   └── devices.tsx               # Objets : demandes d'enrôlement, certificats, révocation (exploitant)
 ├── src/
 │   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE
-│   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active
+│   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active ; connectivity.ts (réseau), app-focus.ts (premier plan, #111), last-sync.ts (ancienneté des données), read-alerts.ts (alertes lues)
 │   ├── auth/                     # Contexte d'authentification, stockage du jeton
 │   ├── storage/                  # Base SQLite locale `solar.db` : database.ts (ouverture et tables), responses.ts (dernières réponses de l'API), read-alerts.ts (alertes lues)
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
 │   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification), alert-banner.ts et AlertBanner.tsx (bandeau d'alerte app ouverte, #108)
 │   └── utils/
-├── assets/                       # Polices, icône de l'app
+├── assets/images/                # Icône de l'app et écran de lancement (les polices viennent des paquets @expo-google-fonts)
+├── tests/                        # Tests Jest (jest.config.js) : écrans, composants, sources de données, stockage
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)
 └── eas.json                      # Profils de build (chacun lié à l'environnement EAS du même nom)
 ```
@@ -290,8 +298,10 @@ apps/mobile/
 | Dépendance | Rôle |
 |---|---|
 | `mqtt` | Publication des mesures |
+| `zod` | Validation de la configuration |
 | `@peculiar/x509`, `reflect-metadata` | Demande de certificat (CSR) et vérification du certificat reçu en mode objet du site ([D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)) |
 | `tsx` | Exécution |
+| `vitest` (dév.) | Tests, dont la comparaison avec le firmware compilé sur le poste |
 | `@solar/contracts` (interne) | Format des messages et topics |
 
 **Mode objet du site** (`SIMULATE_DEVICE=true`, [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) : le simulateur joue aussi l'ESP32. Il publie les mesures du site toutes les 5 s (ensoleillement suivant une courbe de journée accélérée), son statut et son Last Will, et applique les consignes avec l'algorithme de la section 7 de `02-uml.md`, qui sert d'implémentation de référence testée pour le firmware.
@@ -602,6 +612,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 
 | Application | Variable | Exemple | Secrète |
 |---|---|---|---|
+| api | `NODE_ENV` | `development`, `test` ou `production` (journal lisible en développement, JSON sinon) | non |
 | api | `PORT` | `3000` | non |
 | api | `DATABASE_URL` | `postgres://solar:***@localhost:5432/solar` | **oui** |
 | api | `JWT_SECRET` | 64 caractères aléatoires | **oui** |

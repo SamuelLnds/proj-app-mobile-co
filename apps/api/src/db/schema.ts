@@ -257,7 +257,7 @@ export const alerts = pgTable(
   (t) => [
     index("alerts_status_started_idx").on(t.status, t.startedAt.desc()),
     // Drizzle ne sait pas exprimer NULLS NOT DISTINCT sur un index : la migration générée
-    // est complétée à la main (voir src/db/migrations/0000_*.sql).
+    // est complétée à la main (voir src/db/migrations/0001_schema.sql).
     uniqueIndex("alerts_active_unique_idx")
       .on(t.siteId, t.panelId, t.type)
       .where(sql`${t.status} = 'active'`),
