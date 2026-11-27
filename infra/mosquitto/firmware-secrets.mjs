@@ -1,7 +1,8 @@
 // Génère firmware/site-device/include/secrets.h (ignoré par Git) pour l'ESP32 de Wokwi.
-// Sources : le mot de passe de l'objet dans infra/.env (secret) et le certificat de l'autorité
-// du projet dans infra/mosquitto/generated/ca.crt (public, produit par « pnpm mqtt:setup »).
-// Aucune valeur secrète n'est affichée.
+// Sources : les noms d'hôte TLS de infra/.env et le certificat de l'autorité du projet dans
+// infra/mosquitto/generated/ca.crt (public, produit par « pnpm mqtt:setup »).
+// L'objet n'a plus de mot de passe : l'écoute 8883 exige un certificat client (D027, #80), que
+// le firmware obtiendra par enrôlement (#83). D'ici là, le fichier généré ne se connecte pas.
 //
 // Usage : pnpm firmware:secrets --host bore.pub --port 41234
 //   --host  hôte du tunnel (doit figurer dans MQTT_TLS_HOSTS, sinon le certificat sera refusé) ; défaut : bore.pub
@@ -56,8 +57,6 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) fail(`Port invalide : $
 if (!/^[A-Za-z0-9.-]+$/.test(args.host)) fail(`Hôte invalide : ${args.host}.`);
 
 const env = readEnv(args.env);
-const password = env.MQTT_DEVICE_PASSWORD;
-if (!password || password === "change-me") fail("MQTT_DEVICE_PASSWORD manquant dans infra/.env.");
 
 const tlsHosts = (env.MQTT_TLS_HOSTS || "localhost").split(",").map((h) => h.trim());
 if (!tlsHosts.includes(args.host)) {
@@ -85,8 +84,9 @@ const content = `// Généré par « pnpm firmware:secrets » : NE PAS VERSIONNE
 #define MQTT_HOST ${cString(args.host)}
 #define MQTT_PORT ${port}
 
+// Aucun mot de passe : le broker exige un certificat client sur 8883 (D027).
 #define MQTT_USERNAME "device-site01"
-#define MQTT_PASSWORD ${cString(password)}
+#define MQTT_PASSWORD ""
 
 static const char MQTT_CA_CERT[] = R"EOF(
 ${ca}

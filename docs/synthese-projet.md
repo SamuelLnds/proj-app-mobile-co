@@ -101,14 +101,14 @@ Le détail des tables, des topics MQTT et des routes de l'API est dans [le modè
 ## Sécurité
 
 Ce qui est en place :
-- le broker n'accepte que des connexions chiffrées en TLS, avec un compte et des droits par client ;
+- le broker n'accepte que des connexions chiffrées en TLS, avec des droits par client ; sur l'écoute exposée sur Internet, il exige un certificat client signé par l'autorité des objets du projet, non expiré et non révoqué, et l'objet n'a pas de mot de passe ;
 - l'app se connecte avec un jeton JWT valable 8 heures, rangé dans le stockage chiffré du téléphone ;
 - les mots de passe sont hachés en argon2id, et les tentatives de connexion sont limitées ;
 - les droits de l'exploitant sont vérifiés par l'API, pas seulement masqués dans l'app ;
 - chaque requête et chaque message MQTT est validé, un message invalide est ignoré ;
 - aucun secret dans le dépôt, aucune donnée personnelle dans les notifications ni dans les journaux.
 
-Ce qui reste à faire, et qui est obligatoire : la sécurité de l'objet. Aujourd'hui l'objet se connecte avec un mot de passe compilé dans le firmware. Une fois ce travail fait, il générera lui-même sa clé, demandera un certificat, et l'exploitant validera la demande dans l'app en comparant une empreinte. Le broker exigera ce certificat et pourra le révoquer.
+Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'objet. Le broker est prêt : il exige le certificat, refuse un certificat révoqué et n'accorde de droits qu'aux objets inscrits dans son ACL. Il reste l'enrôlement : l'objet générera lui-même sa clé, demandera un certificat à l'API, et l'exploitant validera la demande dans l'app en comparant une empreinte. D'ici là, l'ESP32 de Wokwi ne peut plus se connecter : le simulateur joue l'objet du site.
 
 ## Limites
 

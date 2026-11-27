@@ -96,7 +96,6 @@ Variables à remplir, fichier par fichier. **Les mots de passe doivent se corres
 |                        | `DB_PORT`                                        | `5432` (mettre `5433` si un PostgreSQL local occupe déjà 5432, et le reporter dans `DATABASE_URL`)            |
 |                        | `MQTT_API_PASSWORD`                              | Mot de passe du client MQTT `api` (repris dans `MQTT_PASSWORD` de l'API)                                      |
 |                        | `MQTT_SIMULATOR_PASSWORD`                        | Mot de passe du client `simulator` (repris dans `MQTT_PASSWORD` du simulateur)                                |
-|                        | `MQTT_DEVICE_PASSWORD`                           | Mot de passe du client `device-site01` (repris par `pnpm firmware:secrets` dans `secrets.h`)                  |
 |                        | `MQTT_TLS_HOSTS`                                 | `localhost,bore.pub` (noms valables dans le certificat TLS du broker ; `bore.pub` est nécessaire pour Wokwi)  |
 |                        | `MQTT_PORT`, `MQTTS_PORT`                        | `1883` et `8883`                                                                                              |
 | `apps/api/.env`        | `DATABASE_URL`                                   | `postgres://solar:<POSTGRES_PASSWORD>@localhost:<DB_PORT>/solar`                                              |
@@ -123,11 +122,35 @@ Les variables `EXPO_PUBLIC_*` sont lues quand Metro construit le bundle : après
 pnpm mqtt:setup
 ```
 
-Génère, dans `infra/mosquitto/generated/` (ignoré par Git), le fichier de mots de passe haché, l'autorité de certification du projet (`ca.crt`, créée une seule fois) et le certificat du serveur valable pour les noms de `MQTT_TLS_HOSTS`. Docker doit tourner (OpenSSL et `mosquitto_passwd` s'exécutent dans des conteneurs). À relancer pour changer un mot de passe ou un nom d'hôte, puis recréer le broker :
+Génère, tout étant ignoré par Git :
+
+- dans `infra/mosquitto/generated/` : le fichier de mots de passe haché des clients `api` et `simulator`, l'autorité de certification du serveur (`ca.crt`, créée une seule fois), le certificat du serveur valable pour les noms de `MQTT_TLS_HOSTS`, et le certificat public de l'**autorité des objets** (`devices-ca.crt`) ;
+- dans `infra/mosquitto/device-ca/` : la **clé de l'autorité des objets** (créée une seule fois) et sa base OpenSSL. Ce dossier n'est jamais monté dans le broker : seule l'API s'en servira pour signer le certificat d'un objet accepté ([D027](docs/journal/decisions/D027-certificat-objet-et-enrolement.md)). C'est le secret le plus sensible du projet : ne jamais le copier ni le partager ;
+- dans `infra/mosquitto/devices/` : l'ACL des objets (vide : aucun droit par défaut) et la liste de révocation (vide). L'API les réécrira à l'acceptation et à la révocation d'un objet.
+
+Docker doit tourner (OpenSSL et `mosquitto_passwd` s'exécutent dans des conteneurs). À relancer pour changer un mot de passe ou un nom d'hôte, puis recréer le broker :
 
 ```powershell
 docker compose -f infra/docker-compose.yml up -d --force-recreate mqtt
 ```
+
+L'écoute locale 1883 accepte `api` et `simulator` par mot de passe. L'écoute exposée 8883 n'accepte que des objets porteurs d'un certificat signé par l'autorité des objets, non expiré et non révoqué ; le nom commun du certificat (`device-site01`) sert d'identifiant MQTT. L'objet n'a plus de mot de passe.
+
+Après une modification de `infra/mosquitto/devices/` (ACL ou liste de révocation), le broker relit les deux fichiers sans redémarrer ni couper les autres clients :
+
+```powershell
+pnpm mqtt:reload
+```
+
+Révoquer un objet consiste à retirer son entrée de l'ACL (ses publications sont refusées aussitôt, même sur une connexion déjà ouverte) et à ajouter son certificat à la liste de révocation (sa reconnexion est refusée), puis à recharger le broker. L'app le fera depuis la section « Objets » (#81, #82).
+
+Pour vérifier le TLS mutuel sur le broker démarré (refus sans certificat, certificat expiré, d'une autre autorité ou révoqué ; droits limités d'un certificat valide) :
+
+```powershell
+pnpm mqtt:check-devices
+```
+
+Le script signe ses certificats de test avec une copie de l'autorité des objets, puis restaure l'ACL et la liste de révocation : il ne modifie rien de durable.
 
 ### 2.4 Base de données : démarrage, migrations, données de démonstration
 
@@ -216,6 +239,8 @@ git checkout -- apps/mobile/tsconfig.json
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `pnpm db:up` · `pnpm db:down`                                   | Démarre ou arrête la base et le broker (Docker Compose, `infra/docker-compose.yml`) |
 | `pnpm mqtt:setup` · `pnpm mqtt:up`                              | Prépare puis démarre le broker                                                      |
+| `pnpm mqtt:reload`                                              | Fait relire l'ACL des objets et la liste de révocation au broker                    |
+| `pnpm mqtt:check-devices`                                       | Vérifie le TLS mutuel de l'écoute 8883 sur le broker démarré                        |
 | `pnpm firmware:secrets --host <hôte> --port <port>`             | Génère `firmware/site-device/include/secrets.h` (ignoré par Git)                    |
 | `pnpm --filter api dev`                                         | API seule (rechargement automatique)                                                |
 | `pnpm --filter simulator dev` · `pnpm --filter simulator start` | Simulateur seul (avec ou sans rechargement)                                         |
@@ -303,7 +328,7 @@ cd firmware/site-device
 python -m platformio run
 ```
 
-`pnpm firmware:secrets` écrit `firmware/site-device/include/secrets.h` (ignoré par Git) à partir de `MQTT_DEVICE_PASSWORD` et de `infra/mosquitto/generated/ca.crt`, sans rien afficher. La commande `pio` n'est souvent pas dans le `PATH` : utiliser `python -m platformio`. La première compilation télécharge la chaîne ESP32 ; elle produit `firmware/site-device/.pio/build/esp32dev/firmware.bin` et `.elf`.
+`pnpm firmware:secrets` écrit `firmware/site-device/include/secrets.h` (ignoré par Git) à partir de `MQTT_TLS_HOSTS` et de `infra/mosquitto/generated/ca.crt`, sans rien afficher (plus de mot de passe d'objet depuis #80 : l'ESP32 ne se connecte plus tant que l'enrôlement, #83, n'est pas fait). La commande `pio` n'est souvent pas dans le `PATH` : utiliser `python -m platformio`. La première compilation télécharge la chaîne ESP32 ; elle produit `firmware/site-device/.pio/build/esp32dev/firmware.bin` et `.elf`.
 
 Si le port 6800 est déjà pris, lancer `bore local 8883 --to bore.pub` **sans** `--port` : bore affiche `listening at bore.pub:<port>` ; reporter ce port par `pnpm firmware:secrets --host bore.pub --port <port>` et recompiler. Il faut aussi regénérer `secrets.h` et recompiler si l'autorité de certification a changé (suppression de `infra/mosquitto/generated/`).
 
@@ -433,7 +458,7 @@ Le mot de passe est celui de `SEED_OPERATOR_PASSWORD` ou `SEED_VIEWER_PASSWORD` 
 
 ### `pnpm mqtt:setup` : « Mot de passe manquant » ou broker qui refuse les clients
 
-Les trois mots de passe MQTT de `infra/.env` doivent être renseignés (pas `change-me`) et correspondre à `MQTT_PASSWORD` de l'API et du simulateur. Après toute modification : `pnpm mqtt:setup`, puis `docker compose -f infra/docker-compose.yml up -d --force-recreate mqtt`.
+Les deux mots de passe MQTT de `infra/.env` (`MQTT_API_PASSWORD`, `MQTT_SIMULATOR_PASSWORD`) doivent être renseignés (pas `change-me`) et correspondre à `MQTT_PASSWORD` de l'API et du simulateur. `MQTT_DEVICE_PASSWORD` ne sert plus : il peut être retiré de `infra/.env`. Après toute modification : `pnpm mqtt:setup`, puis `docker compose -f infra/docker-compose.yml up -d --force-recreate mqtt`.
 
 ### Certificat du broker refusé par l'ESP32
 
@@ -445,7 +470,8 @@ Le certificat doit contenir `bore.pub` : `MQTT_TLS_HOSTS=localhost,bore.pub` dan
 - bore.pub est gratuit et coupe parfois (« connexion fermée par l'hôte distant ») : la boucle `while ($true) { bore local 8883 --to bore.pub --port 6800; Start-Sleep 5 }` le relance.
 - Le port est **compilé dans le firmware** : si 6800 est pris, lancer bore sans `--port`, puis `pnpm firmware:secrets --host bore.pub --port <port>` et recompiler.
 - Le tunnel est temporaire : en production, le broker est sur le VPS ([D028](docs/journal/decisions/D028-hebergement-vps.md), [D031](docs/journal/decisions/D031-tunnel-bore-pour-wokwi.md)).
-- Tant que le tunnel est ouvert, le port est joignable depuis Internet : seuls TLS et les mots de passe protègent le broker. Fermer le tunnel (Ctrl+C) après usage.
+- Tant que le tunnel est ouvert, le port est joignable depuis Internet : il n'accepte que des certificats d'objet signés par le projet. Fermer le tunnel (Ctrl+C) après usage.
+- **Depuis #80, l'ESP32 ne peut plus se connecter** : l'écoute 8883 exige un certificat client, que le firmware n'obtiendra qu'avec l'enrôlement (#81, #83). En attendant, le simulateur joue l'objet du site (`SIMULATE_DEVICE=true`). Le moniteur série affiche alors un échec TLS à la connexion.
 
 ### Compiler le firmware : `pio` introuvable
 

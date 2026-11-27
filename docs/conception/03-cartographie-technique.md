@@ -315,7 +315,7 @@ firmware/site-device/
 └── README.md  Tableau des broches et procédure de test
 ```
 
-Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, mot de passe, certificat de l'autorité) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` et l'état appliqué (`state`) sont donc publiés en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1). L'abonnement aux consignes, lui, est en QoS 1 (`subscribe(topic, 1)`). Le tampon MQTT est de 512 octets (`MQTT_BUFFER_SIZE`) : un message entrant ou sortant plus grand serait ignoré, ce qui n'arrive pas avec les messages de la section 6.2 (moins de 320 octets).
+Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, certificat de l'autorité du serveur ; plus de mot de passe depuis #80) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` et l'état appliqué (`state`) sont donc publiés en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1). L'abonnement aux consignes, lui, est en QoS 1 (`subscribe(topic, 1)`). Le tampon MQTT est de 512 octets (`MQTT_BUFFER_SIZE`) : un message entrant ou sortant plus grand serait ignoré, ce qui n'arrive pas avec les messages de la section 6.2 (moins de 320 octets).
 
 La boucle exécute le pilotage **chaque seconde** (`CONTROL_TICK_PERIOD_MS`) : batterie (capacité 10 000 Wh, départ à 50 %), flux, relais et barre de LED ; la mesure part toutes les 5 s avec les valeurs du dernier tick. Une consigne reçue est analysée et appliquée aussitôt (dans la seconde), et son état est publié dans la foulée. Une consigne lisible mais invalide n'est pas adoptée : l'objet répond `rejected` / `invalid_setpoint` pour son identifiant, puis republie l'état de la consigne en vigueur. Une consigne illisible (JSON cassé, identifiant qui n'est pas un UUID) est ignorée et journalisée sur le port série. La consigne retained renvoyée après une reconnexion est appliquée sans republier d'état si elle est identique à celle en vigueur.
 
@@ -326,7 +326,7 @@ Wokwi simule l'ESP32 plus lentement que le temps réel (environ 50 %, moins si l
 | Service Docker Compose | Image | Port exposé | Rôle |
 |---|---|---|---|
 | `db` | `timescale/timescaledb` (étiquette PostgreSQL 16 ou plus) | `DB_PORT`, 5432 par défaut (développement seulement) | Base de données |
-| `mqtt` | `eclipse-mosquitto:2` | `MQTT_PORT` (1883, sur 127.0.0.1 uniquement) et `MQTTS_PORT` (8883, TLS) | Broker MQTT ; configuration dans `infra/mosquitto/config/` (`mosquitto.conf`, `acl`), mots de passe hachés et certificats générés par `pnpm mqtt:setup` dans `infra/mosquitto/generated/` (ignoré par Git) |
+| `mqtt` | `eclipse-mosquitto:2` | `MQTT_PORT` (1883, sur 127.0.0.1 uniquement) et `MQTTS_PORT` (8883, TLS mutuel) | Broker MQTT ; configuration dans `infra/mosquitto/config/` (`mosquitto.conf`, `acl` de l'écoute 1883, `device-ca.cnf`, `reload.sh`), mots de passe hachés et certificats générés par `pnpm mqtt:setup` dans `infra/mosquitto/generated/` ; ACL des objets et liste de révocation dans `infra/mosquitto/devices/`, écrites par l'API ; clé de l'autorité des objets dans `infra/mosquitto/device-ca/`, jamais montée dans le broker (trois dossiers ignorés par Git, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `api` | Construite depuis `apps/api` | 3000 | API (démo ; en développement l'API tourne avec `tsx`) |
 
 ### 5.7 Notifications
@@ -458,13 +458,15 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 
 ### 6.3 Identifiants sur le broker
 
-| Client | Identifiant MQTT | Droits (fichier `infra/mosquitto/config/acl`) |
+| Client | Identifiant MQTT | Droits |
 |---|---|---|
-| Objet | `device-site01` | Publier sur `solar/SITE01/measurements`, `state`, `status` ; s'abonner à `solar/SITE01/setpoint` |
-| Simulateur | `simulator` | Publier sur `solar/SITE01/panels/+/measurements` ; lire et publier `solar/SITE01/measurements` ; en mode objet du site, publier `status` et `state`, lire `setpoint` |
-| API | `api` | Tous les topics `solar/#` |
+| Objet (écoute 8883) | `device-site01`, nom commun de son certificat | ACL des objets `infra/mosquitto/devices/acl`, écrite par l'API à l'acceptation : publier sur `solar/SITE01/measurements`, `state`, `status` ; s'abonner à `solar/SITE01/setpoint` |
+| Simulateur (écoute 1883) | `simulator` | Fichier `infra/mosquitto/config/acl` : publier sur `solar/SITE01/panels/+/measurements` ; lire et publier `solar/SITE01/measurements` ; en mode objet du site, publier `status` et `state`, lire `setpoint` |
+| API (écoute 1883) | `api` | Fichier `infra/mosquitto/config/acl` : tous les topics `solar/#` |
 
-L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'API. Cible (milestone « Sécurité de l'objet », [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) : sur l'écoute TLS 8883, l'objet s'authentifie par un certificat client dont le nom commun (`device-site01`) sert d'identifiant MQTT ; les droits ci-dessus ne changent pas.
+L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'API. Sur l'écoute TLS 8883 ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), #80), l'objet s'authentifie par un certificat client signé par l'autorité des objets (`require_certificate`, `crlfile`), dont le nom commun sert d'identifiant MQTT (`use_identity_as_username`) ; il n'a pas de mot de passe. Sans entrée dans l'ACL des objets, il n'a aucun droit. L'écoute locale 1883 garde l'identifiant et le mot de passe pour l'API et le simulateur (`per_listener_settings`).
+
+Après une modification de l'ACL des objets ou de la liste de révocation, le broker les relit sans redémarrer : `reload.sh` les recopie avec les permissions exigées puis envoie `SIGHUP` à Mosquitto (`pnpm mqtt:reload`). Vérifié avec Mosquitto 2.1.4 (`pnpm mqtt:check-devices`) : le retrait de l'ACL refuse aussitôt les publications d'une connexion déjà ouverte ; un certificat ajouté à la liste de révocation ne peut plus se reconnecter (le broker ne coupe pas la connexion ouverte, d'où le retrait de l'ACL en même temps).
 
 ## 7. Contrat de l'API REST
 
@@ -584,7 +586,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `SITE_CODE` | `SITE01` | non |
 | simulator | `FAULTY_PANELS` | `P07,P12` | non |
 | simulator | `SIMULATE_DEVICE` | `true` (le simulateur joue l'objet du site) | non |
-| infra | `MQTT_API_PASSWORD` / `MQTT_SIMULATOR_PASSWORD` / `MQTT_DEVICE_PASSWORD` | `***` | **oui** |
+| infra | `MQTT_API_PASSWORD` / `MQTT_SIMULATOR_PASSWORD` | `***` | **oui** |
 | infra | `MQTT_TLS_HOSTS` | `localhost,bore.pub` | non |
 | infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` | `5432` / `1883` / `8883` | non |
 | simulator | `EXTRA_PANELS` | `P21` | non |
@@ -594,7 +596,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
-Côté firmware, les identifiants WiFi et MQTT, l'hôte et le port du broker et le certificat de l'autorité sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné ; `pnpm firmware:secrets --host <hôte> --port <port>` le génère à partir de `infra/.env` (variables `MQTT_DEVICE_PASSWORD` et `MQTT_TLS_HOSTS`).
+Côté firmware, les identifiants WiFi, l'hôte et le port du broker et le certificat de l'autorité du serveur sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné ; `pnpm firmware:secrets --host <hôte> --port <port>` le génère à partir de `infra/.env` (variable `MQTT_TLS_HOSTS`). L'objet n'a plus de mot de passe MQTT (#80) : il se connectera avec le certificat obtenu par enrôlement (#83).
 
 ## 10. Décisions structurantes
 

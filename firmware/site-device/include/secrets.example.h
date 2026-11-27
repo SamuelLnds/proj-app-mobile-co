@@ -11,9 +11,10 @@
 #define MQTT_HOST "bore.pub"
 #define MQTT_PORT 8883
 
-// Identifiant de l'objet : le nom est fixé (device-site01), seul le mot de passe est secret.
+// Identifiant de l'objet : le nom est fixé (device-site01). Plus de mot de passe : le broker
+// exige un certificat client sur 8883 (D027), obtenu par enrôlement (#83).
 #define MQTT_USERNAME "device-site01"
-#define MQTT_PASSWORD "change-me"
+#define MQTT_PASSWORD ""
 
 // Certificat de l'autorité du projet (infra/mosquitto/generated/ca.crt, public).
 static const char MQTT_CA_CERT[] = R"EOF(

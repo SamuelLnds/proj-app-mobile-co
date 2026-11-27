@@ -27,7 +27,8 @@ services:
       start_period: 10s
 
   mqtt:
-    # Broker MQTT auto-hébergé (D023) : identifiants, droits par client, TLS sur 8883
+    # Broker MQTT auto-hébergé (D023) : identifiants et droits par client sur 1883,
+    # TLS mutuel avec certificat d'objet sur 8883 (D027)
     image: eclipse-mosquitto:2
     restart: unless-stopped
     ports:
@@ -38,6 +39,8 @@ services:
     volumes:
       - ./mosquitto/config:/src/config:ro
       - ./mosquitto/generated:/src/generated:ro
+      # ACL des objets et liste de révocation, écrites par l'API (jamais la clé de l'autorité)
+      - ./mosquitto/devices:/src/devices:ro
       - solar-mqtt-data:/mosquitto/data
     # Copie la configuration avec les permissions exigées par Mosquitto, puis le démarre
     command:
@@ -46,7 +49,9 @@ services:
       - >-
         mkdir -p /etc/mosquitto-solar &&
         cp /src/config/mosquitto.conf /src/config/acl /etc/mosquitto-solar/ &&
-        cp /src/generated/passwd /src/generated/ca.crt /src/generated/server.crt /src/generated/server.key /etc/mosquitto-solar/ &&
+        cp /src/generated/passwd /src/generated/server.crt /src/generated/server.key /src/generated/devices-ca.crt /etc/mosquitto-solar/ &&
+        cp /src/devices/acl /etc/mosquitto-solar/devices.acl &&
+        cp /src/devices/crl.pem /etc/mosquitto-solar/devices.crl &&
         chown -R mosquitto:mosquitto /etc/mosquitto-solar /mosquitto/data &&
         chmod 0700 /etc/mosquitto-solar &&
         chmod 0600 /etc/mosquitto-solar/* &&

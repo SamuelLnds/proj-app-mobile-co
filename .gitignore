@@ -26,3 +26,7 @@ Thumbs.db
 
 # Mots de passe hachés et certificats générés pour Mosquitto
 infra/mosquitto/generated/
+# Autorité des objets (clé privée) et fichiers écrits par l'API (D027)
+infra/mosquitto/device-ca/
+infra/mosquitto/devices/
+infra/mosquitto/.check/

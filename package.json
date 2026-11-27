@@ -14,6 +14,8 @@
     "build": "pnpm -r --if-present build",
     "db:up": "docker compose -f infra/docker-compose.yml up -d db",
     "mqtt:setup": "node infra/mosquitto/setup.mjs",
+    "mqtt:reload": "node infra/mosquitto/reload.mjs",
+    "mqtt:check-devices": "node infra/mosquitto/check-devices.mjs",
     "firmware:secrets": "node infra/mosquitto/firmware-secrets.mjs",
     "mqtt:up": "docker compose -f infra/docker-compose.yml up -d mqtt",
     "db:down": "docker compose -f infra/docker-compose.yml down",

@@ -1,5 +1,6 @@
-# Droits par client (section 6.3 de la cartographie technique).
-# Chaque client ne publie et ne lit que ce dont il a besoin.
+# Droits sur l'écoute locale 1883 (section 6.3 de la cartographie technique).
+# Chaque client ne publie et ne lit que ce dont il a besoin. Les objets (écoute 8883) ont leur
+# propre ACL, écrite par l'API : infra/mosquitto/devices/acl (D027).
 
 # API : tous les topics du projet
 user api
@@ -9,13 +10,6 @@ topic readwrite solar/#
 user simulator
 topic write solar/SITE01/panels/+/measurements
 topic readwrite solar/SITE01/measurements
-topic write solar/SITE01/status
-topic write solar/SITE01/state
-topic read solar/SITE01/setpoint
-
-# Objet du site (ESP32)
-user device-site01
-topic write solar/SITE01/measurements
 topic write solar/SITE01/status
 topic write solar/SITE01/state
 topic read solar/SITE01/setpoint
