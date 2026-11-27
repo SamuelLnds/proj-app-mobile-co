@@ -75,6 +75,7 @@ describe("constantes", () => {
       ENROLLMENT_POLL_PERIOD_S: contracts.ENROLLMENT_POLL_PERIOD_S,
       DEVICE_CERT_DEFAULT_TTL_H: contracts.DEVICE_CERT_DEFAULT_TTL_H,
       DEVICE_CERT_MAX_TTL_H: contracts.DEVICE_CERT_MAX_TTL_H,
+      STREAM_HEARTBEAT_S: contracts.STREAM_HEARTBEAT_S,
     }).toEqual({
       SITE_MEASUREMENT_PERIOD_S: 5,
       PANEL_MEASUREMENT_PERIOD_S: 10,
@@ -103,6 +104,7 @@ describe("constantes", () => {
       ENROLLMENT_POLL_PERIOD_S: 3,
       DEVICE_CERT_DEFAULT_TTL_H: 8,
       DEVICE_CERT_MAX_TTL_H: 168,
+      STREAM_HEARTBEAT_S: 15,
     });
   });
 });

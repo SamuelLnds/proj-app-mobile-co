@@ -74,6 +74,8 @@ export function createAlertEngine(
   repository: AlertsRepository,
   notify: AlertNotifier,
   logger: FastifyBaseLogger,
+  /** Appelé quand une alerte s'ouvre ou se résout (flux d'événements, bonus #60). */
+  onChange: () => void = () => undefined,
 ): AlertEngine {
   /**
    * Début de la période de production basse en cours, par site ou panneau. En mémoire : un
@@ -103,6 +105,7 @@ export function createAlertEngine(
     const row = await repository.insert(alert);
     if (!row) return false; // Déjà active : pas de doublon, pas de nouvelle notification.
     logger.info({ type: row.type, severity: row.severity }, "Alerte ouverte");
+    onChange();
     if (row.severity !== "info") {
       try {
         await notify(row);
@@ -117,7 +120,10 @@ export function createAlertEngine(
   async function resolve(scope: AlertScope, types: AlertType[], endedAt: Date): Promise<void> {
     if (types.length === 0) return;
     const count = await repository.resolve(scope.siteId, scope.panelId ?? null, types, endedAt);
-    if (count > 0) logger.info({ types, count }, "Alertes résolues");
+    if (count > 0) {
+      logger.info({ types, count }, "Alertes résolues");
+      onChange();
+    }
   }
 
   /** Applique les décisions de plusieurs règles : une résolution groupée, puis les ouvertures. */

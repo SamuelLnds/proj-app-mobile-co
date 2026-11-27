@@ -20,6 +20,7 @@ import {
   EnrollmentStatusResponseSchema,
   FingerprintParamsSchema,
 } from "./enrollments";
+import { StreamEventSchema } from "./events";
 import { IdParamsSchema, MeasurementQuerySchema, PageQuerySchema } from "./common";
 import {
   PanelDetailSchema,
@@ -177,6 +178,14 @@ export const ROUTES = {
     query: AlertsQuerySchema,
     status: 200,
     response: AlertPageSchema,
+  },
+  events: {
+    method: "GET",
+    path: "/v1/events",
+    role: "viewer",
+    status: 200,
+    // Flux text/event-stream : schéma des données de chaque événement `change`.
+    response: StreamEventSchema,
   },
   requestEnrollment: {
     method: "POST",

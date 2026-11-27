@@ -1143,8 +1143,8 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **À faire :** route SSE poussant les nouvelles mesures et les changements d'état ; l'app remplace l'interrogation périodique par le flux quand il est disponible, avec retour automatique à l'interrogation en cas de coupure.
 
 **Critères d'acceptation :**
-- [ ] Délai d'affichage d'une nouvelle mesure inférieur à 2 s.
-- [ ] Une coupure du flux ne bloque pas l'app.
+- [x] Délai d'affichage d'une nouvelle mesure inférieur à 2 s.
+- [x] Une coupure du flux ne bloque pas l'app.
 
 **Dépend de :** M6 terminé · **Références :** [D010](../journal/decisions/D010-api-rest-fastify.md)
 

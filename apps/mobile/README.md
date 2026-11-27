@@ -13,6 +13,10 @@ Un lecteur voit seulement « Réservé aux exploitants ». Sans réseau, les bou
 
 Avec la source `api`, les routes `/v1/enrollments` de l'API sont utilisées (#81). Si l'API n'a pas pu recharger le broker, l'écran affiche « Décision enregistrée » avec le message de l'API : relancer `pnpm mqtt:reload` sur le serveur.
 
+## Mise à jour en direct (flux d'événements)
+
+Avec la source `api`, l'app ouvre le flux `GET /v1/events` de l'API (bonus #60, [D037](../../docs/journal/decisions/D037-flux-evenements-sse.md)) tant que l'utilisateur est connecté, l'app au premier plan et le téléphone en ligne. Chaque signal fait relire aussitôt les données concernées ; les interrogations périodiques passent alors à 60 s. Si le flux se coupe (réseau, redémarrage de l'API, deux battements manqués), elles reprennent aussitôt et l'app rouvre le flux, de 3 s à 30 s d'attente entre deux essais. Avec la source `mock`, aucun flux : l'app interroge comme avant.
+
 ## Notifications d'alerte : configuration Firebase
 
 Les alertes `warning` et `critical` arrivent app fermée ou en arrière-plan par le **push Expo**, qui s'appuie sur Firebase Cloud Messaging (FCM) sur Android ([D030](../../docs/journal/decisions/D030-notifications-push-expo-et-locales.md)). Quand l'app est ouverte, aucune notification n'est affichée : l'alerte est déjà visible dans l'app, et le push d'une consigne refusée n'est pas envoyé ([D033](../../docs/journal/decisions/D033-regles-envoi-notifications-alerte.md)). La configuration Firebase se fait **une seule fois**, par le développeur, et n'est jamais versionnée.

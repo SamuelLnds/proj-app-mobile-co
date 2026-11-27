@@ -275,6 +275,24 @@ sequenceDiagram
   end
 ```
 
+Avec le flux d'événements (bonus #60, [D037](../journal/decisions/D037-flux-evenements-sse.md)), l'app n'attend plus son interrogation suivante :
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as Objet
+  participant B as Broker
+  participant API
+  participant App
+  App->>API: GET /v1/events (JWT), flux ouvert
+  D->>B: PUBLISH mesure du site
+  B->>API: mesure
+  API->>API: enregistrement, puis signal « site » (regroupé sur 250 ms)
+  API-->>App: event: change, topic site
+  App->>API: GET /v1/sites/{id}
+  API-->>App: dernière mesure, affichée moins de 2 s après sa réception
+```
+
 ### 4.3 Envoi et application d'une consigne (UC07, UC12)
 
 ```mermaid

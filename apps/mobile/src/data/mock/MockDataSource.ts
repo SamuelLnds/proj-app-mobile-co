@@ -376,6 +376,11 @@ export class MockDataSource implements DataSource {
     return { ...enrollment };
   }
 
+  /** Les données d'exemple n'ont pas de flux : l'app garde l'interrogation périodique. */
+  openEventStream(): null {
+    return null;
+  }
+
   // --- Simulation -------------------------------------------------------------------------
 
   /** Avance la simulation (batterie, réponse de l'objet) jusqu'à maintenant, puis simule la latence. */
