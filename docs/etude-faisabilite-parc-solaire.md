@@ -26,7 +26,7 @@ Une application mobile supervise et **pilote** un petit parc solaire équipé d'
 |---|---|
 | 1 ESP32 simulé : mesures + pilotage batterie / réseau | Plusieurs boîtiers, anémomètre |
 | Script simulant une vingtaine de panneaux pour peupler la carte | Flotte de centaines de panneaux |
-| Broker MQTT Mosquitto auto-hébergé (TLS, identifiants, droits par client) | TLS mutuel |
+| Broker MQTT Mosquitto auto-hébergé (TLS, identifiants, droits par client) et TLS mutuel pour l'objet du site ([D027](journal/decisions/D027-certificat-objet-et-enrolement.md)) | Certificats pour les panneaux simulés |
 | Une API REST qui reçoit les mesures et envoie les consignes | Microservices, GraphQL |
 | PostgreSQL avec TimescaleDB | PostGIS, agrégats et rétention avancés |
 | App de 5 écrans, dont un écran de pilotage | Mode hors ligne complet, ordres de travail |

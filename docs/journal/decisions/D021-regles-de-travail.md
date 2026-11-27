@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-06 |
-| **Statut** | Proposée |
+| **Statut** | Acceptée |
 | **Décideurs** | À compléter |
 | **Liens** | Issue #3 · `CLAUDE.md` · `.claude/` |
 

@@ -65,7 +65,7 @@ flowchart LR
 
 | Environnement | Où tourne quoi | Usage |
 |---|---|---|
-| **Développement** | API et base dans Docker Compose sur le poste du développeur ; broker Mosquitto dans le même Docker Compose ; notifications push via le service Expo et Firebase (aucun service local) ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
+| **Développement** | Base et broker Mosquitto dans Docker Compose sur le poste du développeur, API lancée sur le poste avec `tsx` (`pnpm dev`) ; notifications push via le service Expo et Firebase (aucun service local) ; le simulateur peut jouer l'objet du site ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) ; app dans un *development build* sur téléphone ; objet dans Wokwi (navigateur ou extension VS Code) | Travail quotidien |
 | **Démonstration** | API, base et broker dans Docker Compose sur un **VPS** derrière Caddy (HTTPS) ; notifications par le service Expo ; ESP32 de Wokwi connecté directement au broker du VPS ; APK installé sur le téléphone de test ([D028](../journal/decisions/D028-hebergement-vps.md)) | Soutenance |
 
 L'hébergement final est un VPS ([D028](../journal/decisions/D028-hebergement-vps.md)) : seuls les ports 443 (API) et 8883 (MQTT en TLS mutuel) sont ouverts sur Internet. Le broker est **auto-hébergé** ([D023](../journal/decisions/D023-broker-mosquitto-auto-heberge.md)). Wokwi gratuit ne joignant que des services sur Internet, l'ESP32 simulé passe par un tunnel TCP vers le port 8883, ou par la passerelle privée de Wokwi (payante) en secours ; une fois le VPS en place, l'ESP32 joint directement son broker et le tunnel n'est plus utile ; cette connexion n'est nécessaire qu'à partir du travail sur le firmware ([D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)).
@@ -590,7 +590,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `EXTRA_PANELS` | `P21` | non |
 | mobile | `EXPO_PUBLIC_API_URL` | `https://api.example.com/v1` | non (visible dans l'app) |
 | mobile | `EXPO_PUBLIC_DATA_SOURCE` | `mock` ou `api` | non |
-| mobile | `EXPO_PUBLIC_MOCK_SCENARIO` | `normal`, `device_offline`, `battery_full`, `no_alerts` | non |
+| mobile | `EXPO_PUBLIC_MOCK_SCENARIO` | `normal`, `device_offline`, `phone_offline`, `battery_full`, `no_alerts` | non |
 | mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
