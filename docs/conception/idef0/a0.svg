@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1340 1112" width="1340" height="1112" font-family="sans-serif" role="img" aria-labelledby="t d">
+<title id="t">IDEF0 A0 : décomposition du parc solaire</title><desc id="d">Six fonctions : mesurer, transmettre, enregistrer, détecter et alerter, restituer, piloter.</desc>
+<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#222222"/></marker><marker id="ahA" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5f99"/></marker></defs>
+<rect x="0" y="0" width="1340" height="1112" fill="#ffffff"/>
+<rect x="3" y="3" width="1334" height="1106" fill="none" stroke="#cccccc" stroke-width="1"/>
+<rect x="190" y="112" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="260.0" y="159.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Mesurer</text>
+<text x="323" y="209" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A1</text>
+<rect x="358" y="254" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="428.0" y="293.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Transmettre</text>
+<text x="428.0" y="310.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">(MQTT sur TLS)</text>
+<text x="491" y="351" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A2</text>
+<rect x="526" y="396" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="596.0" y="435.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Enregistrer</text>
+<text x="596.0" y="452.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">et historiser</text>
+<text x="659" y="493" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A3</text>
+<rect x="694" y="538" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="764.0" y="568.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Détecter les</text>
+<text x="764.0" y="585.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">anomalies</text>
+<text x="764.0" y="602.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">et alerter</text>
+<text x="827" y="635" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A4</text>
+<rect x="862" y="680" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="932.0" y="702.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Restituer à</text>
+<text x="932.0" y="719.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">l'utilisateur</text>
+<text x="932.0" y="736.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">(app, hors ligne,</text>
+<text x="932.0" y="753.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">notifications)</text>
+<text x="995" y="777" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A5</text>
+<rect x="1030" y="822" width="140" height="104" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="1100.0" y="852.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Piloter la</text>
+<text x="1100.0" y="869.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">répartition</text>
+<text x="1100.0" y="886.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">batterie / réseau</text>
+<text x="1163" y="919" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A6</text>
+<polyline points="222,232 222,216" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="230" y="237" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ESP32 (Wokwi)</text>
+<polyline points="206,254 206,216" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="214" y="259" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Simulateur des</text>
+<text x="214" y="274" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">panneaux</text>
+<polyline points="374,374 374,358" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="382" y="379" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Broker Mosquitto</text>
+<text x="382" y="394" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">(TLS)</text>
+<polyline points="558,516 558,500" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="566" y="521" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<polyline points="542,538 542,500" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="550" y="543" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">PostgreSQL +</text>
+<text x="550" y="558" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">TimescaleDB</text>
+<polyline points="726,658 726,642" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="734" y="663" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<polyline points="710,680 710,642" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="718" y="685" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Service push Expo</text>
+<text x="718" y="700" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">+ Firebase</text>
+<polyline points="878,800 878,784" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="886" y="805" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">App Expo +</text>
+<text x="886" y="820" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">SQLite local</text>
+<polyline points="1078,942 1078,926" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="1086" y="947" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">App Expo</text>
+<polyline points="1062,964 1062,926" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="1070" y="969" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify +</text>
+<text x="1070" y="984" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">broker Mosquitto</text>
+<polyline points="1046,1001 1046,926" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="1054" y="1006" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ESP32 (Wokwi)</text>
+<text x="1054" y="1021" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ou simulateur</text>
+<polyline points="8,132 190,132" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="12" y="126" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Ensoleillement</text>
+<polyline points="8,160 190,160" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="12" y="154" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Température</text>
+<polyline points="8,188 190,188" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="12" y="182" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Production des panneaux</text>
+<polyline points="330,164 344,164 344,294 358,294" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="354" y="248" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Mesures brutes</text>
+<polyline points="498,306 514,306 514,426 526,426" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="522" y="390" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Messages MQTT</text>
+<polyline points="666,456 680,456 680,726 862,726" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<polyline points="680,568 694,568" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<circle cx="680" cy="568" r="3.2" fill="#222222"/>
+<text x="690" y="517" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Données</text>
+<text x="690" y="532" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">enregistrées</text>
+<polyline points="834,590 848,590 848,700 862,700" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="858" y="659" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Alertes et</text>
+<text x="858" y="674" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notifications push</text>
+<polyline points="1170,892 1184,892 1184,1048 504,1048 504,476 526,476" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="700" y="1042" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Consigne et état appliqué (retour de l'objet, via le broker)</text>
+<polyline points="8,882 1030,882" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="12" y="876" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Consignes de l'exploitant</text>
+<polyline points="666,420 1330,420" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1178" y="414" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Mesures historisées</text>
+<polyline points="1002,702 1330,702" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1178" y="696" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Tableau de bord</text>
+<polyline points="1002,742 1330,742" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1178" y="721" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Alertes et</text>
+<text x="1178" y="736" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notifications</text>
+<polyline points="1170,844 1330,844" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1178" y="823" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">État appliqué de la</text>
+<text x="1178" y="838" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">batterie et du réseau</text>
+<polyline points="483,30 483,254" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<polyline points="483,180 651,180 651,396" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<circle cx="483" cy="180" r="3.2" fill="#222222"/>
+<text x="489" y="44" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Conception :</text>
+<text x="489" y="59" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">formats, topics,</text>
+<text x="489" y="74" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">modèle de données</text>
+<polyline points="794,60 794,538" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="800" y="74" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Seuils d'alerte</text>
+<text x="800" y="89" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">et hystérésis</text>
+<polyline points="819,115 819,538" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="825" y="129" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de</text>
+<text x="825" y="144" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification (D033)</text>
+<polyline points="987,170 987,680" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="993" y="184" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Rôles exploitant /</text>
+<text x="993" y="199" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">lecteur</text>
+<polyline points="987,646 1130,646 1130,822" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<circle cx="987" cy="646" r="3.2" fill="#222222"/>
+<polyline points="1155,230 1155,822" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1161" y="244" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de pilotage :</text>
+<text x="1161" y="259" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">batterie pleine 95 %,</text>
+<text x="1161" y="274" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">faible 20 %,</text>
+<text x="1161" y="289" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">charge max. 3 000 W,</text>
+<text x="1161" y="304" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">charge auto</text>
+<text x="1161" y="319" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">jusqu'à 80 %</text>
+<rect x="8" y="1068" width="1324" height="36" fill="#fff" stroke="#222222" stroke-width="1.5"/>
+<line x1="170" y1="1068" x2="170" y2="1104" stroke="#222222" stroke-width="1.5"/>
+<line x1="1090" y1="1068" x2="1090" y2="1104" stroke="#222222" stroke-width="1.5"/>
+<text x="20" y="1091" font-size="15" text-anchor="start" font-weight="bold" fill="#1a1a1a">Nœud : A0</text>
+<text x="182" y="1091" font-size="15" text-anchor="start" font-weight="normal" fill="#1a1a1a">Titre : Superviser et piloter le parc solaire (décomposition)</text>
+<text x="1102" y="1091" font-size="14" text-anchor="start" font-weight="normal" fill="#1a1a1a">Diagramme n° 2 sur 4 · IDEF0</text>
+<rect x="500" y="878" width="8" height="8" fill="#fff"/>
+<line x1="504" y1="875" x2="504" y2="889" stroke="#222222" stroke-width="1.8"/>
+<rect x="790" y="416" width="8" height="8" fill="#fff"/>
+<line x1="794" y1="413" x2="794" y2="427" stroke="#222222" stroke-width="1.8"/>
+<rect x="815" y="416" width="8" height="8" fill="#fff"/>
+<line x1="819" y1="413" x2="819" y2="427" stroke="#222222" stroke-width="1.8"/>
+<rect x="983" y="416" width="8" height="8" fill="#fff"/>
+<line x1="987" y1="413" x2="987" y2="427" stroke="#222222" stroke-width="1.8"/>
+<rect x="1151" y="416" width="8" height="8" fill="#fff"/>
+<line x1="1155" y1="413" x2="1155" y2="427" stroke="#222222" stroke-width="1.8"/>
+<rect x="1126" y="698" width="8" height="8" fill="#fff"/>
+<line x1="1130" y1="695" x2="1130" y2="709" stroke="#222222" stroke-width="1.8"/>
+<rect x="1151" y="698" width="8" height="8" fill="#fff"/>
+<line x1="1155" y1="695" x2="1155" y2="709" stroke="#222222" stroke-width="1.8"/>
+<rect x="1126" y="738" width="8" height="8" fill="#fff"/>
+<line x1="1130" y1="735" x2="1130" y2="749" stroke="#222222" stroke-width="1.8"/>
+<rect x="1151" y="738" width="8" height="8" fill="#fff"/>
+<line x1="1155" y1="735" x2="1155" y2="749" stroke="#222222" stroke-width="1.8"/>
+</svg>
