@@ -13,6 +13,10 @@
 #include "sensors.h"
 #include "setpoint.h"
 
+// L'enrôlement (clé P-256, demande de certificat, client HTTP) dépasse la pile par défaut de 8 Ko de
+// loop() : sans cette ligne, la pile déborde juste après la synchronisation de l'heure.
+SET_LOOP_TASK_STACK_SIZE(24 * 1024);
+
 namespace {
 
 Pilot pilot;
