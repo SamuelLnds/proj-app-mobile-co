@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,9 +15,13 @@ type ScreenProps = {
   children: ReactNode;
   scroll?: boolean;
   /**
-   * Rafraîchissement demandé en tirant l'écran. L'indicateur ne s'affiche que pendant ce geste,
-   * jamais pendant les rafraîchissements automatiques en arrière-plan.
+   * Tirer l'écran vers le bas relance **toutes** les requêtes affichées (#127) : celles de
+   * l'écran, de la barre d'onglets et des onglets déjà ouverts. L'indicateur ne s'affiche que
+   * pendant ce geste, jamais pendant les rafraîchissements automatiques, et reste visible jusqu'à
+   * la fin de toutes les requêtes. En cas d'échec, chaque requête garde ses dernières données.
    */
+  refreshable?: boolean;
+  /** Action de plus pendant le geste (par exemple recharger une liste depuis sa première page). */
   onRefresh?: () => Promise<unknown>;
   /** Élément superposé (feuille du bas, dialogue). */
   overlay?: ReactNode;
@@ -35,16 +40,22 @@ export function Screen({
   headerBelow,
   children,
   scroll = true,
+  refreshable = false,
   onRefresh,
   overlay,
   onEndReached,
 }: ScreenProps) {
   const { colors } = useTheme();
+  const client = useQueryClient();
   const [pulling, setPulling] = useState(false);
+  const canRefresh = refreshable || !!onRefresh;
   const refresh = () => {
-    if (!onRefresh) return;
+    if (!canRefresh) return;
     setPulling(true);
-    void onRefresh().finally(() => setPulling(false));
+    void Promise.allSettled([
+      refreshable ? client.refetchQueries({ type: "active" }) : null,
+      onRefresh?.(),
+    ]).finally(() => setPulling(false));
   };
   const content = <View style={styles.content}>{children}</View>;
   return (
@@ -63,6 +74,7 @@ export function Screen({
       {headerBelow ? <View style={styles.below}>{headerBelow}</View> : null}
       {scroll ? (
         <ScrollView
+          testID="screen-scroll"
           contentContainerStyle={styles.scroll}
           scrollEventThrottle={100}
           onScroll={
@@ -78,7 +90,7 @@ export function Screen({
               : undefined
           }
           refreshControl={
-            onRefresh ? (
+            canRefresh ? (
               <RefreshControl refreshing={pulling} onRefresh={refresh} tintColor={colors.primary} />
             ) : undefined
           }

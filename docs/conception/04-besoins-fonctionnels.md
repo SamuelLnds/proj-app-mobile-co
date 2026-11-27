@@ -1273,10 +1273,10 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - Le témoin de rafraîchissement reste visible jusqu'à la fin de toutes les requêtes ; en cas d'échec, l'écran garde ses dernières données et signale l'erreur (comportement hors ligne inchangé).
 
 **Critères d'acceptation :**
-- [ ] Sur chaque écran (Supervision, Carte, Pilotage, Alertes, détail d'un panneau, Objets), le geste relance toutes les requêtes affichées (test).
-- [ ] La Carte se rafraîchit au geste (test).
-- [ ] Après avoir accepté une demande d'enrôlement, l'état de l'objet est relancé sans attendre l'intervalle (test).
-- [ ] Hors ligne, le geste n'efface rien et garde l'indicateur « Hors ligne » (test).
+- [x] Sur chaque écran (Supervision, Carte, Pilotage, Alertes, détail d'un panneau, Objets), le geste relance toutes les requêtes affichées (test).
+- [x] La Carte se rafraîchit au geste (test).
+- [x] Après avoir accepté une demande d'enrôlement, l'état de l'objet est relancé sans attendre l'intervalle (test).
+- [x] Hors ligne, le geste n'efface rien et garde l'indicateur « Hors ligne » (test).
 - [ ] Vérifié sur le téléphone : accepter un certificat puis tirer vers le bas fait passer l'objet « en ligne » aussitôt.
 
 **Références :** [Cartographie, section 5.3](03-cartographie-technique.md)

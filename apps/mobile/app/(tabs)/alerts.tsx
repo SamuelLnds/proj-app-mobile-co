@@ -140,7 +140,7 @@ export default function AlertsScreen() {
           ]}
         />
       }
-      onRefresh={() => alerts.refetch()}
+      refreshable
     >
       <OfflineBanner />
       {alerts.isError ? <Banner tone="critical" title="Alertes indisponibles" /> : null}

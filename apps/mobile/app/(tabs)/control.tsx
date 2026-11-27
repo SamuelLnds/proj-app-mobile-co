@@ -386,7 +386,8 @@ export default function ControlScreen() {
     <Screen
       title="Pilotage"
       subtitle={data?.name ?? "Parc solaire"}
-      onRefresh={() => Promise.all([site.refetch(), resetSetpoints()])}
+      refreshable
+      onRefresh={resetSetpoints}
       onEndReached={loadMore}
       overlay={
         <BottomSheet

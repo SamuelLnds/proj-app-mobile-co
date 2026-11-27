@@ -192,7 +192,7 @@ export default function DevicesScreen() {
       title="Objets"
       subtitle="Certificats des objets du site"
       headerBelow={back}
-      onRefresh={operator ? () => enrollments.refetch() : undefined}
+      refreshable={operator}
       overlay={
         <>
           <BottomSheet

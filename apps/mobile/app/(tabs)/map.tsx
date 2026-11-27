@@ -199,6 +199,7 @@ export default function MapScreen() {
   return (
     <Screen
       title="Carte"
+      refreshable
       subtitle={
         list.length
           ? `${list.length} panneaux${toPlace.length ? ` dont ${toPlace.length} à positionner` : ""}`

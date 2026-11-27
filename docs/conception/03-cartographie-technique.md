@@ -295,6 +295,8 @@ apps/mobile/
 
 `read_alerts` ne contient que des identifiants d'alertes actives : ceux qui ne le sont plus sont retirés quand la liste des alertes actives change. Les hooks `useReadAlerts` et `useUnreadAlertCount` (`src/api/`) partagent cet état entre l'écran Alertes et la pastille de l'onglet.
 
+**Geste de rafraîchissement (#127)** : sur chaque écran (Supervision, Carte, Pilotage, Alertes, détail d'un panneau, Objets), tirer vers le bas relance toutes les requêtes affichées (`Screen` avec `refreshable` : `refetchQueries` des requêtes actives), y compris celles de la barre d'onglets et des onglets déjà ouverts. L'indicateur reste visible jusqu'à la dernière réponse ; une requête en échec garde ses dernières données. Une décision sur un objet (accepter, refuser, révoquer) relance aussi l'état du site.
+
 **Rôle de chaque outil côté app :** TanStack Query interroge l'API et gère le rafraîchissement ; chaque réponse reçue est enregistrée dans SQLite ; à l'ouverture de l'app ou sans réseau, l'écran affiche d'abord les données de SQLite avec leur ancienneté. TanStack Query suit l'état du réseau (`onlineManager`, NetInfo) et l'état de l'app (`focusManager`, `AppState`, `src/api/app-focus.ts`) : en arrière-plan, aucune interrogation de l'API ; au retour au premier plan, les écrans affichés sont rafraîchis aussitôt (#111).
 
 ### 5.4 `tools/simulator`
