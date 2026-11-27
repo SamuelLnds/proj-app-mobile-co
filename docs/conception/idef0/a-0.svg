@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" font-family="sans-serif" role="img" aria-labelledby="t d">
+<title id="t">IDEF0 A-0 : Superviser et piloter le parc solaire</title><desc id="d">Diagramme de contexte : une boîte avec ses entrées, contrôles, sorties et mécanismes.</desc>
+<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#222222"/></marker><marker id="ahA" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5f99"/></marker></defs>
+<rect x="0" y="0" width="1200" height="600" fill="#ffffff"/>
+<rect x="3" y="3" width="1194" height="594" fill="none" stroke="#cccccc" stroke-width="1"/>
+<rect x="210" y="240" width="780" height="170" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="600.0" y="312.0" font-size="20" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Superviser et piloter</text>
+<text x="600.0" y="329.0" font-size="20" text-anchor="middle" font-weight="bold" fill="#1a1a1a">le parc solaire</text>
+<text x="983" y="403" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A0</text>
+<polyline points="8,275 210,275" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="14" y="269" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Ensoleillement</text>
+<polyline points="8,310 210,310" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="14" y="304" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Production des panneaux</text>
+<polyline points="8,345 210,345" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="14" y="339" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Température</text>
+<polyline points="8,380 210,380" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="14" y="374" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Consignes de l'exploitant</text>
+<polyline points="288,178 288,240" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="288" y="152" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Seuils d'alerte</text>
+<text x="288" y="168" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">et hystérésis</text>
+<polyline points="444,178 444,240" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="444" y="88" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de pilotage :</text>
+<text x="444" y="104" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">batterie pleine 95 %,</text>
+<text x="444" y="120" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">faible 20 %,</text>
+<text x="444" y="136" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">charge max. 3 000 W,</text>
+<text x="444" y="152" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">charge auto</text>
+<text x="444" y="168" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">jusqu'à 80 %</text>
+<polyline points="600,178 600,240" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="600" y="152" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de</text>
+<text x="600" y="168" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification</text>
+<polyline points="756,178 756,240" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="756" y="152" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Rôles exploitant /</text>
+<text x="756" y="168" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">lecteur</text>
+<polyline points="912,178 912,240" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="912" y="152" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Conception</text>
+<text x="912" y="168" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">(docs/conception)</text>
+<polyline points="990,270 1190,270" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="998" y="264" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Mesures historisées</text>
+<polyline points="990,305 1190,305" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="998" y="299" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Tableau de bord</text>
+<polyline points="990,340 1190,340" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="998" y="334" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Alertes et notifications</text>
+<polyline points="990,385 1190,385" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="998" y="364" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">État appliqué de la</text>
+<text x="998" y="379" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">batterie et du réseau</text>
+<polyline points="265,446 265,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="265" y="465" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ESP32 (Wokwi)</text>
+<polyline points="375,488 375,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="375" y="507" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Simulateur des panneaux</text>
+<polyline points="485,446 485,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="485" y="465" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Broker Mosquitto (TLS)</text>
+<polyline points="595,488 595,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="595" y="507" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<polyline points="705,446 705,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="705" y="465" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">PostgreSQL + TimescaleDB</text>
+<polyline points="815,488 815,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="815" y="507" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">App mobile Expo</text>
+<polyline points="925,446 925,410" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="925" y="465" font-size="13" text-anchor="middle" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Service push Expo + Firebase</text>
+<rect x="8" y="556" width="1184" height="36" fill="#fff" stroke="#222222" stroke-width="1.5"/>
+<line x1="170" y1="556" x2="170" y2="592" stroke="#222222" stroke-width="1.5"/>
+<line x1="950" y1="556" x2="950" y2="592" stroke="#222222" stroke-width="1.5"/>
+<text x="20" y="579" font-size="15" text-anchor="start" font-weight="bold" fill="#1a1a1a">Nœud : A-0</text>
+<text x="182" y="579" font-size="15" text-anchor="start" font-weight="normal" fill="#1a1a1a">Titre : Superviser et piloter le parc solaire</text>
+<text x="962" y="579" font-size="14" text-anchor="start" font-weight="normal" fill="#1a1a1a">Diagramme n° 1 sur 4 · IDEF0</text>
+</svg>

@@ -8,6 +8,7 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 |---|---|---|
 | [`points/`](points/) | **Points d'étape** : synthèse datée de l'état du projet, des études menées et des décisions de la période | Au démarrage, à chaque jalon important, et à la fin du projet |
 | [`decisions/`](decisions/) | **Fiches de décision** (une par décision) : contexte, options comparées, choix, conséquences | Dès qu'un choix engage le projet (technologie, périmètre, architecture, organisation) |
+| [`../synthese-projet.md`](../synthese-projet.md) | **Synthèse du projet** : support d'oral (architecture, choix, mécanismes, état d'avancement, questions du jury) | À relire et mettre à jour à chaque jalon, avant la soutenance |
 
 ## Règles
 
@@ -34,10 +35,10 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D002](decisions/D002-perimetre-reduit.md) | Périmètre volontairement réduit, bonus après le socle | 2026-11-06 | Acceptée |
 | [D003](decisions/D003-pilotage-batterie-reseau.md) | Pilotage par répartition batterie / réseau plutôt que par tracker | 2026-11-06 | Acceptée |
 | [D004](decisions/D004-mode-restitution.md) | Ajout du mode « restitution » | 2026-11-06 | Acceptée |
-| [D005](decisions/D005-framework-mobile.md) | Framework mobile : Expo / React Native | 2026-11-06 | Acceptée |
+| [D005](decisions/D005-framework-mobile.md) | Framework mobile : Expo / React Native | 2026-11-06 | Acceptée · notifications : push Expo rétabli par D030 (D029 remplacée) |
 | [D006](decisions/D006-protocole-mqtt.md) | Protocole objet : MQTT 3.1.1 | 2026-11-06 | Acceptée |
 | [D007](decisions/D007-objet-wokwi.md) | Objet : un seul ESP32 simulé dans Wokwi | 2026-11-06 | Acceptée |
-| [D008](decisions/D008-broker-hivemq-cloud.md) | Broker : HiveMQ Cloud | 2026-11-06 | Acceptée |
+| [D008](decisions/D008-broker-hivemq-cloud.md) | Broker : HiveMQ Cloud | 2026-11-06 | Remplacée par D023 |
 | [D009](decisions/D009-base-timescaledb.md) | Base : PostgreSQL + TimescaleDB | 2026-11-06 | Acceptée |
 | [D010](decisions/D010-api-rest-fastify.md) | API : REST avec Fastify, sans GraphQL | 2026-11-06 | Acceptée |
 | [D011](decisions/D011-monorepo-contrats.md) | Monorepo pnpm et contrats Zod partagés | 2026-11-06 | Acceptée |
@@ -46,9 +47,21 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D014](decisions/D014-stockage-local-sqlite.md) | Stockage local de l'app : SQLite, avec TanStack Query pour le réseau | 2026-11-06 | Acceptée |
 | [D015](decisions/D015-emplacement-simulateur.md) | Le simulateur de panneaux est placé dans `tools/` | 2026-11-06 | Acceptée |
 | [D016](decisions/D016-typographie-red-hat.md) | Typographie : famille Red Hat | 2026-11-06 | Acceptée |
-| [D017](decisions/D017-icones-phosphor.md) | Icônes : Phosphor, via la bibliothèque React Native | 2026-11-06 | Acceptée |
+| [D017](decisions/D017-icones-phosphor.md) | Icônes : Phosphor, via la bibliothèque React Native | 2026-11-06 | Remplacée en partie par D026 |
 | [D018](decisions/D018-palette-et-themes.md) | Palette accessible, thèmes clair et sombre | 2026-11-06 | Acceptée |
 | [D019](decisions/D019-outil-de-maquettage.md) | Outil de maquettage : design system et canevas intégrés à Claude | 2026-11-06 | Acceptée |
 | [D020](decisions/D020-inventaire-des-panneaux.md) | Inventaire des panneaux : fichier de seed et rattachement automatique | 2026-11-06 | Acceptée |
-| [D021](decisions/D021-regles-de-travail.md) | Règles de travail communes : CLAUDE.md, skills et flux Git | 2026-11-06 | Proposée |
-
+| [D021](decisions/D021-regles-de-travail.md) | Règles de travail communes : CLAUDE.md, skills et flux Git (`develop` et `main`) | 2026-11-06 | Acceptée |
+| [D022](decisions/D022-socle-par-agents.md) | Socle réalisé par des agents, sur une seule branche | 2026-11-06 | Acceptée |
+| [D023](decisions/D023-broker-mosquitto-auto-heberge.md) | Broker : Mosquitto auto-hébergé, ESP32 de Wokwi relié par tunnel | 2026-11-06 | Acceptée |
+| [D024](decisions/D024-objet-simule-et-connexion-wokwi.md) | Le simulateur joue l'objet du site ; connexion de Wokwi repoussée | 2026-11-06 | Acceptée |
+| [D025](decisions/D025-integration-interface.md) | Intégration de l'interface sur données d'exemple, couche de données remplaçable | 2026-11-06 | Acceptée |
+| [D026](decisions/D026-icones-phosphor-embarquees.md) | Icônes Phosphor embarquées dans le code de l'app | 2026-11-06 | Acceptée |
+| [D027](decisions/D027-certificat-objet-et-enrolement.md) | Authentification de l'objet par certificat client, délivré à l'exécution par enrôlement | 2026-11-23 | Acceptée |
+| [D028](decisions/D028-hebergement-vps.md) | Hébergement final sur un VPS | 2026-11-23 | Acceptée |
+| [D029](decisions/D029-notifications-locales-et-ntfy.md) | Notifications : notifications locales dans l'app et serveur ntfy auto-hébergé, à la place du push Expo/Firebase | 2026-11-26 | Remplacée par D030 |
+| [D030](decisions/D030-notifications-push-expo-et-locales.md) | Notifications : push Expo (Firebase) et notifications locales, à la place de ntfy | 2026-11-26 | Acceptée · notifications locales retirées par D033 |
+| [D031](decisions/D031-tunnel-bore-pour-wokwi.md) | Connexion de l'ESP32 de Wokwi au broker par un tunnel TCP bore, en attendant le VPS | 2026-11-26 | Acceptée |
+| [D032](decisions/D032-analyseur-json-minimal-du-firmware.md) | Analyseur JSON minimal dans le firmware, à la place d'ArduinoJson | 2026-11-26 | Acceptée |
+| [D033](decisions/D033-regles-envoi-notifications-alerte.md) | Règles d'envoi des notifications d'alerte : aucune au premier plan, pas de push pour une consigne refusée | 2026-11-26 | Acceptée |
+| [D034](decisions/D034-alertes-lues-par-telephone.md) | Alertes lues : état propre à chaque téléphone | 2026-11-26 | Acceptée |

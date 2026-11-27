@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" width="1200" height="780" font-family="sans-serif" role="img" aria-labelledby="t d">
+<title id="t">IDEF0 A4 : Détecter les anomalies et alerter</title><desc id="d">Quatre fonctions : calculer la production attendue, évaluer les règles, ouvrir ou résoudre l'alerte, notifier.</desc>
+<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#222222"/></marker><marker id="ahA" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5f99"/></marker></defs>
+<rect x="0" y="0" width="1200" height="780" fill="#ffffff"/>
+<rect x="3" y="3" width="1194" height="774" fill="none" stroke="#cccccc" stroke-width="1"/>
+<rect x="210" y="150" width="170" height="100" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="295.0" y="178.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Calculer la</text>
+<text x="295.0" y="195.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">production</text>
+<text x="295.0" y="212.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">attendue</text>
+<text x="373" y="243" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A41</text>
+<rect x="415" y="275" width="170" height="100" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="500.0" y="312.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Évaluer les règles</text>
+<text x="500.0" y="329.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">avec hystérésis</text>
+<text x="578" y="368" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A42</text>
+<rect x="620" y="400" width="170" height="100" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="705.0" y="437.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Ouvrir ou résoudre</text>
+<text x="705.0" y="454.0" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">l'alerte</text>
+<text x="783" y="493" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A43</text>
+<rect x="825" y="525" width="170" height="100" fill="#fff" stroke="#222222" stroke-width="2"/>
+<text x="910.0" y="570.5" font-size="14" text-anchor="middle" font-weight="bold" fill="#1a1a1a">Notifier</text>
+<text x="988" y="618" font-size="14" text-anchor="end" font-weight="bold" fill="#1f5f99">A44</text>
+<polyline points="226,266 226,250" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="234" y="271" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<polyline points="431,391 431,375" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="439" y="396" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<text x="439" y="411" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">(planificateur 10 s)</text>
+<polyline points="652,516 652,500" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="660" y="521" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">API Fastify</text>
+<polyline points="636,538 636,500" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="644" y="543" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">PostgreSQL +</text>
+<text x="644" y="558" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">TimescaleDB</text>
+<polyline points="841,641 841,625" fill="none" stroke="#1f5f99" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ahA)"/>
+<text x="849" y="646" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Service push Expo</text>
+<text x="849" y="661" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">+ Firebase</text>
+<polyline points="8,180 210,180" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="12" y="144" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Données enregistrées</text>
+<text x="12" y="159" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">(mesures, états,</text>
+<text x="12" y="174" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">paramètres)</text>
+<polyline points="190,180 190,347 415,347" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<circle cx="190" cy="180" r="3.2" fill="#222222"/>
+<polyline points="380,200 397,200 397,305 415,305" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="407" y="269" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Production attendue</text>
+<polyline points="585,325 602,325 602,440 620,440" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="612" y="394" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Ouvrir ou résoudre</text>
+<polyline points="790,460 807,460 807,565 825,565" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="817" y="519" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Alerte ouverte</text>
+<polyline points="790,422 1190,422" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1005" y="401" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Alertes ouvertes</text>
+<text x="1005" y="416" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ou résolues</text>
+<polyline points="995,575 1190,575" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="1003" y="539" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Notifications push</text>
+<text x="1003" y="554" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">(app fermée ou en</text>
+<text x="1003" y="569" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">arrière-plan)</text>
+<polyline points="330,50 330,150" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="321" y="56" font-size="20" text-anchor="middle" font-weight="normal" fill="#1a1a1a">(</text>
+<text x="339" y="56" font-size="20" text-anchor="middle" font-weight="normal" fill="#1a1a1a">)</text>
+<text x="352" y="54" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Formule de production attendue :</text>
+<text x="352" y="69" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ensoleillement × facteur du site,</text>
+<text x="352" y="84" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ou × puissance nominale ÷ 1 000</text>
+<text x="352" y="99" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">pour un panneau</text>
+<polyline points="570,50 570,275" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="576" y="54" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Seuils d'alerte</text>
+<text x="576" y="69" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">et hystérésis</text>
+<polyline points="740,110 740,400" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="731" y="116" font-size="20" text-anchor="middle" font-weight="normal" fill="#1a1a1a">(</text>
+<text x="749" y="116" font-size="20" text-anchor="middle" font-weight="normal" fill="#1a1a1a">)</text>
+<text x="762" y="114" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Cycle de vie de l'alerte :</text>
+<text x="762" y="129" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">une seule active par type ;</text>
+<text x="762" y="144" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">résolue, elle ne rouvre pas :</text>
+<text x="762" y="159" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">une nouvelle est créée</text>
+<polyline points="965,50 965,525" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
+<text x="971" y="54" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de</text>
+<text x="971" y="69" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification</text>
+<text x="1186" y="728" font-size="12" text-anchor="end" font-weight="normal" fill="#1a1a1a">( ) flèche tunnelée : absente du diagramme parent</text>
+<rect x="20" y="440" width="380" height="158" fill="#fff" stroke="#999" stroke-width="1"/>
+<rect x="20" y="440" width="4" height="158" fill="#1f5f99"/>
+<text x="34" y="458" font-size="13" text-anchor="start" font-weight="bold" fill="#1a1a1a">Ce qu'évalue A42</text>
+<text x="34" y="476" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Production basse : ensoleillement > 100 W/m² et</text>
+<text x="34" y="492" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">production &lt; 70 % de l'attendue pendant 60 s ;</text>
+<text x="34" y="508" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">fin de l'alerte à 80 %.</text>
+<text x="34" y="524" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Surchauffe : > 75 °C ; fin sous 70 °C.</text>
+<text x="34" y="540" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Batterie faible : ≤ 20 % (fin à 25 %) ; pleine : ≥ 95 %</text>
+<text x="34" y="556" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">(fin à 90 %), sans push.</text>
+<text x="34" y="572" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Objet hors ligne : 60 s sans message, ou Last Will.</text>
+<text x="34" y="588" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Consigne sans réponse : 30 s ; consigne refusée.</text>
+<rect x="20" y="612" width="380" height="94" fill="#fff" stroke="#999" stroke-width="1"/>
+<rect x="20" y="612" width="4" height="94" fill="#1f5f99"/>
+<text x="34" y="630" font-size="13" text-anchor="start" font-weight="bold" fill="#1a1a1a">Ce que notifie A44</text>
+<text x="34" y="648" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">Seulement les alertes d'avertissement ou critiques ;</text>
+<text x="34" y="664" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">rien pour l'information ni pour une consigne refusée.</text>
+<text x="34" y="680" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">App au premier plan : rien d'affiché. Jetons refusés</text>
+<text x="34" y="696" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a">par Expo supprimés. Aucune donnée personnelle.</text>
+<rect x="8" y="736" width="1184" height="36" fill="#fff" stroke="#222222" stroke-width="1.5"/>
+<line x1="170" y1="736" x2="170" y2="772" stroke="#222222" stroke-width="1.5"/>
+<line x1="950" y1="736" x2="950" y2="772" stroke="#222222" stroke-width="1.5"/>
+<text x="20" y="759" font-size="15" text-anchor="start" font-weight="bold" fill="#1a1a1a">Nœud : A4</text>
+<text x="182" y="759" font-size="15" text-anchor="start" font-weight="normal" fill="#1a1a1a">Titre : Détecter les anomalies et alerter</text>
+<text x="962" y="759" font-size="14" text-anchor="start" font-weight="normal" fill="#1a1a1a">Diagramme n° 3 sur 4 · IDEF0</text>
+<rect x="961" y="418" width="8" height="8" fill="#fff"/>
+<line x1="965" y1="415" x2="965" y2="429" stroke="#222222" stroke-width="1.8"/>
+</svg>

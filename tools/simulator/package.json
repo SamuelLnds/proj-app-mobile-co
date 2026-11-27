@@ -1,0 +1,24 @@
+{
+  "name": "simulator",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Simulateur des 20 panneaux : publication des mesures MQTT pour le développement et la démo",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@solar/contracts": "workspace:*",
+    "mqtt": "^5.16.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "vitest": "^5.1.0"
+  }
+}

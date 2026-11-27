@@ -155,7 +155,7 @@ erDiagram
 | `setpoint_status` | `sent`, `applied`, `partial`, `rejected`, `no_response` | Voir le diagramme d'états dans [02-uml.md](02-uml.md) |
 | `rejection_reason` | `battery_full`, `battery_low`, `charge_limit`, `invalid_setpoint` | Raison donnée par l'objet quand il n'applique pas tout ou partie d'une consigne |
 | `alert_type` | `low_production`, `overheating`, `battery_low`, `battery_full`, `setpoint_rejected`, `setpoint_no_response`, `device_offline` | Voir les règles d'alerte dans [02-uml.md](02-uml.md) |
-| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent une notification push |
+| `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent un push Expo, sauf l'alerte `setpoint_rejected` ; aucune notification système au premier plan ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | `alert_status` | `active`, `resolved` | Une alerte est résolue automatiquement quand sa condition disparaît |
 
 ## 4. Dictionnaire de données
@@ -180,6 +180,8 @@ erDiagram
 | `token` | `text` | non | | unique | Jeton Expo (`ExponentPushToken[...]`) |
 | `platform` | `mobile_platform` | non | | | Android ou iOS |
 | `created_at` | `timestamptz` | non | `now()` | | Date d'enregistrement |
+
+Cette table a déjà existé : [D029](../journal/decisions/D029-notifications-locales-et-ntfy.md) l'avait supprimée, [D030](../journal/decisions/D030-notifications-push-expo-et-locales.md) la rétablit (nouvelle migration, définition identique).
 
 Un même jeton ne peut appartenir qu'à un utilisateur : si un autre utilisateur se connecte sur le même téléphone, la ligne est réattribuée (mise à jour de `user_id`).
 

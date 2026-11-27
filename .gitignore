@@ -1,0 +1,28 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement (seul .env.example est versionné)
+.env
+.env.*
+!.env.example
+
+# Sorties de build et de test
+dist/
+coverage/
+*.tsbuildinfo
+
+# Expo
+.expo/
+
+# Firmware : secrets locaux et sorties PlatformIO
+firmware/**/include/secrets.h
+.pio/
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log
+.claude/settings.local.json
+
+# Mots de passe hachés et certificats générés pour Mosquitto
+infra/mosquitto/generated/

@@ -1,0 +1,57 @@
+# Services d'infrastructure du développement local.
+# Les variables sont lues dans infra/.env (copie de .env.example, ignorée par Git).
+# Avant le premier démarrage du broker : pnpm mqtt:setup
+
+services:
+  db:
+    # Image PostgreSQL 16 avec les extensions timescaledb et citext disponibles
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # Port exposé pour le développement seulement
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Volume nommé : les données survivent à l'arrêt des conteneurs
+      - solar-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mqtt:
+    # Broker MQTT auto-hébergé (D023) : identifiants, droits par client, TLS sur 8883
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      # Sans TLS, accessible depuis cette machine seulement
+      - "127.0.0.1:${MQTT_PORT:-1883}:1883"
+      # Avec TLS, pour l'ESP32 dans Wokwi (via un tunnel TCP)
+      - "${MQTTS_PORT:-8883}:8883"
+    volumes:
+      - ./mosquitto/config:/src/config:ro
+      - ./mosquitto/generated:/src/generated:ro
+      - solar-mqtt-data:/mosquitto/data
+    # Copie la configuration avec les permissions exigées par Mosquitto, puis le démarre
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /etc/mosquitto-solar &&
+        cp /src/config/mosquitto.conf /src/config/acl /etc/mosquitto-solar/ &&
+        cp /src/generated/passwd /src/generated/ca.crt /src/generated/server.crt /src/generated/server.key /etc/mosquitto-solar/ &&
+        chown -R mosquitto:mosquitto /etc/mosquitto-solar /mosquitto/data &&
+        chmod 0700 /etc/mosquitto-solar &&
+        chmod 0600 /etc/mosquitto-solar/* &&
+        exec mosquitto -c /etc/mosquitto-solar/mosquitto.conf
+
+volumes:
+  solar-db-data:
+  solar-mqtt-data:

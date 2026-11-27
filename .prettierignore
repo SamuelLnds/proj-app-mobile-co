@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.expo
+.pio
+pnpm-lock.yaml
+docs
+supports-cours
+CLAUDE.md
+.claude
+firmware
+apps/api/src/db/migrations
+
+# Configuration Firebase propre au projet du binôme, générée par Firebase (jamais versionnée)
+google-services.json

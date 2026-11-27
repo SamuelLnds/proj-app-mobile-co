@@ -15,7 +15,7 @@ description: Prendre une issue GitHub du projet et la mener jusqu'à la pull req
 
 ## 2. Préparer
 
-1. Partir de `main` à jour : `git switch main`, puis `git pull`.
+1. Partir de `develop` à jour : `git switch develop`, puis `git pull`.
 2. Créer la branche `<type>/<numéro>-<sujet-court>` : `git switch -c feat/41-envoi-consigne`.
    Types : `feat` (fonctionnalité), `fix`, `chore` (mise en place, configuration), `docs`, `test`, `ci`, `refactor`.
 
@@ -45,7 +45,7 @@ Seulement si la personne le demande (pas de push sans accord) :
 
 ```
 git push -u origin <branche>
-gh pr create --title "<même format que les commits>" --body-file <fichier>
+gh pr create --base develop --title "<même format que les commits>" --body-file <fichier>
 ```
 
 Corps de la pull request :
@@ -63,4 +63,8 @@ Corps de la pull request :
 Closes #<numéro>
 ```
 
-Ensuite, demander une relecture à l'autre membre du binôme. La fusion se fait en squash merge, après approbation et CI verte.
+Ensuite, demander une relecture à l'autre membre du binôme. La fusion dans `develop` se fait en squash merge, après approbation et CI verte.
+
+## Livrer une version sur `main`
+
+Uniquement à la demande du binôme : pull request `develop` → `main` (`gh pr create --base main --head develop`), fusionnée par **merge commit**, jamais en squash, pour que les deux branches restent alignées.

@@ -12,7 +12,7 @@
 | **Lecteur** | rôle `viewer` | Humain | Consulte les données, sans droit de pilotage |
 | **Objet** | `device` | Système | ESP32 du site, simulé dans Wokwi : publie les mesures, applique les consignes |
 | **Simulateur** | `simulator` | Système | Script qui publie les mesures des 20 panneaux |
-| **Service de notifications Expo** | — | Système externe | Achemine les notifications push vers les téléphones |
+| **Service de notifications Expo** | `expo` | Système externe | Reçoit les alertes envoyées par l'API et les achemine, via Firebase (FCM) sur Android, vers le téléphone, app fermée ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md)) |
 | **Planificateur** | `scheduler` | Interne à l'API | Tâches périodiques : délais de réponse aux consignes, détection d'objet silencieux |
 
 L'**Exploitant** hérite de toutes les capacités du **Lecteur**.
@@ -43,28 +43,30 @@ flowchart LR
     UC13["UC13 Signaler sa présence"]
     UC14["UC14 Publier les mesures des panneaux"]
     UC17["UC17 Positionner ou corriger un panneau"]
+    UC19["UC19 S'enrôler"]
+    UC20["UC20 Accepter ou révoquer un objet"]
   end
 
   viewer --- UC01 & UC02 & UC03 & UC04 & UC05 & UC06 & UC08 & UC09 & UC10
   operator -. hérite de .-> viewer
-  operator --- UC07 & UC17
-  device --- UC11 & UC12 & UC13
+  operator --- UC07 & UC17 & UC20
+  device --- UC11 & UC12 & UC13 & UC19
   simulator --- UC14
   UC10 --- expo
 ```
 
 | ID | Cas d'utilisation | Acteur principal | Résumé | Priorité |
 |---|---|---|---|---|
-| UC01 | Se connecter | Lecteur | Saisie de l'e-mail et du mot de passe, obtention d'un jeton, enregistrement du jeton de notification du téléphone | Socle |
-| UC02 | Se déconnecter | Lecteur | Suppression du jeton local et du jeton de notification côté API | Socle |
+| UC01 | Se connecter | Lecteur | Saisie de l'e-mail et du mot de passe, obtention d'un jeton, demande d'autorisation des notifications, enregistrement du jeton push Expo du téléphone auprès de l'API | Socle |
+| UC02 | Se déconnecter | Lecteur | Suppression du jeton local et du jeton push côté API ; le téléphone ne reçoit plus d'alerte | Socle |
 | UC03 | Consulter la supervision | Lecteur | Production, batterie, répartition actuelle, mode, statut de l'objet, nombre d'alertes | Socle |
 | UC04 | Consulter la carte | Lecteur | Panneaux positionnés et colorés selon leur statut | Socle |
 | UC05 | Consulter le détail d'un panneau | Lecteur | Dernières valeurs et historique d'un panneau | Socle |
 | UC06 | Consulter l'historique du site | Lecteur | Graphiques de production, batterie et flux sur une période | Socle |
 | UC07 | Envoyer une consigne | Exploitant | Choix du mode et de la répartition, confirmation, suivi de l'application | Socle |
 | UC08 | Consulter l'historique des consignes | Lecteur | Liste des consignes : auteur, demande, résultat | Socle |
-| UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues | Socle |
-| UC10 | Recevoir une notification | Lecteur | Notification push à l'ouverture d'une alerte `warning` ou `critical` | Socle |
+| UC09 | Consulter les alertes | Lecteur | Alertes actives et résolues ; marquer une alerte active comme lue (appui sur l'alerte ou « Tout marquer comme lu »), état propre au téléphone : la pastille de l'onglet compte les alertes actives non lues ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)) | Socle |
+| UC10 | Recevoir une notification | Lecteur | À l'ouverture d'une alerte `warning` ou `critical` (sauf `setpoint_rejected`) : notification push Expo affichée par le système quand l'app est fermée ou en arrière-plan ; rien au premier plan, l'alerte étant déjà visible dans l'app ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) | Socle |
 | UC11 | Publier les mesures du site | Objet | Toutes les 5 s | Socle |
 | UC12 | Appliquer une consigne | Objet | Application avec limites de sécurité, réponse avec l'état appliqué | Socle |
 | UC13 | Signaler sa présence | Objet | Statut `online` à la connexion, `offline` via le Last Will | Socle |
@@ -73,6 +75,8 @@ flowchart LR
 | UC16 | Piloter l'orientation des panneaux | Exploitant | Mode automatique ou position de sécurité du tracker | Bonus |
 | UC17 | Positionner ou corriger un panneau | Exploitant | Placer un panneau détecté à la position GPS du téléphone, corriger son nom ou sa puissance, le supprimer | Socle |
 | UC18 | Ajouter un panneau sur le terrain | Exploitant | Scanner le QR code d'un panneau, capter la position, enregistrer | Bonus |
+| UC19 | S'enrôler | Objet | Demander un certificat client au démarrage, sans secret dans le code ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) | Socle |
+| UC20 | Accepter ou révoquer un objet | Exploitant | Comparer l'empreinte d'une demande d'enrôlement et l'accepter, révoquer le certificat d'un objet volé | Socle |
 
 ### Description détaillée de UC07 « Envoyer une consigne »
 
@@ -224,8 +228,9 @@ sequenceDiagram
     API->>API: Vérification argon2id, création du JWT (8 h)
     API-->>App: 200 token, expiresAt, user
     App->>App: Stockage du jeton dans expo-secure-store
-    App->>App: Demande d'autorisation des notifications, obtention du jeton Expo
-    App->>API: POST /push-tokens
+    App->>App: Demande d'autorisation des notifications (Android 13 et plus)
+    App->>App: Obtention du jeton push Expo (getExpoPushTokenAsync)
+    App->>API: POST /push-tokens (jeton, plateforme)
     API->>DB: Insertion ou réattribution du jeton
     API-->>App: 204
     App-->>U: Écran Supervision
@@ -244,7 +249,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant D as Objet ESP32
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   participant App as App mobile
@@ -279,7 +284,7 @@ sequenceDiagram
   participant App as App mobile
   participant API as API
   participant DB as Base
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant D as Objet ESP32
 
   E->>App: Mode manuel, 70 % vers la batterie, « Appliquer »
@@ -317,10 +322,12 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant D as Objet ESP32
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   participant X as Service Expo
+  participant P as Téléphone
+  participant App as App mobile
 
   D->>B: CONNECT avec Last Will solar/SITE01/status = offline (retained)
   D->>B: PUBLISH solar/SITE01/status = online (retained)
@@ -331,7 +338,11 @@ sequenceDiagram
   B->>API: Last Will : statut offline
   API->>DB: devices.status = offline
   API->>DB: INSERT alerts device_offline
-  API->>X: Notification « L'objet du site SITE01 est hors ligne »
+  API->>X: Push « L'objet du site SITE01 est hors ligne » (jetons enregistrés)
+  X-->>P: Notification, via FCM (app fermée)
+  App->>API: GET /alerts?status=active (toutes les 5 s, app ouverte)
+  API-->>App: Nouvelle alerte device_offline
+  App->>App: Badge et écran Alertes mis à jour, aucune notification système (app ouverte)
 
   Note over D,B: Retour du réseau
   D->>B: CONNECT, abonnement à solar/SITE01/setpoint
@@ -355,18 +366,32 @@ sequenceDiagram
   participant App as App mobile
 
   API->>API: Une règle d'alerte se déclenche
-  API->>DB: Alerte active du même type déjà ouverte ?
+  API->>DB: Alerte active du même type ?
   alt Aucune alerte active
     API->>DB: INSERT alerts (active)
-    opt Gravité warning ou critical
+    opt Gravité warning ou critical, type autre que setpoint_rejected
       API->>DB: Lecture des jetons push de tous les utilisateurs
-      API->>X: Envoi groupé des notifications
-      X-->>App: Notification
+      API->>X: Envoi groupé des notifications push
+      Note over API,X: Une erreur d'envoi est journalisée, sans effet sur le traitement ; un jeton DeviceNotRegistered est supprimé
+      X-->>App: Push reçu par le téléphone
     end
   else Alerte déjà active
     API->>API: Rien à faire (pas de doublon)
   end
+
+  alt App fermée ou en arrière-plan
+    App->>App: Le système affiche le push ; l'appui ouvre le panneau concerné ou l'écran Alertes
+  else App au premier plan
+    App->>App: Push reçu, rien d'affiché (gestionnaire de notifications)
+    loop Toutes les 5 s
+      App->>API: GET /alerts?status=active
+      API-->>App: Alertes actives
+      App->>App: Badge de l'onglet Alertes et écran Alertes mis à jour
+    end
+  end
 ```
+
+**Règles d'envoi** ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)). Le message push contient l'identifiant de l'alerte (`alertId`). **Au premier plan, aucune notification système** : ni push ni notification locale (il n'y en a plus), car l'alerte est déjà visible dans l'app ; le gestionnaire de notifications de l'app ne montre rien. Hors premier plan, le push est affiché par le système, et un appui ouvre le panneau concerné ou l'écran Alertes. **Exclusion du push** : l'alerte `setpoint_rejected` est créée et visible dans l'app, mais n'envoie aucun push (constante `PUSH_EXCLUDED_ALERT_TYPES`), l'écran Pilotage affichant déjà le refus à l'exploitant qui vient d'envoyer la consigne. `setpoint_no_response` reste notifiée : elle est critique et l'exploitant peut avoir quitté l'app pendant l'attente.
 
 ### 4.6 Détection puis positionnement d'un panneau (UC14, UC17)
 
@@ -374,7 +399,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   participant S as Simulateur
-  participant B as Broker HiveMQ
+  participant B as Broker Mosquitto
   participant API as API
   participant DB as Base
   actor E as Exploitant
@@ -403,6 +428,90 @@ sequenceDiagram
 ```
 
 Un panneau supprimé par erreur réapparaît comme « détecté » à sa prochaine mesure : c'est voulu, la suppression sert à retirer un panneau qui ne publie plus.
+
+### 4.7 Enrôlement puis révocation de l'objet (UC19, UC20)
+
+Sécurité de l'objet décrite par [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md) : l'objet n'a aucun secret dans son code, il obtient son certificat client à l'exécution après que l'exploitant a comparé l'empreinte de sa clé.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as Objet ESP32
+  participant API as API (module enrollment)
+  participant DB as Base
+  actor E as Exploitant
+  participant App as App mobile
+  participant B as Broker Mosquitto
+
+  D->>D: Heure NTP, puis clé P-256 en mémoire et demande de certificat (CSR)
+  D->>D: Moniteur série : nom device-site01 et empreinte de la clé publique
+  D->>API: HTTPS POST, nom demandé et CSR (aucune clé privée)
+  API->>DB: Demande « en attente », empreinte, expiration dans 30 min
+  API-->>D: 202 pending et empreinte
+  loop Toutes les 3 s tant que la demande est en attente
+    D->>API: HTTPS GET, suivi par l'empreinte
+    API-->>D: pending
+  end
+
+  E->>App: Section « Objets », demande en attente
+  App-->>E: Nom, empreinte, date
+  E->>E: Compare l'empreinte avec celle du moniteur série
+  E->>App: Accepter (durée du certificat)
+  App->>API: Acceptation (JWT, rôle operator vérifié)
+  API->>API: Signature du CSR, nom commun imposé device-site01, 8 h par défaut (48 h au plus)
+  API->>DB: Certificat actif, numéro de série, expiration
+  API->>B: Objet ajouté à l'ACL, rechargement
+  D->>API: HTTPS GET, suivi par l'empreinte
+  API-->>D: approved, certificat signé et expiration
+  D->>D: Nom commun et clé publique du certificat identiques aux siens ?
+
+  D->>B: Connexion TLS mutuelle sur 8883 avec son certificat
+  B->>B: Signé par l'autorité des objets, non expiré, absent de la liste de révocation ?
+  B-->>D: CONNACK, identifiant MQTT = nom commun, droits de l'ACL
+  D->>B: PUBLISH status online, puis mesures (section 4.2)
+
+  Note over E,B: Objet volé
+  E->>App: Révoquer l'objet (confirmation)
+  App->>API: Révocation (rôle operator)
+  API->>DB: Certificat révoqué
+  API->>B: Retrait de l'ACL, certificat ajouté à la liste de révocation, rechargement
+  D->>B: PUBLISH mesures
+  B-->>D: Refusé (plus de droits)
+  D->>B: Nouvelle connexion avec l'ancien certificat
+  B-->>D: Refus pendant la négociation TLS
+```
+
+La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas.
+
+### 4.8 Marquer une alerte comme lue (UC09)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Utilisateur
+  participant App as App mobile
+  participant L as SQLite local
+  participant API as API
+
+  App->>API: GET /alerts?status=active (toutes les 5 s)
+  API-->>App: Alertes actives
+  App->>L: Lecture des alertes lues (table read_alerts)
+  L-->>App: Identifiants lus
+  App->>App: Pastille = alertes actives dont l'identifiant n'est pas lu
+  App->>L: Retrait des identifiants qui ne sont plus actifs
+
+  U->>App: Appui sur une alerte non lue (ou « Tout marquer comme lu »)
+  App->>App: État partagé mis à jour : pastille et liste changent aussitôt
+  App->>L: INSERT read_alerts (alert_id, read_at)
+
+  U->>App: Appui sur « Voir le panneau »
+  App->>App: Ouverture du détail du panneau (l'état lu ne change pas)
+
+  U->>App: Déconnexion
+  App->>L: Effacement de la mémoire locale, dont read_alerts
+```
+
+L'état « lu » n'est jamais envoyé à l'API : aucune route, aucune colonne ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). Il ne concerne que les alertes **actives** ; une alerte résolue puis rouverte reçoit un nouvel identifiant et redevient non lue. Au premier lancement après la mise à jour, la table est vide : toutes les alertes actives sont non lues. Les identifiants qui ne figurent plus dans la liste des alertes actives sont retirés de la table, qui ne grossit donc pas.
 
 ## 5. Diagrammes d'états
 
@@ -433,9 +542,12 @@ Une réponse est rattachée à une consigne par son identifiant (`setpointId`). 
 stateDiagram-v2
   [*] --> unknown
   unknown --> online : premier message reçu
+  unknown --> offline : Last Will retained relu au démarrage de l'API
   online --> offline : Last Will reçu ou silence de 60 s
   offline --> online : statut online ou message reçu
 ```
+
+Le Last Will est publié par le broker : il change le statut mais pas `devices.last_seen_at`, qui ne retient que les messages de l'objet lui-même.
 
 ### 5.3 Alerte (`alert_status`)
 
@@ -468,6 +580,8 @@ Une alerte résolue n'est jamais rouverte : si la condition réapparaît, une **
 expected production of a site  = irradiance_w_m2 × sites.production_factor
 expected production of a panel = irradiance_w_m2 × panels.rated_power_w / 1000
 ```
+
+La durée de 60 s de `low_production` est suivie **en mémoire** par l'API, par site et par panneau : elle repart de zéro si la production repasse au-dessus du seuil de déclenchement, si l'ensoleillement tombe à 100 W/m² ou moins, si plus aucune mesure n'arrive pendant 60 s, ou si l'API redémarre. Toute ouverture et toute résolution d'alerte passent par le moteur d'alertes de l'API, qui déclenche la notification (séquence 4.5). Seule exception : l'alerte `setpoint_rejected` est créée mais n'envoie pas de push ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)).
 
 L'ensoleillement utilisé pour les panneaux est celui de la **dernière mesure du site** (les panneaux simulés n'ont pas de capteur d'ensoleillement).
 
