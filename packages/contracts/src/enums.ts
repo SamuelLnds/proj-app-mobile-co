@@ -60,3 +60,13 @@ export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;
 /** État d'une alerte, résolue automatiquement quand sa condition disparaît. */
 export const AlertStatusSchema = z.enum(["active", "resolved"]);
 export type AlertStatus = z.infer<typeof AlertStatusSchema>;
+
+/** État d'une demande d'enrôlement d'un objet, puis du certificat délivré (D027). */
+export const EnrollmentStatusSchema = z.enum([
+  "pending",
+  "active",
+  "rejected",
+  "revoked",
+  "expired",
+]);
+export type EnrollmentStatus = z.infer<typeof EnrollmentStatusSchema>;

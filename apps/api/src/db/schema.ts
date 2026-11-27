@@ -58,6 +58,13 @@ export const alertType = pgEnum("alert_type", [
 ]);
 export const alertSeverity = pgEnum("alert_severity", ["info", "warning", "critical"]);
 export const alertStatus = pgEnum("alert_status", ["active", "resolved"]);
+export const enrollmentStatus = pgEnum("enrollment_status", [
+  "pending",
+  "active",
+  "rejected",
+  "revoked",
+  "expired",
+]);
 
 // Utilisateurs
 export const users = pgTable(
@@ -256,5 +263,50 @@ export const alerts = pgTable(
       .where(sql`${t.status} = 'active'`),
     check("alerts_message_length_check", sql`char_length(${t.message}) BETWEEN 1 AND 200`),
     check("alerts_ended_at_check", sql`(${t.status} = 'resolved') = (${t.endedAt} IS NOT NULL)`),
+  ],
+);
+
+export const deviceEnrollments = pgTable(
+  "device_enrollments",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    deviceId: uuid()
+      .notNull()
+      .references(() => devices.id, { onDelete: "cascade" }),
+    fingerprint: text().notNull(),
+    csrPem: text().notNull(),
+    status: enrollmentStatus().notNull().default("pending"),
+    requestedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    pendingExpiresAt: timestamp({ withTimezone: true }).notNull(),
+    decidedAt: timestamp({ withTimezone: true }),
+    decidedBy: uuid().references(() => users.id, { onDelete: "set null" }),
+    serialNumber: text().unique(),
+    certificatePem: text(),
+    certificateExpiresAt: timestamp({ withTimezone: true }),
+    revokedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("device_enrollments_pending_unique_idx")
+      .on(t.deviceId)
+      .where(sql`${t.status} = 'pending'`),
+    uniqueIndex("device_enrollments_active_unique_idx")
+      .on(t.deviceId)
+      .where(sql`${t.status} = 'active'`),
+    index("device_enrollments_fingerprint_idx").on(t.fingerprint, t.requestedAt.desc()),
+    index("device_enrollments_status_idx").on(t.status, t.requestedAt.desc()),
+    check("device_enrollments_fingerprint_check", sql`${t.fingerprint} ~ '^[0-9a-f]{64}$'`),
+    check("device_enrollments_serial_number_check", sql`${t.serialNumber} ~ '^[0-9a-f]{32}$'`),
+    check(
+      "device_enrollments_certificate_check",
+      sql`(${t.serialNumber} IS NULL) = (${t.certificatePem} IS NULL) AND (${t.certificatePem} IS NULL) = (${t.certificateExpiresAt} IS NULL)`,
+    ),
+    check(
+      "device_enrollments_issued_check",
+      sql`${t.status} NOT IN ('active', 'revoked') OR ${t.serialNumber} IS NOT NULL`,
+    ),
+    check(
+      "device_enrollments_revoked_check",
+      sql`(${t.status} = 'revoked') = (${t.revokedAt} IS NOT NULL)`,
+    ),
   ],
 );

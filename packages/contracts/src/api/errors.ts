@@ -9,9 +9,13 @@ export const ErrorCodeSchema = z.enum([
   "FORBIDDEN",
   "NOT_FOUND",
   "DEVICE_OFFLINE",
+  "ENROLLMENT_PENDING",
+  "INVALID_ENROLLMENT_STATE",
   "INVALID_REQUEST",
+  "INVALID_CSR",
   "TOO_MANY_ATTEMPTS",
   "INTERNAL_ERROR",
+  "BROKER_UNAVAILABLE",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 
@@ -22,9 +26,13 @@ export const ERROR_HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   DEVICE_OFFLINE: 409,
+  ENROLLMENT_PENDING: 409,
+  INVALID_ENROLLMENT_STATE: 409,
   INVALID_REQUEST: 422,
+  INVALID_CSR: 422,
   TOO_MANY_ATTEMPTS: 429,
   INTERNAL_ERROR: 500,
+  BROKER_UNAVAILABLE: 503,
 } as const satisfies Record<ErrorCode, number>;
 
 /** Champ en erreur, listé dans `details` pour `INVALID_REQUEST`. */

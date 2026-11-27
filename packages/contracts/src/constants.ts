@@ -59,6 +59,16 @@ export const PUSH_EXCLUDED_ALERT_TYPES = [
   "setpoint_rejected",
 ] as const satisfies readonly AlertType[];
 
+// Enrôlement des objets (D027).
+/** Durée de validité d'une demande d'enrôlement en attente (min). */
+export const ENROLLMENT_PENDING_TTL_MIN = 30;
+/** Période de suivi d'une demande d'enrôlement par l'objet (s). */
+export const ENROLLMENT_POLL_PERIOD_S = 3;
+/** Durée par défaut du certificat d'un objet (h). */
+export const DEVICE_CERT_DEFAULT_TTL_H = 8;
+/** Durée maximale du certificat d'un objet (h). */
+export const DEVICE_CERT_MAX_TTL_H = 48;
+
 // Paramètres du site de démonstration (seed et objet).
 /** Puissance crête du site de démonstration (W). */
 export const DEMO_SITE_PEAK_POWER_W = 4000;

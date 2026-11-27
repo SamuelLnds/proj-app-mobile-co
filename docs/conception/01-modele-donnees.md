@@ -54,6 +54,8 @@ erDiagram
   SITES ||--o{ SETPOINTS : "reçoit"
   SITES ||--o{ ALERTS : "concerne"
   PANELS |o--o{ ALERTS : "concerne"
+  DEVICES ||--o{ DEVICE_ENROLLMENTS : "demande un certificat"
+  USERS |o--o{ DEVICE_ENROLLMENTS : "décide"
 
   USERS {
     uuid id PK
@@ -157,6 +159,7 @@ erDiagram
 | `alert_type` | `low_production`, `overheating`, `battery_low`, `battery_full`, `setpoint_rejected`, `setpoint_no_response`, `device_offline` | Voir les règles d'alerte dans [02-uml.md](02-uml.md) |
 | `alert_severity` | `info`, `warning`, `critical` | Seules `warning` et `critical` déclenchent un push Expo, sauf l'alerte `setpoint_rejected` ; aucune notification système au premier plan ([D030](../journal/decisions/D030-notifications-push-expo-et-locales.md), [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | `alert_status` | `active`, `resolved` | Une alerte est résolue automatiquement quand sa condition disparaît |
+| `enrollment_status` | `pending`, `active`, `rejected`, `revoked`, `expired` | Cycle de vie d'une demande d'enrôlement et du certificat délivré ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), diagramme d'états dans [02-uml.md](02-uml.md)) |
 
 ## 4. Dictionnaire de données
 
@@ -212,6 +215,28 @@ Un même jeton ne peut appartenir qu'à un utilisateur : si un autre utilisateur
 | `firmware_version` | `text` | oui | | | Version annoncée par l'objet à sa connexion |
 
 Dans le socle, chaque site a exactement un objet. Le modèle autorise plusieurs objets pour la suite (bonus tracker).
+
+### `device_enrollments` (demandes d'enrôlement et certificats des objets)
+
+| Colonne | Type | Null | Défaut | Contraintes | Description |
+|---|---|---|---|---|---|
+| `id` | `uuid` | non | `gen_random_uuid()` | PK | Identifiant |
+| `device_id` | `uuid` | non | | FK → `devices.id`, `ON DELETE CASCADE` | Objet demandé : le nom envoyé par l'objet doit être un `devices.mqtt_client_id` existant |
+| `fingerprint` | `text` | non | | `^[0-9a-f]{64}$` | Empreinte de la clé : SHA-256 de la clé publique de la demande (`SubjectPublicKeyInfo` en DER), en hexadécimal |
+| `csr_pem` | `text` | non | | | Demande de certificat (CSR) reçue, au format PEM : données publiques uniquement |
+| `status` | `enrollment_status` | non | `'pending'` | | État de la demande puis du certificat |
+| `requested_at` | `timestamptz` | non | `now()` | | Réception de la demande |
+| `pending_expires_at` | `timestamptz` | non | | | Fin de validité de la demande en attente (`requested_at` + `ENROLLMENT_PENDING_TTL_MIN`) |
+| `decided_at` | `timestamptz` | oui | | | Acceptation ou refus |
+| `decided_by` | `uuid` | oui | | FK → `users.id`, `ON DELETE SET NULL` | Exploitant qui a accepté ou refusé |
+| `serial_number` | `text` | oui | | unique, `^[0-9a-f]{32}$` | Numéro de série du certificat délivré (hexadécimal) |
+| `certificate_pem` | `text` | oui | | | Certificat signé par l'autorité des objets (public) |
+| `certificate_expires_at` | `timestamptz` | oui | | | Fin de validité du certificat |
+| `revoked_at` | `timestamptz` | oui | | | Révocation ; le numéro de série figure alors dans la liste de révocation |
+
+Contraintes : les trois colonnes du certificat sont toutes renseignées ou toutes vides ; un état `active` ou `revoked` a un certificat ; `revoked_at` est renseigné si et seulement si l'état est `revoked`. **Une seule demande en attente et un seul certificat actif par objet** (index uniques partiels). La clé privée de l'objet n'est jamais reçue ni stockée ; la clé de l'autorité des objets n'est pas en base (fichier réservé à l'API, [D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)).
+
+La base fait foi : l'ACL des objets et la liste de révocation du broker sont regénérées à partir de cette table (objets `active`, certificats `revoked`).
 
 ### `panels`
 
@@ -321,6 +346,10 @@ Ces volumes sont faibles pour PostgreSQL et TimescaleDB.
 | `alerts` | `(status, started_at DESC)` | Liste des alertes actives et récentes |
 | `alerts` | unique partiel `(site_id, panel_id, type) NULLS NOT DISTINCT WHERE status = 'active'` | Une seule alerte active par cause |
 | `push_tokens` | `(user_id)` | Envoi des notifications |
+| `device_enrollments` | unique partiel `(device_id) WHERE status = 'pending'` | Une seule demande en attente par objet |
+| `device_enrollments` | unique partiel `(device_id) WHERE status = 'active'` | Un seul certificat actif par objet |
+| `device_enrollments` | `(fingerprint, requested_at DESC)` | Suivi d'une demande par l'objet |
+| `device_enrollments` | `(status, requested_at DESC)` | Liste des demandes dans l'app |
 
 ## 7. Script SQL de référence
 
@@ -344,6 +373,7 @@ CREATE TYPE alert_type AS ENUM (
 );
 CREATE TYPE alert_severity AS ENUM ('info', 'warning', 'critical');
 CREATE TYPE alert_status AS ENUM ('active', 'resolved');
+CREATE TYPE enrollment_status AS ENUM ('pending', 'active', 'rejected', 'revoked', 'expired');
 
 -- Users
 CREATE TABLE users (
@@ -461,6 +491,34 @@ CREATE INDEX alerts_status_started_idx ON alerts (status, started_at DESC);
 CREATE UNIQUE INDEX alerts_active_unique_idx
   ON alerts (site_id, panel_id, type) NULLS NOT DISTINCT
   WHERE status = 'active';
+
+CREATE TABLE device_enrollments (
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id              uuid NOT NULL REFERENCES devices (id) ON DELETE CASCADE,
+  fingerprint            text NOT NULL CHECK (fingerprint ~ '^[0-9a-f]{64}$'),
+  csr_pem                text NOT NULL,
+  status                 enrollment_status NOT NULL DEFAULT 'pending',
+  requested_at           timestamptz NOT NULL DEFAULT now(),
+  pending_expires_at     timestamptz NOT NULL,
+  decided_at             timestamptz,
+  decided_by             uuid REFERENCES users (id) ON DELETE SET NULL,
+  serial_number          text UNIQUE CHECK (serial_number ~ '^[0-9a-f]{32}$'),
+  certificate_pem        text,
+  certificate_expires_at timestamptz,
+  revoked_at             timestamptz,
+  CHECK ((serial_number IS NULL) = (certificate_pem IS NULL)
+     AND (certificate_pem IS NULL) = (certificate_expires_at IS NULL)),
+  CHECK (status NOT IN ('active', 'revoked') OR serial_number IS NOT NULL),
+  CHECK ((status = 'revoked') = (revoked_at IS NOT NULL))
+);
+CREATE UNIQUE INDEX device_enrollments_pending_unique_idx
+  ON device_enrollments (device_id) WHERE status = 'pending';
+CREATE UNIQUE INDEX device_enrollments_active_unique_idx
+  ON device_enrollments (device_id) WHERE status = 'active';
+CREATE INDEX device_enrollments_fingerprint_idx
+  ON device_enrollments (fingerprint, requested_at DESC);
+CREATE INDEX device_enrollments_status_idx
+  ON device_enrollments (status, requested_at DESC);
 ```
 
 ## 8. Données de démonstration

@@ -184,6 +184,8 @@ packages/contracts/src/
 | `mqtt` | Client MQTT |
 | `argon2` | Hachage des mots de passe |
 | `expo-server-sdk` | Envoi des notifications push |
+| `@peculiar/x509` | Lecture des demandes de certificat (CSR), signature des certificats des objets et de la liste de révocation par l'autorité des objets ([D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)) |
+| `reflect-metadata` | Polyfill exigé par `@peculiar/x509` (injection de dépendances de `tsyringe`), chargé avant elle |
 | `pino-pretty` (dév.) | Logs lisibles en développement (Fastify utilise `pino`) |
 | `tsx` (dév.) | Exécution TypeScript en développement |
 | `vitest` (dév.) | Tests |
@@ -209,7 +211,8 @@ apps/api/src/
 │   ├── measurements/         # Enregistrement des mesures reçues
 │   ├── setpoints/
 │   ├── alerts/               # engine.ts (règles de la section 6 de 02-uml.md, ouverture et résolution des alertes), routes.ts, service.ts, repository.ts
-│   └── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
+│   ├── notifications/        # Jetons push (routes.ts, service.ts, repository.ts) et envoi Expo (sender.ts, injectable dans les tests)
+│   └── enrollment/           # Enrôlement des objets (routes.ts, service.ts, repository.ts), signature (authority.ts) et fichiers du broker (broker.ts, injectable dans les tests)
 ├── scheduler.ts              # Délais de réponse aux consignes, objets silencieux
 └── errors.ts                 # Erreurs applicatives et format de réponse
 ```
@@ -497,9 +500,13 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | 403 | `FORBIDDEN` | Rôle insuffisant |
 | 404 | `NOT_FOUND` | Ressource inexistante |
 | 409 | `DEVICE_OFFLINE` | Consigne impossible, objet hors ligne |
+| 409 | `ENROLLMENT_PENDING` | Une demande d'enrôlement d'une autre clé est déjà en attente pour cet objet |
+| 409 | `INVALID_ENROLLMENT_STATE` | Action impossible dans l'état de la demande (accepter ou refuser une demande qui n'est plus en attente, révoquer un certificat qui n'est pas actif) |
 | 422 | `INVALID_REQUEST` | Paramètres ou corps invalides (`details` liste les champs en erreur) |
-| 429 | `TOO_MANY_ATTEMPTS` | Plus de 5 tentatives de connexion par minute et par adresse IP |
+| 422 | `INVALID_CSR` | Demande de certificat illisible, mal signée ou dont la clé n'est pas ECDSA P-256 |
+| 429 | `TOO_MANY_ATTEMPTS` | Plus de 5 tentatives de connexion par minute et par adresse IP ; plus de 10 demandes d'enrôlement ou 30 suivis par minute et par adresse IP |
 | 500 | `INTERNAL_ERROR` | Erreur inattendue (détail uniquement dans les logs) |
+| 503 | `BROKER_UNAVAILABLE` | Décision d'enrôlement enregistrée, mais le broker n'a pas pu être rechargé (il le sera au prochain démarrage de l'API ou par `pnpm mqtt:reload`) |
 
 ### 7.2 Routes
 
@@ -521,6 +528,14 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | POST | `/v1/sites/{id}/setpoints` | **operator** | `{ mode, batteryShare }` | 202 `Setpoint` |
 | GET | `/v1/sites/{id}/setpoints` | viewer | `limit`, `before` | 200 page de `Setpoint` |
 | GET | `/v1/alerts` | viewer | `status` (`active`, `resolved`), `siteId`, `limit`, `before` | 200 page d'`Alert` |
+| POST | `/v1/enrollments` | aucun (objet) | `{ deviceName, csr }` (CSR en PEM) | 202 `EnrollmentStatus` (`pending` et empreinte) |
+| GET | `/v1/enrollments/{fingerprint}` | aucun (objet) | | 200 `EnrollmentStatus` de la demande la plus récente pour cette empreinte |
+| GET | `/v1/enrollments` | **operator** | `status`, `limit`, `before` | 200 page d'`Enrollment` |
+| POST | `/v1/enrollments/{id}/accept` | **operator** | `{ ttlHours? }` (1 à `DEVICE_CERT_MAX_TTL_H`, défaut `DEVICE_CERT_DEFAULT_TTL_H`) | 200 `Enrollment` |
+| POST | `/v1/enrollments/{id}/reject` | **operator** | | 200 `Enrollment` |
+| POST | `/v1/enrollments/{id}/revoke` | **operator** | | 200 `Enrollment` |
+
+Les deux routes de l'objet sont publiques (l'objet n'a pas de compte) et limitées en débit par adresse IP. Elles ne renvoient que des données publiques : le certificat n'est présent que lorsque la demande est acceptée et le certificat actif. Aucune route ne reçoit ni ne renvoie de clé privée.
 
 ### 7.3 Principaux objets renvoyés
 
@@ -534,6 +549,8 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | `PanelDetail` | Champs de `PanelSummary` + `ratedPowerW`, `expectedProduction`, `activeAlerts` |
 | `Setpoint` | `id`, `mode`, `requestedBatteryShare`, `status`, `appliedBatteryShare`, `rejectionReason`, `author` (`{ id, name }`), `createdAt`, `respondedAt` |
 | `Alert` | `id`, `type`, `severity`, `message`, `status`, `site` (`{ id, name }`), `panel` (`{ id, name }` ou `null`), `startedAt`, `endedAt` |
+| `EnrollmentStatus` (objet) | `fingerprint`, `status`, `pendingExpiresAt`, `certificate` (PEM, seulement si `active`, sinon `null`), `certificateExpiresAt` (ou `null`) |
+| `Enrollment` (app) | `id`, `deviceName`, `fingerprint`, `status`, `requestedAt`, `pendingExpiresAt`, `decidedAt`, `decidedBy` (`{ id, name }` ou `null`), `serialNumber`, `certificateExpiresAt`, `revokedAt` |
 
 L'état appliqué courant (`controlState`) est conservé **en mémoire** par l'API (dernier message `state` reçu par site). Au redémarrage de l'API, il est récupéré grâce au message retained du broker.
 
@@ -580,6 +597,10 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | api | `MQTT_USERNAME` / `MQTT_PASSWORD` | `api` / `***` | **oui** (mot de passe) |
 | api | `EXPO_ACCESS_TOKEN` | facultatif : jeton d'accès du compte Expo ; sans lui, les notifications partent quand même | **oui** |
 | api | `LOG_LEVEL` | `info` | non |
+| api | `DEVICE_CA_CERT_PATH` | `../../infra/mosquitto/device-ca/devices-ca.crt` (par défaut) : certificat de l'autorité des objets | non |
+| api | `DEVICE_CA_KEY_PATH` | `../../infra/mosquitto/device-ca/devices-ca.key` (par défaut) : **clé de l'autorité des objets**, lue au moment de signer, jamais journalisée | **oui** (fichier) |
+| api | `BROKER_DEVICES_DIR` | `../../infra/mosquitto/devices` (par défaut) : ACL des objets et liste de révocation écrites par l'API | non |
+| api | `BROKER_RELOAD_COMMAND` | `docker compose -f ../../infra/docker-compose.yml exec -T mqtt sh /src/config/reload.sh` (par défaut) : commande de rechargement du broker, arguments séparés par des espaces | non |
 | api (seed) | `SEED_OPERATOR_PASSWORD` / `SEED_VIEWER_PASSWORD` | `***` | **oui** |
 | api (tests) | `TEST_DATABASE_URL` | facultatif, même forme que `DATABASE_URL` : active les tests sur une base TimescaleDB réelle (transactions annulées) | **oui** |
 | simulator | `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` | | **oui** (mot de passe) |

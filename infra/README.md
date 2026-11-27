@@ -30,6 +30,8 @@ Problèmes connus :
 
 - `per_listener_settings` est déprécié dans Mosquitto 2.1 et sera retiré en 3.0 : le broker l'indique au démarrage. Il reste nécessaire ici pour avoir un mot de passe sur 1883 et un certificat sur 8883 ; à revoir si l'image passe en 3.0.
 - Une liste de révocation expirée ferait refuser **tous** les objets : elle est générée pour 825 jours et regénérée à chaque révocation.
+- Une liste de révocation **illisible** empêche le broker de démarrer (il redémarre en boucle, journal « Unable to load certificate revocation file »). L'API écrit l'étiquette PEM `X509 CRL` attendue par OpenSSL ; en cas de doute, recopier `mosquitto/device-ca/crl.pem` (liste vide valide) dans `mosquitto/devices/crl.pem` puis redémarrer le broker.
+- Depuis #81, l'API **regénère `mosquitto/devices/` à son démarrage et à chaque décision** à partir de la base ([D035](../docs/journal/decisions/D035-signature-des-certificats-par-l-api.md)) : une modification à la main de l'ACL des objets est écrasée.
 
 ## Alertes sur le téléphone
 

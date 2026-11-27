@@ -108,7 +108,9 @@ Ce qui est en place :
 - chaque requête et chaque message MQTT est validé, un message invalide est ignoré ;
 - aucun secret dans le dépôt, aucune donnée personnelle dans les notifications ni dans les journaux.
 
-Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'objet. Le broker est prêt : il exige le certificat, refuse un certificat révoqué et n'accorde de droits qu'aux objets inscrits dans son ACL. Il reste l'enrôlement : l'objet générera lui-même sa clé, demandera un certificat à l'API, et l'exploitant validera la demande dans l'app en comparant une empreinte. D'ici là, l'ESP32 de Wokwi ne peut plus se connecter : le simulateur joue l'objet du site.
+- l'objet obtient son certificat par **enrôlement** : il envoie à l'API une demande de certificat (sans clé privée), l'exploitant compare l'empreinte de la clé et accepte ; l'API signe le certificat avec le nom de l'objet, quel que soit celui de la demande, puis inscrit l'objet dans l'ACL du broker. Une révocation retire ses droits et ajoute son certificat à la liste de révocation.
+
+Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'objet. Le broker et l'API sont prêts. Il reste l'écran de l'app qui affiche les demandes (comparer l'empreinte, accepter, refuser, révoquer), et l'enrôlement lui-même dans le firmware et le simulateur. D'ici là, l'ESP32 de Wokwi ne peut plus se connecter : le simulateur joue l'objet du site avec son mot de passe, sur l'écoute locale.
 
 ## Limites
 
@@ -120,12 +122,11 @@ Ce qui reste à faire, et qui est obligatoire : la fin de la sécurité de l'obj
 
 ## Où on en est
 
-Fait : l'API, la base, le simulateur, le firmware, tous les écrans de l'app branchés sur l'API, le mode hors ligne, les alertes, les notifications et le pilotage, vérifiés de bout en bout dans Wokwi.
+Fait : l'API, la base, le simulateur, le firmware, tous les écrans de l'app branchés sur l'API, le mode hors ligne, les alertes, les notifications et le pilotage, vérifiés de bout en bout dans Wokwi ; le bandeau d'alerte app ouverte (#108) et l'arrêt des rafraîchissements en arrière-plan (#111) ; côté sécurité de l'objet, le TLS mutuel du broker (#80) et l'enrôlement par l'API (#81).
 
 Reste à faire, dans l'ordre :
-1. finir les vérifications dans Wokwi (#20, #38 à #40) et sur le téléphone (#62) ;
-2. ajouter le bandeau d'alerte quand l'app est ouverte (#108) et arrêter les rafraîchissements en arrière-plan (#111) ;
-3. la sécurité de l'objet (#80 à #84) ;
+1. finir les vérifications dans Wokwi (#20, #38 à #40) et sur le téléphone (#62, #108, #111) ;
+2. la fin de la sécurité de l'objet : écran « Objets » de l'app (#82), enrôlement du firmware (#83) et du simulateur (#84) ;
 4. la livraison : VPS (#54), APK (#53), dossier sécurité (#51), mesures de performance (#110), tests (#52), documentation (#55), démonstration (#56), bilan (#57).
 
 Les bonus (vue 3D, rotation des panneaux, temps réel poussé, ajout par QR code) viennent ensuite. Le détail de chaque issue est dans [les besoins fonctionnels](conception/04-besoins-fonctionnels.md).

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  AcceptEnrollmentRequestSchema,
   AlertsQuerySchema,
+  EnrollmentRequestSchema,
+  EnrollmentSchema,
+  EnrollmentStatusResponseSchema,
+  FingerprintParamsSchema,
   CreateSetpointRequestSchema,
   ERROR_HTTP_STATUS,
   ErrorCodeSchema,
@@ -147,22 +152,26 @@ describe("erreurs", () => {
   });
 
   it("associe chaque code à son code HTTP", () => {
-    expect(ErrorCodeSchema.options).toHaveLength(8);
+    expect(ErrorCodeSchema.options).toHaveLength(12);
     expect(ERROR_HTTP_STATUS).toEqual({
       UNAUTHENTICATED: 401,
       INVALID_CREDENTIALS: 401,
       FORBIDDEN: 403,
       NOT_FOUND: 404,
       DEVICE_OFFLINE: 409,
+      ENROLLMENT_PENDING: 409,
+      INVALID_ENROLLMENT_STATE: 409,
       INVALID_REQUEST: 422,
+      INVALID_CSR: 422,
       TOO_MANY_ATTEMPTS: 429,
       INTERNAL_ERROR: 500,
+      BROKER_UNAVAILABLE: 503,
     });
   });
 });
 
 describe("table des routes (section 7.2)", () => {
-  it("couvre les 16 routes avec méthode, chemin et rôle", () => {
+  it("couvre les 22 routes avec méthode, chemin et rôle", () => {
     const summary = Object.values(ROUTES).map((r) => `${r.method} ${r.path} ${r.role}`);
     expect(summary).toEqual([
       "GET /v1/health none",
@@ -181,6 +190,12 @@ describe("table des routes (section 7.2)", () => {
       "POST /v1/sites/{id}/setpoints operator",
       "GET /v1/sites/{id}/setpoints viewer",
       "GET /v1/alerts viewer",
+      "POST /v1/enrollments none",
+      "GET /v1/enrollments/{fingerprint} none",
+      "GET /v1/enrollments operator",
+      "POST /v1/enrollments/{id}/accept operator",
+      "POST /v1/enrollments/{id}/reject operator",
+      "POST /v1/enrollments/{id}/revoke operator",
     ]);
   });
 
@@ -188,5 +203,69 @@ describe("table des routes (section 7.2)", () => {
     for (const route of Object.values(ROUTES)) {
       expect(route.response === null).toBe(route.status === 204);
     }
+  });
+});
+
+describe("enrôlement des objets (/v1/enrollments)", () => {
+  const CSR = "-----BEGIN CERTIFICATE REQUEST-----\nMIIB...\n-----END CERTIFICATE REQUEST-----\n";
+  const FINGERPRINT = "a".repeat(64);
+
+  it("accepte une demande avec un nom d'objet et un CSR PEM", () => {
+    expect(
+      EnrollmentRequestSchema.safeParse({ deviceName: "device-site01", csr: CSR }).success,
+    ).toBe(true);
+  });
+
+  it("refuse un nom invalide, un CSR absent, autre chose qu'un CSR ou trop long", () => {
+    const parse = (body: unknown) => EnrollmentRequestSchema.safeParse(body).success;
+    expect(parse({ deviceName: "Device Site", csr: CSR })).toBe(false);
+    expect(parse({ deviceName: "device-site01" })).toBe(false);
+    expect(parse({ deviceName: "device-site01", csr: "-----BEGIN CERTIFICATE-----" })).toBe(false);
+    expect(parse({ deviceName: "device-site01", csr: CSR + "x".repeat(5000) })).toBe(false);
+  });
+
+  it("n'accepte qu'une empreinte SHA-256 hexadécimale en minuscules", () => {
+    expect(FingerprintParamsSchema.safeParse({ fingerprint: FINGERPRINT }).success).toBe(true);
+    expect(FingerprintParamsSchema.safeParse({ fingerprint: "A".repeat(64) }).success).toBe(false);
+    expect(FingerprintParamsSchema.safeParse({ fingerprint: "a".repeat(63) }).success).toBe(false);
+  });
+
+  it("donne 8 h par défaut au certificat et refuse plus de 48 h", () => {
+    expect(AcceptEnrollmentRequestSchema.parse({})).toEqual({ ttlHours: 8 });
+    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 48 }).success).toBe(true);
+    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 49 }).success).toBe(false);
+    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 0 }).success).toBe(false);
+  });
+
+  it("accepte l'état renvoyé à l'objet, avec ou sans certificat", () => {
+    const pending = {
+      fingerprint: FINGERPRINT,
+      status: "pending",
+      pendingExpiresAt: "2026-11-27T10:30:00.000Z",
+      certificate: null,
+      certificateExpiresAt: null,
+    };
+    expect(EnrollmentStatusResponseSchema.safeParse(pending).success).toBe(true);
+    expect(EnrollmentStatusResponseSchema.safeParse({ ...pending, status: "done" }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepte une demande vue par l'app et refuse un numéro de série invalide", () => {
+    const enrollment = {
+      id: "00000000-0000-4000-8000-000000000001",
+      deviceName: "device-site01",
+      fingerprint: FINGERPRINT,
+      status: "active",
+      requestedAt: "2026-11-27T10:00:00.000Z",
+      pendingExpiresAt: "2026-11-27T10:30:00.000Z",
+      decidedAt: "2026-11-27T10:05:00.000Z",
+      decidedBy: { id: "00000000-0000-4000-8000-000000000002", name: "Exploitant" },
+      serialNumber: "0123456789abcdef0123456789abcdef",
+      certificateExpiresAt: "2026-11-27T18:05:00.000Z",
+      revokedAt: null,
+    };
+    expect(EnrollmentSchema.safeParse(enrollment).success).toBe(true);
+    expect(EnrollmentSchema.safeParse({ ...enrollment, serialNumber: "12" }).success).toBe(false);
   });
 });

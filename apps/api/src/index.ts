@@ -24,6 +24,10 @@ import { createPanelsRepository } from "./modules/panels/repository";
 import { createPanelsService } from "./modules/panels/service";
 import { createSitesRepository } from "./modules/sites/repository";
 import { createSitesService } from "./modules/sites/service";
+import { createFileAuthority } from "./modules/enrollment/authority";
+import { createBrokerAccess } from "./modules/enrollment/broker";
+import { createEnrollmentsRepository } from "./modules/enrollment/repository";
+import { createEnrollmentService } from "./modules/enrollment/service";
 import { startScheduler } from "./scheduler";
 import { buildServer } from "./server";
 
@@ -54,6 +58,14 @@ const pushService = createPushService(
   createExpoSender(config.EXPO_ACCESS_TOKEN),
 );
 
+// Enrôlement des objets (D035) : le logger du serveur est utilisé au moment de journaliser.
+const enrollment = createEnrollmentService(
+  createEnrollmentsRepository(database),
+  createFileAuthority(config.DEVICE_CA_CERT_PATH, config.DEVICE_CA_KEY_PATH),
+  createBrokerAccess(config.BROKER_DEVICES_DIR, config.BROKER_RELOAD_COMMAND),
+  { error: (details, message) => app.log.error(details, message) },
+);
+
 const app = buildServer({
   config,
   checkDatabase: async () => {
@@ -71,6 +83,7 @@ const app = buildServer({
   setpoints,
   alerts: createAlertsService(alertsRepository),
   push: pushService,
+  enrollment,
 });
 
 const engine = createAlertEngine(
@@ -88,7 +101,17 @@ const measurements = createMeasurementsService(
   app.log,
   devices.recordActivity,
 );
-const stopScheduler = startScheduler(devices, setpoints, app.log);
+const stopScheduler = startScheduler(devices, setpoints, app.log, undefined, enrollment);
+// La base fait foi : l'ACL des objets et la liste de révocation sont regénérées au démarrage.
+enrollment
+  .syncBroker()
+  .then(() => app.log.info("ACL des objets et liste de révocation du broker à jour"))
+  .catch((error: unknown) =>
+    app.log.warn(
+      { err: error },
+      "Broker non rechargé au démarrage : enrôlement des objets indisponible",
+    ),
+  );
 
 const handleMessage = createMessageHandler(
   {
