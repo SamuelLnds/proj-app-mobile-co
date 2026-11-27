@@ -34,6 +34,13 @@ L'option la plus cohérente avec la stack (React) et la plus liée aux données.
 - La 3D n'apporte aucune information exclusive (accessibilité).
 - Si le budget est dépassé, on s'arrête là où on en est.
 
+## Suivi (#58, 2026-11-27)
+
+- Réalisée comme troisième vue de l'écran Carte (« Plan », « 3D », « Liste ») plutôt qu'un écran à part : la sélection d'un panneau et sa fiche restent les mêmes que dans le plan.
+- Paquets : `three` 0.187, `@react-three/fiber` 9.8 (version native), `expo-gl`, ainsi que `expo-asset` et `expo-file-system` qu'elle demande. La scène est chargée à la demande : une version de l'app construite sans `expo-gl` affiche un message et renvoie vers le plan et la liste au lieu de planter.
+- Panneaux en boîtes simples (1,7 m × 1 m, inclinés de 30°), placés en mètres depuis le centre du parc, couleurs des jetons de la charte selon le statut. Le lecteur d'écran reçoit un résumé (nombre de panneaux, en alerte, sans données) et est renvoyé vers la vue Liste.
+- La fluidité sur le téléphone de test avec les 20 panneaux reste à vérifier sur l'appareil.
+
 ## Sources
 
 - <https://r3f.docs.pmnd.rs>
