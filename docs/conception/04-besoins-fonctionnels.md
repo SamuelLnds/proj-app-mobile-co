@@ -185,6 +185,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #108 | Mobile : bandeau d'alerte quand l'app est ouverte | M5 | mobile, design |
 | #110 | Performance : indicateurs tirés de la télémétrie | M6 | api, infra, docs |
 | #111 | Mobile : suspendre les rafraîchissements en arrière-plan | M3 | mobile |
+| #127 | Mobile : le geste de rafraîchissement met à jour toutes les données de l'écran | M3 | mobile |
 
 ---
 
@@ -1255,6 +1256,27 @@ Issues ajoutées le 6 novembre 2026 suite à la décision [D020](../journal/deci
 - [ ] Aucune requête réseau pendant que l'app est en arrière-plan (test).
 - [ ] Au retour au premier plan, les données de l'écran affiché sont rafraîchies aussitôt (test).
 - [ ] Vérifié sur le téléphone dans le journal de l'API : plus de requêtes de l'app une fois en arrière-plan.
+
+**Références :** [Cartographie, section 5.3](03-cartographie-technique.md)
+
+### #127 · Mobile : le geste de rafraîchissement met à jour toutes les données de l'écran
+
+**Labels :** `type:feature`, `area:mobile`, `priority:core`
+
+**Contexte :** tirer l'écran vers le bas fait penser que toutes les données se synchronisent. Or chaque écran ne relance qu'une seule requête : la Supervision recharge le site mais pas l'historique, les panneaux ni les alertes ; l'écran Objets recharge les demandes mais pas l'état de l'objet ; la Carte n'a pas de rafraîchissement. Exemple constaté : après avoir accepté un certificat, l'objet n'apparaît « en ligne » qu'au prochain rafraîchissement automatique, alors que le geste de rafraîchissement est le réflexe naturel.
+
+**À faire :**
+- Le geste de rafraîchissement de chaque écran relance **toutes** les requêtes que l'écran affiche (données principales, historique, panneaux, alertes, objets, selon l'écran), par un mécanisme commun plutôt qu'écran par écran.
+- Ajouter le rafraîchissement à la Carte (vues Plan et Liste).
+- Après acceptation, refus ou révocation d'un objet, relancer aussi l'état du site, pour que « en ligne » ou « hors ligne » apparaisse sans attendre.
+- Le témoin de rafraîchissement reste visible jusqu'à la fin de toutes les requêtes ; en cas d'échec, l'écran garde ses dernières données et signale l'erreur (comportement hors ligne inchangé).
+
+**Critères d'acceptation :**
+- [ ] Sur chaque écran (Supervision, Carte, Pilotage, Alertes, détail d'un panneau, Objets), le geste relance toutes les requêtes affichées (test).
+- [ ] La Carte se rafraîchit au geste (test).
+- [ ] Après avoir accepté une demande d'enrôlement, l'état de l'objet est relancé sans attendre l'intervalle (test).
+- [ ] Hors ligne, le geste n'efface rien et garde l'indicateur « Hors ligne » (test).
+- [ ] Vérifié sur le téléphone : accepter un certificat puis tirer vers le bas fait passer l'objet « en ligne » aussitôt.
 
 **Références :** [Cartographie, section 5.3](03-cartographie-technique.md)
 
