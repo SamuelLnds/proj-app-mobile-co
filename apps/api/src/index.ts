@@ -31,6 +31,7 @@ import { createEnrollmentService } from "./modules/enrollment/service";
 import { createEventBus } from "./modules/events/service";
 import type { EnrollmentService } from "./modules/enrollment/service";
 import type { SetpointsService } from "./modules/setpoints/service";
+import type { PanelsService } from "./modules/panels/service";
 import { startScheduler } from "./scheduler";
 import { buildServer } from "./server";
 
@@ -81,6 +82,15 @@ const setpointsWithEvents: SetpointsService = {
     return created;
   },
 };
+const panelsService = createPanelsService(createPanelsRepository(database));
+const panelsWithEvents: PanelsService = {
+  ...panelsService,
+  createPanel: async (...args) => {
+    const created = await panelsService.createPanel(...args);
+    events.publish("panels");
+    return created;
+  },
+};
 const signalEnrollments =
   <A extends unknown[], R>(call: (...args: A) => Promise<R>) =>
   async (...args: A): Promise<R> => {
@@ -110,7 +120,7 @@ const app = buildServer({
     jwtSecret: config.JWT_SECRET,
   },
   sites: createSitesService(createSitesRepository(database), controlStates),
-  panels: createPanelsService(createPanelsRepository(database)),
+  panels: panelsWithEvents,
   history: createHistoryService(createHistoryRepository(database)),
   setpoints: setpointsWithEvents,
   alerts: createAlertsService(alertsRepository),

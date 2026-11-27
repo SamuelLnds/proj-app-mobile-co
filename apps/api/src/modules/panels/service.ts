@@ -1,7 +1,10 @@
 // Panneaux : statut calculé (section 6 de l'UML), production attendue, modification.
 import {
+  DEFAULT_PANEL_RATED_POWER_W,
+  MAX_PANELS_PER_SITE,
   PANEL_NO_DATA_TIMEOUT_S,
   type Alert,
+  type CreatePanelRequest,
   type PanelDetail,
   type PanelStatus,
   type PanelSummary,
@@ -14,6 +17,8 @@ export interface PanelsService {
   listPanels: (siteId: string) => Promise<PanelSummary[]>;
   getPanel: (panelId: string) => Promise<PanelDetail>;
   updatePanel: (panelId: string, body: UpdatePanelRequest) => Promise<PanelDetail>;
+  /** `POST /v1/sites/{id}/panels` (bonus #63) : panneau ajouté sur le terrain, positionné. */
+  createPanel: (siteId: string, body: CreatePanelRequest) => Promise<PanelDetail>;
   deletePanel: (panelId: string) => Promise<void>;
 }
 
@@ -120,6 +125,31 @@ export function createPanelsService(
     async updatePanel(panelId, body) {
       const panel = await repository.updatePanel(panelId, body);
       if (!panel) throw notFound();
+      return detail(panel);
+    },
+
+    async createPanel(siteId, body) {
+      if (!(await repository.findSite(siteId))) throw notFound();
+      if ((await repository.countPanels(siteId)) >= MAX_PANELS_PER_SITE) {
+        throw new AppError(
+          "INVALID_REQUEST",
+          `Le site compte déjà ${MAX_PANELS_PER_SITE} panneaux, le maximum.`,
+        );
+      }
+      const panel = await repository.createPanel({
+        siteId,
+        code: body.code,
+        name: body.name ?? `Panneau ${body.code}`,
+        latitude: body.latitude,
+        longitude: body.longitude,
+        ratedPowerW: body.ratedPowerW ?? DEFAULT_PANEL_RATED_POWER_W,
+      });
+      if (!panel) {
+        throw new AppError(
+          "PANEL_CODE_TAKEN",
+          `Un panneau ${body.code} existe déjà sur ce site. S'il vient d'être détecté, placez-le depuis la liste « à positionner ».`,
+        );
+      }
       return detail(panel);
     },
 

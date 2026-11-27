@@ -29,6 +29,20 @@ export function panelsRoutes(app: FastifyInstance, service: PanelsService, guard
     (request) => service.getPanel(request.params.id),
   );
 
+  v1.post(
+    "/sites/:id/panels",
+    {
+      preHandler: guards.operator,
+      schema: {
+        params: ROUTES.createPanel.params,
+        body: ROUTES.createPanel.body,
+        response: { 201: ROUTES.createPanel.response },
+      },
+    },
+    async (request, reply) =>
+      reply.status(201).send(await service.createPanel(request.params.id, request.body)),
+  );
+
   v1.patch(
     "/panels/:id",
     {

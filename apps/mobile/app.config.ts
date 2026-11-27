@@ -49,6 +49,14 @@ const config: ExpoConfig = {
     "expo-notifications",
     "expo-sqlite",
     [
+      "expo-camera",
+      {
+        cameraPermission: "La caméra sert à lire le QR code d'un panneau pour l'ajouter au parc.",
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
       "expo-location",
       {
         locationWhenInUsePermission:

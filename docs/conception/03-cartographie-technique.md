@@ -237,6 +237,7 @@ Chaque module suit la même découpe : `routes.ts` (HTTP uniquement), `service.t
 | `@tanstack/react-query` | Appels à l'API, rafraîchissement périodique |
 | `expo-sqlite` | Stockage local des dernières données (disponibles sans réseau) |
 | `@react-native-community/netinfo` | Détection de la connexion (désactivation du pilotage hors ligne) |
+| `expo-camera` | Lecture du QR code d'un panneau à ajouter (bonus #63) ; chargé à la demande comme `expo-location` |
 | `expo-location` | Position GPS du téléphone pour positionner un panneau ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)) |
 | `expo-secure-store` | Stockage du JWT |
 | `expo-notifications`, `expo-device`, `expo-constants` | Notifications push (jeton Expo, réception, appui) ; `expo-notifications` et `expo-device` sont chargés à la demande (modules natifs) |
@@ -257,6 +258,7 @@ apps/mobile/
 │   │   ├── control.tsx           # Pilotage
 │   │   └── alerts.tsx
 │   ├── panel/[id].tsx            # Détail d'un panneau
+│   ├── panel/new.tsx             # Ajout d'un panneau sur le terrain : QR code, position du téléphone (exploitant, #63)
 │   └── devices.tsx               # Objets : demandes d'enrôlement, certificats, révocation (exploitant)
 ├── src/
 │   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE ; api/event-stream.ts (client SSE minimal sur XMLHttpRequest, #60)
@@ -282,6 +284,7 @@ apps/mobile/
 | Alertes | `app/(tabs)/alerts.tsx` | UC09 |
 | Détail d'un panneau | `app/panel/[id].tsx` | UC05 |
 | Objets (exploitant) | `app/devices.tsx` | UC20 |
+| Ajout d'un panneau (exploitant, bonus #63) | `app/panel/new.tsx` | UC18 |
 
 **Tables locales de `solar.db`** (`src/storage/`), jamais envoyées à l'API et effacées à la déconnexion :
 
@@ -523,6 +526,7 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | 403 | `FORBIDDEN` | Rôle insuffisant |
 | 404 | `NOT_FOUND` | Ressource inexistante |
 | 409 | `DEVICE_OFFLINE` | Consigne impossible, objet hors ligne |
+| 409 | `PANEL_CODE_TAKEN` | Un panneau porte déjà ce code sur le site (ajout d'un panneau, bonus #63) |
 | 409 | `ENROLLMENT_PENDING` | Une demande d'enrôlement d'une autre clé est déjà en attente pour cet objet |
 | 409 | `INVALID_ENROLLMENT_STATE` | Action impossible dans l'état de la demande (accepter ou refuser une demande qui n'est plus en attente, révoquer un certificat qui n'est pas actif) |
 | 422 | `INVALID_REQUEST` | Paramètres ou corps invalides (`details` liste les champs en erreur) |
@@ -545,6 +549,7 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | GET | `/v1/sites/{id}/measurements` | viewer | `from`, `to` (ISO, écart ≤ 7 jours), `interval` (`1m`, `5m`, `15m`, `1h`) | 200 liste de points moyennés |
 | GET | `/v1/sites/{id}/panels` | viewer | | 200 liste de `PanelSummary` |
 | GET | `/v1/panels/{id}` | viewer | | 200 `PanelDetail` |
+| POST | `/v1/sites/{id}/panels` | **operator** | `{ code, latitude, longitude, name?, ratedPowerW? }` (bonus #63 : panneau ajouté sur le terrain, `source = 'manual'`) | 201 `PanelDetail` |
 | PATCH | `/v1/panels/{id}` | **operator** | `{ name?, latitude?, longitude?, ratedPowerW? }` (latitude et longitude ensemble) | 200 `PanelDetail` |
 | DELETE | `/v1/panels/{id}` | **operator** | | 204 (supprime aussi ses mesures et alertes) |
 | GET | `/v1/panels/{id}/measurements` | viewer | `from`, `to`, `interval` | 200 liste de points moyennés |
@@ -558,6 +563,8 @@ Après une modification de l'ACL des objets ou de la liste de révocation, le br
 | POST | `/v1/enrollments/{id}/accept` | **operator** | `{ ttlHours? }` (1 à `DEVICE_CERT_MAX_TTL_H`, défaut `DEVICE_CERT_DEFAULT_TTL_H`) | 200 `Enrollment` |
 | POST | `/v1/enrollments/{id}/reject` | **operator** | | 200 `Enrollment` |
 | POST | `/v1/enrollments/{id}/revoke` | **operator** | | 200 `Enrollment` |
+
+**QR code d'un panneau (bonus #63)** : le texte `solar:panel:<code>` (par exemple `solar:panel:P21`) ; un code seul (`P21`) est aussi accepté. Le code suit `PANEL_CODE_PATTERN` (`P` et 2 ou 3 chiffres). Un panneau ajouté ainsi est positionné d'emblée (`source = 'manual'`) ; s'il publiait déjà des mesures, il existe déjà (`discovered`) et l'ajout est refusé (`409 PANEL_CODE_TAKEN`) : il se place alors depuis la liste « à positionner ».
 
 Les deux routes de l'objet sont publiques (l'objet n'a pas de compte) et limitées en débit par adresse IP. Elles ne renvoient que des données publiques : le certificat n'est présent que lorsque la demande est acceptée et le certificat actif. Aucune route ne reçoit ni ne renvoie de clé privée.
 

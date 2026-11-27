@@ -1,5 +1,6 @@
 import {
   BATTERY_FULL_PCT,
+  CreatePanelRequestSchema,
   CreateSetpointRequestSchema,
   DEFAULT_PAGE_LIMIT,
   LOW_PRODUCTION_RATIO,
@@ -11,6 +12,7 @@ import {
   type AlertsQuery,
   type ControlMode,
   type ControlState,
+  type CreatePanelRequest,
   type CreateSetpointRequest,
   type Enrollment,
   type EnrollmentPage,
@@ -256,6 +258,32 @@ export class MockDataSource implements DataSource {
       ...(body.ratedPowerW !== undefined && { ratedPowerW: body.ratedPowerW }),
       ...(body.latitude !== undefined && { latitude: body.latitude, longitude: body.longitude }),
     });
+    return this.panelDetail(panel, this.time());
+  }
+
+  async createPanel(siteId: string, body: CreatePanelRequest): Promise<PanelDetail> {
+    await this.request();
+    if (siteId !== SITE.id) throw notFound();
+    this.requireOperator("L'ajout d'un panneau est réservé aux exploitants.");
+    const parsed = CreatePanelRequestSchema.safeParse(body);
+    if (!parsed.success) throw new DataSourceError("INVALID_REQUEST", "Le panneau est invalide.");
+    const { code, name, latitude, longitude, ratedPowerW } = parsed.data;
+    if (this.state.panels.some((p) => p.code === code)) {
+      throw new DataSourceError(
+        "PANEL_CODE_TAKEN",
+        `Un panneau ${code} existe déjà sur ce site. S'il vient d'être détecté, placez-le depuis la liste « à positionner ».`,
+      );
+    }
+    const panel: MockPanel = {
+      id: mockId(3, 500 + this.state.panels.length),
+      code,
+      name: name ?? `Panneau ${code}`,
+      latitude,
+      longitude,
+      ratedPowerW,
+      source: "manual",
+    };
+    this.state.panels.push(panel);
     return this.panelDetail(panel, this.time());
   }
 

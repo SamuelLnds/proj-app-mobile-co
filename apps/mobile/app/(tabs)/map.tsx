@@ -1,7 +1,6 @@
 import { DEFAULT_PANEL_RATED_POWER_W, type PanelSummary } from "@solar/contracts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import type * as ExpoLocation from "expo-location";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -29,41 +28,9 @@ import { PANEL_STATUS, ParkPlan } from "../../src/components/ParkPlan";
 import { dataSource, DataSourceError } from "../../src/data";
 import { Icon, radius, sizes, spacing, typography, useTheme } from "../../src/theme";
 import { formatPower } from "../../src/utils/format";
+import { locatePhone, type Position } from "../../src/utils/location";
 
 type View_ = "map" | "list";
-
-type Position = { latitude: number; longitude: number; accuracy: number };
-
-/**
- * Position du téléphone pour placer un panneau (#62, D020). Avec les données d'exemple, elle
- * est simulée près du site ; avec l'API, c'est la vraie position GPS (expo-location).
- */
-async function locatePhone(site: { latitude: number; longitude: number }): Promise<Position> {
-  if (dataSource.kind === "mock") {
-    return { latitude: site.latitude - 0.00006, longitude: site.longitude + 0.0004, accuracy: 4 };
-  }
-  let Location: typeof ExpoLocation;
-  try {
-    // Chargé à la demande : une version de l'app sans ce module ne plante pas au démarrage.
-    Location = await import("expo-location");
-  } catch {
-    throw new Error("La localisation n'est pas disponible dans cette version de l'app.");
-  }
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== "granted") {
-    throw new Error(
-      "La localisation est refusée. Autorisez-la dans Réglages › Applications › Solar › Autorisations, puis réessayez.",
-    );
-  }
-  const { coords } = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.Highest,
-  });
-  return {
-    latitude: coords.latitude,
-    longitude: coords.longitude,
-    accuracy: Math.round(coords.accuracy ?? 0),
-  };
-}
 
 function Legend({ panels }: { panels: PanelSummary[] }) {
   const { colors } = useTheme();
@@ -157,6 +124,7 @@ export default function MapScreen() {
   const placed = list.filter((p) => p.placed);
   const toPlace = list.filter((p) => !p.placed);
   const operator = user?.role === "operator";
+  const router = useRouter();
   const selectedPanel = selected ? (list.find((p) => p.id === selected.id) ?? null) : null;
 
   const locate = () => {
@@ -301,6 +269,15 @@ export default function MapScreen() {
       }
     >
       <OfflineBanner />
+      {operator ? (
+        <Button
+          label="Ajouter un panneau"
+          icon="MapPin"
+          variant="secondary"
+          onPress={() => router.push("/panel/new")}
+          accessibilityHint="Scanne le QR code d'un nouveau panneau et l'enregistre à la position du téléphone"
+        />
+      ) : null}
       {panels.isError ? (
         <Banner tone="critical" title="Panneaux indisponibles" text={panels.error?.message} />
       ) : null}

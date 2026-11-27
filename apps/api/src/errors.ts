@@ -26,6 +26,7 @@ export const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   FORBIDDEN: "Vous n'avez pas les droits nécessaires pour cette action.",
   NOT_FOUND: "La ressource demandée est introuvable.",
   DEVICE_OFFLINE: "L'objet du site est hors ligne, la consigne ne peut pas être envoyée.",
+  PANEL_CODE_TAKEN: "Un panneau porte déjà ce code sur ce site.",
   ENROLLMENT_PENDING:
     "Une autre demande d'enrôlement est déjà en attente pour cet objet : refusez-la ou attendez son expiration.",
   INVALID_ENROLLMENT_STATE: "Cette action n'est pas possible dans l'état actuel de la demande.",

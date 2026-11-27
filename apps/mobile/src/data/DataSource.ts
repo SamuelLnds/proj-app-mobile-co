@@ -1,6 +1,7 @@
 import type {
   AcceptEnrollmentRequest,
   AlertPage,
+  CreatePanelRequest,
   AlertsQuery,
   CreateSetpointRequest,
   Enrollment,
@@ -65,6 +66,8 @@ export interface DataSource {
   getPanelMeasurements(panelId: string, query: MeasurementQuery): Promise<PanelMeasurementPoint[]>;
   /** `PATCH /v1/panels/{id}` */
   updatePanel(panelId: string, body: UpdatePanelRequest): Promise<PanelDetail>;
+  /** `POST /v1/sites/{id}/panels` (exploitant, bonus #63) */
+  createPanel(siteId: string, body: CreatePanelRequest): Promise<PanelDetail>;
   /** `DELETE /v1/panels/{id}` */
   deletePanel(panelId: string): Promise<void>;
 

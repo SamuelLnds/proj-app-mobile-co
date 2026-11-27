@@ -1,6 +1,8 @@
 // Schémas des panneaux (routes /v1/sites/{id}/panels et /v1/panels/{id}, section 7.3).
 import { z } from "zod";
+import { DEFAULT_PANEL_RATED_POWER_W } from "../constants";
 import { PanelSourceSchema } from "../enums";
+import { PANEL_CODE_PATTERN } from "../mqtt/topics";
 import { Iso8601UtcSchema, TemperatureSchema } from "../primitives";
 import { AlertSchema } from "./alerts";
 
@@ -64,6 +66,19 @@ export const UpdatePanelRequestSchema = z
 export type UpdatePanelRequest = z.infer<typeof UpdatePanelRequestSchema>;
 
 /** Point moyenné d'une courbe de panneau : `GET /v1/panels/{id}/measurements`. */
+/**
+ * `POST /v1/sites/{id}/panels` (bonus #63) : panneau ajouté sur le terrain, positionné d'emblée.
+ * Le nom vaut « Panneau <code> » et la puissance `DEFAULT_PANEL_RATED_POWER_W` s'ils sont absents.
+ */
+export const CreatePanelRequestSchema = z.object({
+  code: z.string().regex(PANEL_CODE_PATTERN, "Code attendu : P suivi de 2 ou 3 chiffres (ex. P21)"),
+  name: z.string().min(1).max(100).optional(),
+  latitude: LatitudeSchema,
+  longitude: LongitudeSchema,
+  ratedPowerW: z.number().int().positive().default(DEFAULT_PANEL_RATED_POWER_W),
+});
+export type CreatePanelRequest = z.input<typeof CreatePanelRequestSchema>;
+
 export const PanelMeasurementPointSchema = z.object({
   time: Iso8601UtcSchema,
   production: z.number().min(0),

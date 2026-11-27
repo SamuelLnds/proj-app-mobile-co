@@ -1,5 +1,5 @@
 // Requêtes de consultation et de modification des panneaux.
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { alerts, panelMeasurements, panels, siteMeasurements, sites } from "../../db/schema";
 
@@ -19,6 +19,15 @@ export interface PanelChanges {
   ratedPowerW?: number;
 }
 
+export interface NewPanel {
+  siteId: string;
+  code: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  ratedPowerW: number;
+}
+
 export interface PanelsRepository {
   findSite: (siteId: string) => Promise<{ id: string; name: string } | null>;
   listPanels: (siteId: string) => Promise<PanelRow[]>;
@@ -30,6 +39,10 @@ export interface PanelsRepository {
   /** Alertes actives portant sur les panneaux demandés. */
   activePanelAlerts: (panelIds: string[]) => Promise<AlertRow[]>;
   updatePanel: (panelId: string, changes: PanelChanges) => Promise<PanelRow | null>;
+  /** Nombre de panneaux du site (limite `MAX_PANELS_PER_SITE`). */
+  countPanels: (siteId: string) => Promise<number>;
+  /** Panneau ajouté sur le terrain ; `null` si le code existe déjà sur le site (index unique). */
+  createPanel: (panel: NewPanel) => Promise<PanelRow | null>;
   /** Supprime le panneau ; ses mesures et alertes suivent (ON DELETE CASCADE). */
   deletePanel: (panelId: string) => Promise<boolean>;
 }
@@ -90,6 +103,18 @@ export function createPanelsRepository({ db }: Database): PanelsRepository {
         .where(eq(panels.id, panelId))
         .returning();
       return panel ?? null;
+    },
+    async countPanels(siteId) {
+      const [row] = await db.select({ n: count() }).from(panels).where(eq(panels.siteId, siteId));
+      return row?.n ?? 0;
+    },
+    async createPanel(panel) {
+      const [created] = await db
+        .insert(panels)
+        .values({ ...panel, source: "manual" })
+        .onConflictDoNothing({ target: [panels.siteId, panels.code] })
+        .returning();
+      return created ?? null;
     },
     async deletePanel(panelId) {
       const deleted = await db

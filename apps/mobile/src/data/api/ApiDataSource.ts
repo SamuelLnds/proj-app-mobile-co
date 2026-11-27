@@ -4,6 +4,7 @@ import {
   type AcceptEnrollmentRequest,
   type AlertPage,
   type AlertsQuery,
+  type CreatePanelRequest,
   type CreateSetpointRequest,
   type Enrollment,
   type EnrollmentPage,
@@ -146,6 +147,10 @@ export class ApiDataSource implements DataSource {
 
   updatePanel(panelId: string, body: UpdatePanelRequest): Promise<PanelDetail> {
     return this.request("PATCH", ROUTES.updatePanel, { params: { id: panelId }, body });
+  }
+
+  createPanel(siteId: string, body: CreatePanelRequest): Promise<PanelDetail> {
+    return this.request("POST", ROUTES.createPanel, { params: { id: siteId }, body });
   }
 
   deletePanel(panelId: string): Promise<void> {

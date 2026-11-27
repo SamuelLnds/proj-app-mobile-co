@@ -90,6 +90,13 @@ function repository(): PanelsRepository & { panels: PanelRow[] } {
       Object.assign(p, changes);
       return p;
     },
+    countPanels: async () => panels.length,
+    createPanel: async (panel) => {
+      if (panels.some((p) => p.siteId === panel.siteId && p.code === panel.code)) return null;
+      const row: PanelRow = { id: id(900 + panels.length), source: "manual", ...panel };
+      panels.push(row);
+      return row;
+    },
     deletePanel: async (panelId) => {
       const index = panels.findIndex((p) => p.id === panelId);
       if (index < 0) return false;
@@ -229,5 +236,65 @@ describe("PATCH et DELETE /v1/panels/{id}", () => {
     expect((await app.inject({ method: "DELETE", url, headers: operator })).statusCode).toBe(204);
     expect(repo.panels.some((p) => p.id === id(103))).toBe(false);
     expect((await app.inject({ method: "DELETE", url, headers: operator })).statusCode).toBe(404);
+  });
+});
+
+describe("POST /v1/sites/{id}/panels (bonus #63)", () => {
+  const url = `/v1/sites/${SITE.id}/panels`;
+
+  it("crée un panneau positionné (201, source manual), avec nom et puissance par défaut", async () => {
+    const { app, repo, operator } = await setup();
+    const response = await app.inject({
+      method: "POST",
+      url,
+      headers: operator,
+      payload: { code: "P40", latitude: 47.2501, longitude: -1.5502 },
+    });
+    expect(response.statusCode).toBe(201);
+    const body = PanelDetailSchema.parse(response.json());
+    expect(body).toMatchObject({
+      code: "P40",
+      name: "Panneau P40",
+      placed: true,
+      source: "manual",
+      ratedPowerW: 200,
+      latitude: 47.2501,
+    });
+    expect(repo.panels.some((p) => p.code === "P40")).toBe(true);
+  });
+
+  it("refuse un code déjà présent sur le site (409 PANEL_CODE_TAKEN, message clair)", async () => {
+    const { app, operator } = await setup();
+    const response = await app.inject({
+      method: "POST",
+      url,
+      headers: operator,
+      payload: { code: "P21", latitude: 47.25, longitude: -1.55 },
+    });
+    expect(response.statusCode).toBe(409);
+    expect(code(response)).toBe("PANEL_CODE_TAKEN");
+    expect(response.json().error.message).toContain("P21 existe déjà");
+  });
+
+  it("refuse un lecteur (403), un code invalide (422) et un site inconnu (404)", async () => {
+    const { app, operator, viewer } = await setup();
+    const payload = { code: "P41", latitude: 47.25, longitude: -1.55 };
+    expect((await app.inject({ method: "POST", url, headers: viewer, payload })).statusCode).toBe(
+      403,
+    );
+    const invalid = await app.inject({
+      method: "POST",
+      url,
+      headers: operator,
+      payload: { ...payload, code: "41" },
+    });
+    expect(invalid.statusCode).toBe(422);
+    const unknown = await app.inject({
+      method: "POST",
+      url: `/v1/sites/${id(999)}/panels`,
+      headers: operator,
+      payload,
+    });
+    expect(unknown.statusCode).toBe(404);
   });
 });

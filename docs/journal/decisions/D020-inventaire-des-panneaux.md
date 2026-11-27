@@ -38,3 +38,5 @@ C'est le meilleur rapport entre coût et intérêt : aucun code à saisir, une d
 - App : section « Panneaux à positionner » dans la vue Liste de l'écran Carte ; dépendance `expo-location`.
 - Simulateur : variable `EXTRA_PANELS` pour publier des panneaux absents du seed pendant la démo.
 - Nouvelles issues sur GitHub et mise à jour de l'issue d'enregistrement des mesures des panneaux.
+
+**Suivi (2026-11-27, #63) :** le bonus D est réalisé. Le QR code d'un panneau porte `solar:panel:<code>` (un code seul est accepté) ; `POST /v1/sites/{id}/panels` crée le panneau positionné (`source = 'manual'`) et refuse un code déjà présent sur le site (`409 PANEL_CODE_TAKEN`). Le format est volontairement minimal : le code identifie le panneau, la position vient du téléphone, la puissance est saisie.

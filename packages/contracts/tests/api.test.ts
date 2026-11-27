@@ -152,13 +152,14 @@ describe("erreurs", () => {
   });
 
   it("associe chaque code à son code HTTP", () => {
-    expect(ErrorCodeSchema.options).toHaveLength(12);
+    expect(ErrorCodeSchema.options).toHaveLength(13);
     expect(ERROR_HTTP_STATUS).toEqual({
       UNAUTHENTICATED: 401,
       INVALID_CREDENTIALS: 401,
       FORBIDDEN: 403,
       NOT_FOUND: 404,
       DEVICE_OFFLINE: 409,
+      PANEL_CODE_TAKEN: 409,
       ENROLLMENT_PENDING: 409,
       INVALID_ENROLLMENT_STATE: 409,
       INVALID_REQUEST: 422,
@@ -171,7 +172,7 @@ describe("erreurs", () => {
 });
 
 describe("table des routes (section 7.2)", () => {
-  it("couvre les 23 routes avec méthode, chemin et rôle", () => {
+  it("couvre les 24 routes avec méthode, chemin et rôle", () => {
     const summary = Object.values(ROUTES).map((r) => `${r.method} ${r.path} ${r.role}`);
     expect(summary).toEqual([
       "GET /v1/health none",
@@ -184,6 +185,7 @@ describe("table des routes (section 7.2)", () => {
       "GET /v1/sites/{id}/measurements viewer",
       "GET /v1/sites/{id}/panels viewer",
       "GET /v1/panels/{id} viewer",
+      "POST /v1/sites/{id}/panels operator",
       "PATCH /v1/panels/{id} operator",
       "DELETE /v1/panels/{id} operator",
       "GET /v1/panels/{id}/measurements viewer",

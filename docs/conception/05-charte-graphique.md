@@ -147,6 +147,19 @@ Quand une nouvelle alerte s'ouvre alors que l'app est au premier plan, aucune no
 - **Confirmation de la révocation** (feuille du bas) : titre « Révoquer device-site01 ? », texte « L'objet perd aussitôt ses droits sur le broker et ne pourra plus se reconnecter avec ce certificat. C'est définitif : pour revenir, il devra refaire une demande. », puis « Annuler » et « Révoquer ».
 - **États** : chargement (« Chargement des objets… ») ; aucune demande (« Aucune demande en attente. Un objet qui démarre sans certificat apparaît ici. ») ; aucun objet actif ; erreur de chargement (bandeau `critical` « Objets indisponibles ») ; action refusée (bandeau `critical` « Action impossible » avec le message de l'API) ; broker non rechargé (bandeau `warning` « Décision enregistrée ») ; hors ligne (bandeau habituel, boutons désactivés) ; **lecteur** : bandeau `neutral` « Réservé aux exploitants » (icône `Lock`), aucune demande ni aucun bouton.
 
+### Ajout d'un panneau sur le terrain (bonus #63)
+
+Écran `app/panel/new.tsx`, ouvert par le bouton secondaire « Ajouter un panneau » (icône `MapPin`) de l'écran Carte, visible du seul exploitant.
+
+- **En-tête** : titre « Ajouter un panneau », retour « Carte ».
+- **1. Code du panneau** : aperçu de la caméra (carré, coins arrondis `radius.md`) avec la phrase « Visez le QR code collé sur le panneau. » ; une fois lu, le code s'affiche en `metric` avec la pastille « Code lu » (`status-normal`). Le bouton « Saisir le code à la main » ouvre un champ (« Code du panneau », exemple `P21`).
+- **2. Position** : bouton « Utiliser ma position » (principal tant qu'aucune position n'est prise), puis « Position du téléphone : 47,250 12, -1,549 87 (précision 4 m) ». « Saisir les coordonnées » ouvre deux champs (latitude, longitude).
+- **3. Description** : « Nom » (facultatif, « Panneau P21 » par défaut) et « Puissance nominale (W) » (200 par défaut).
+- **Bouton principal** « Ajouter le panneau », actif quand le code et la position sont connus.
+- **Refus de la caméra** : bandeau `neutral` « Caméra non autorisée » : « La caméra sert à lire le QR code du panneau sans erreur de saisie. Vous pouvez saisir le code à la main, ou l'autoriser dans les réglages du téléphone. » et le champ de saisie ouvert.
+- **Refus de la localisation** : bandeau `neutral` « Localisation non autorisée » : « La position du téléphone place le panneau sur la carte. Vous pouvez saisir ses coordonnées, ou l'autoriser dans les réglages. » et les deux champs ouverts.
+- **Erreurs** : code déjà présent (« Un panneau P21 existe déjà sur ce site. Placez-le depuis la liste « à positionner » s'il vient d'être détecté. »), code invalide, hors ligne (bouton désactivé). **Lecteur** : bandeau « Réservé aux exploitants », aucun champ.
+
 ### Graphique de courbe (lecture d'une valeur)
 
 Le graphique de production (écran Supervision, détail d'un panneau) se lit au toucher ([#106](04-besoins-fonctionnels.md)) :
@@ -163,4 +176,5 @@ Le graphique de production (écran Supervision, détail d'un panneau) se lit au 
 - Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).
 - L'écran Alertes montre le marqueur « Nouvelle », le contrôle « Voir le panneau » et le bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette (canevas hors du dépôt) a été mise à jour le 2026-11-26 : écran Alertes, thème sombre compris, et état « Alertes · toutes lues ».
 - Le bandeau d'alerte app ouverte (#108) est décrit ci-dessus, mais **pas encore dessiné sur le canevas** (clair et sombre, une alerte et plusieurs alertes) : la maquette reste à ajouter.
+- L'écran d'ajout d'un panneau (#63) est décrit ci-dessus, mais **pas encore dessiné sur le canevas** : la maquette reste à ajouter.
 - La section « Objets » (#82) est décrite ci-dessus et réalisée avec les jetons des deux thèmes, mais **pas encore dessinée sur le canevas** (demandes, objets actifs, confirmations, lecteur, clair et sombre) : la maquette reste à ajouter et à faire valider par le binôme.

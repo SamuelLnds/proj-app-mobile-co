@@ -23,6 +23,7 @@ import {
 import { StreamEventSchema } from "./events";
 import { IdParamsSchema, MeasurementQuerySchema, PageQuerySchema } from "./common";
 import {
+  CreatePanelRequestSchema,
   PanelDetailSchema,
   PanelListSchema,
   PanelMeasurementSeriesSchema,
@@ -43,7 +44,7 @@ export interface RouteContract {
   query?: z.ZodType;
   body?: z.ZodType;
   /** Code HTTP de succès. */
-  status: 200 | 202 | 204;
+  status: 200 | 201 | 202 | 204;
   /** Schéma du corps de la réponse, `null` pour un 204. */
   response: z.ZodType | null;
 }
@@ -125,6 +126,15 @@ export const ROUTES = {
     role: "viewer",
     params: IdParamsSchema,
     status: 200,
+    response: PanelDetailSchema,
+  },
+  createPanel: {
+    method: "POST",
+    path: "/v1/sites/{id}/panels",
+    role: "operator",
+    params: IdParamsSchema,
+    body: CreatePanelRequestSchema,
+    status: 201,
     response: PanelDetailSchema,
   },
   updatePanel: {

@@ -1155,9 +1155,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **À faire :** route `POST /v1/sites/{id}/panels` (rôle `operator`, `source = 'manual'`) ; écran d'ajout dans l'app : scan du QR code du panneau (caméra, `expo-camera`), position GPS du téléphone, puissance nominale, validation. Les documents de conception sont mis à jour avant le code.
 
 **Critères d'acceptation :**
-- [ ] Un panneau scanné et validé apparaît sur la carte.
-- [ ] Un code déjà existant sur le site est refusé avec un message clair.
-- [ ] Refus de la caméra ou de la localisation : saisie manuelle possible, message expliquant l'intérêt de l'autorisation.
+- [x] Un panneau scanné et validé apparaît sur la carte.
+- [x] Un code déjà existant sur le site est refusé avec un message clair.
+- [x] Refus de la caméra ou de la localisation : saisie manuelle possible, message expliquant l'intérêt de l'autorisation.
 
 **Dépend de :** #61, #62, M6 terminé · **Références :** [D020](../journal/decisions/D020-inventaire-des-panneaux.md), [UML, UC18](02-uml.md)
 
