@@ -134,6 +134,19 @@ Quand une nouvelle alerte s'ouvre alors que l'app est au premier plan, aucune no
 - **Comportement** : disparition seule après 8 s (`ALERT_BANNER_DURATION_MS`), ou à la fermeture ; « Voir » ouvre le détail du panneau ou l'écran Alertes, sans marquer l'alerte comme lue. Le bandeau est annoncé au lecteur d'écran (« Nouvelle alerte, Critique : … »).
 - **Quand il n'apparaît pas** : au premier chargement et pour les alertes déjà présentes à l'ouverture de l'app, pour une alerte déjà lue (D034), pour une alerte `info` et pour les types de `PUSH_EXCLUDED_ALERT_TYPES` (consigne refusée), comme le push.
 
+### Section « Objets » (exploitant)
+
+Écran `app/devices.tsx` ([#82](04-besoins-fonctionnels.md), [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) : l'exploitant compare l'empreinte de la clé d'un objet, accepte ou refuse sa demande, et révoque un objet volé.
+
+- **Accès** : depuis Supervision, une carte-lien « Objets du site » (icône `Lock`, `CaretRight`), visible du seul exploitant. Tant qu'une demande attend, la carte est en haut de l'écran, fond `status-warning-soft` bordé de `status-warning`, texte « 1 demande à comparer et accepter » ; sinon elle est en bas, fond `surfaceRaised`, texte « Certificats et révocation ». Elle reste visible quand l'objet n'a encore envoyé aucune mesure : sans certificat, il n'en enverra pas.
+- **En-tête** : titre « Objets », sous-titre « Certificats des objets du site », retour « Supervision » (`CaretLeft`, `primary`).
+- **Demandes en attente** : une carte par demande, avec le nom de l'objet en `bodyBold`, la pastille « En attente » (`status-warning`, icône `Clock`), « Demande reçue à 10:02 · expire à 10:32 » en `label` `inkMuted`, l'intitulé « Empreinte de la clé », l'**empreinte complète** puis l'invitation « Comparez-la caractère par caractère avec l'empreinte affichée sur le moniteur série de l'objet. Acceptez seulement si elles sont identiques. ». Boutons « Refuser » (secondaire) et « Accepter » (principal), côte à côte.
+- **Empreinte** : les 64 caractères hexadécimaux **en minuscules**, en groupes de 4 séparés par une espace, 4 groupes par ligne (4 lignes), en Red Hat Mono (`value`), sur fond `surfaceSunken`. Le firmware l'affiche au même format sur le moniteur série (#83). Le lecteur d'écran l'épelle : « Empreinte de la clé : 3 f a 9, 4 c 0 e, … ».
+- **Confirmation de l'acceptation** (feuille du bas) : titre « Accepter device-site01 ? », rappel « Acceptez seulement si cette empreinte est identique à celle du moniteur série de l'objet. », l'empreinte de nouveau, « Durée du certificat » avec un sélecteur `8 h` (défaut), `24 h`, `48 h`, puis « Annuler » et « Accepter ».
+- **Objets actifs** : une carte par objet, avec le nom, la pastille « Certificat actif » (`status-normal`, `CheckCircle`), « Valable jusqu'au 27 nov., 15:04 · accepté par Exploitant », l'empreinte, et le bouton secondaire « Révoquer ».
+- **Confirmation de la révocation** (feuille du bas) : titre « Révoquer device-site01 ? », texte « L'objet perd aussitôt ses droits sur le broker et ne pourra plus se reconnecter avec ce certificat. C'est définitif : pour revenir, il devra refaire une demande. », puis « Annuler » et « Révoquer ».
+- **États** : chargement (« Chargement des objets… ») ; aucune demande (« Aucune demande en attente. Un objet qui démarre sans certificat apparaît ici. ») ; aucun objet actif ; erreur de chargement (bandeau `critical` « Objets indisponibles ») ; action refusée (bandeau `critical` « Action impossible » avec le message de l'API) ; broker non rechargé (bandeau `warning` « Décision enregistrée ») ; hors ligne (bandeau habituel, boutons désactivés) ; **lecteur** : bandeau `neutral` « Réservé aux exploitants » (icône `Lock`), aucune demande ni aucun bouton.
+
 ### Graphique de courbe (lecture d'une valeur)
 
 Le graphique de production (écran Supervision, détail d'un panneau) se lit au toucher ([#106](04-besoins-fonctionnels.md)) :
@@ -150,3 +163,4 @@ Le graphique de production (écran Supervision, détail d'un panneau) se lit au 
 - Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).
 - L'écran Alertes montre le marqueur « Nouvelle », le contrôle « Voir le panneau » et le bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette (canevas hors du dépôt) a été mise à jour le 2026-11-26 : écran Alertes, thème sombre compris, et état « Alertes · toutes lues ».
 - Le bandeau d'alerte app ouverte (#108) est décrit ci-dessus, mais **pas encore dessiné sur le canevas** (clair et sombre, une alerte et plusieurs alertes) : la maquette reste à ajouter.
+- La section « Objets » (#82) est décrite ci-dessus et réalisée avec les jetons des deux thèmes, mais **pas encore dessinée sur le canevas** (demandes, objets actifs, confirmations, lecteur, clair et sombre) : la maquette reste à ajouter et à faire valider par le binôme.

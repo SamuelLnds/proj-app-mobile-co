@@ -74,3 +74,35 @@ export function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** Taille d'un groupe de l'empreinte, et nombre de groupes par ligne (4 lignes pour SHA-256). */
+const FINGERPRINT_GROUP = 4;
+export const FINGERPRINT_GROUPS_PER_LINE = 4;
+
+/**
+ * Empreinte d'une clé découpée en groupes de 4 caractères hexadécimaux en minuscules, comme sur
+ * le moniteur série de l'objet (D027) : `3fa9 4c0e 7b21 …`.
+ */
+export function fingerprintGroups(fingerprint: string): string[] {
+  return fingerprint.toLowerCase().match(new RegExp(`.{1,${FINGERPRINT_GROUP}}`, "g")) ?? [];
+}
+
+/** Lignes de l'empreinte, 4 groupes par ligne. */
+export function fingerprintLines(fingerprint: string): string[] {
+  const groups = fingerprintGroups(fingerprint);
+  const lines: string[] = [];
+  for (let i = 0; i < groups.length; i += FINGERPRINT_GROUPS_PER_LINE) {
+    lines.push(groups.slice(i, i + FINGERPRINT_GROUPS_PER_LINE).join(" "));
+  }
+  return lines;
+}
+
+/**
+ * Empreinte lue à voix haute : chaque caractère séparé, une pause entre les groupes, pour que le
+ * lecteur d'écran l'épelle au lieu de la lire comme un mot.
+ */
+export function speakFingerprint(fingerprint: string): string {
+  return fingerprintGroups(fingerprint)
+    .map((group) => group.split("").join(" "))
+    .join(", ");
+}

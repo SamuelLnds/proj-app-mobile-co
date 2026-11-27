@@ -246,7 +246,8 @@ apps/mobile/
 │   │   ├── map.tsx
 │   │   ├── control.tsx           # Pilotage
 │   │   └── alerts.tsx
-│   └── panel/[id].tsx            # Détail d'un panneau
+│   ├── panel/[id].tsx            # Détail d'un panneau
+│   └── devices.tsx               # Objets : demandes d'enrôlement, certificats, révocation (exploitant)
 ├── src/
 │   ├── data/                     # DataSource : sources mock (données d'exemple) et api, choisies par EXPO_PUBLIC_DATA_SOURCE
 │   ├── api/                      # Hooks TanStack Query, qui appellent la source de données active
@@ -269,6 +270,7 @@ apps/mobile/
 | Pilotage | `app/(tabs)/control.tsx` | UC07, UC08 |
 | Alertes | `app/(tabs)/alerts.tsx` | UC09 |
 | Détail d'un panneau | `app/panel/[id].tsx` | UC05 |
+| Objets (exploitant) | `app/devices.tsx` | UC20 |
 
 **Tables locales de `solar.db`** (`src/storage/`), jamais envoyées à l'API et effacées à la déconnexion :
 

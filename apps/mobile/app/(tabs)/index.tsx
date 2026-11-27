@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   useConnectivity,
   useCurrentSiteId,
+  useEnrollments,
   useSites,
   useSite,
   useSiteMeasurements,
@@ -89,6 +90,51 @@ function LoadingState() {
   );
 }
 
+/**
+ * Accès à la section « Objets » (exploitant seulement, D027). Une demande en attente la met en
+ * avant en haut de l'écran : sans certificat, l'objet n'envoie aucune mesure.
+ */
+function DevicesLink({ position }: { position: "top" | "bottom" }) {
+  const { colors } = useTheme();
+  const { user } = useAuth();
+  const operator = user?.role === "operator";
+  const enrollments = useEnrollments({ enabled: operator });
+  if (!operator) return null;
+  const pending = (enrollments.data?.items ?? []).filter((e) => e.status === "pending").length;
+  if ((position === "top") !== pending > 0) return null;
+  const text =
+    pending === 0
+      ? "Certificats et révocation"
+      : pending === 1
+        ? "1 demande à comparer et accepter"
+        : `${pending} demandes à comparer et accepter`;
+  return (
+    <Link href="/devices" asChild>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`Objets du site, ${text}`}
+        style={StyleSheet.flatten([
+          styles.linkCard,
+          pending > 0
+            ? {
+                backgroundColor: colors.statusWarningSoft,
+                borderColor: colors.statusWarning,
+                borderWidth: 1,
+              }
+            : { backgroundColor: colors.surfaceRaised },
+        ])}
+      >
+        <Icon name="Lock" color={pending > 0 ? colors.statusWarning : colors.inkMuted} />
+        <View style={styles.flex}>
+          <Text style={[typography.bodyBold, { color: colors.ink }]}>Objets du site</Text>
+          <Text style={[typography.label, { color: colors.ink }]}>{text}</Text>
+        </View>
+        <Icon name="CaretRight" color={colors.ink} size={20} />
+      </Pressable>
+    </Link>
+  );
+}
+
 export default function SupervisionScreen() {
   const { colors } = useTheme();
   const now = useNow();
@@ -118,6 +164,7 @@ export default function SupervisionScreen() {
       }
       onRefresh={() => (siteId ? site.refetch() : sites.refetch())}
     >
+      <DevicesLink position="top" />
       {!data || !m ? (
         site.isError || sites.isError ? (
           <Banner
@@ -323,6 +370,7 @@ export default function SupervisionScreen() {
           </Card>
         </>
       )}
+      <DevicesLink position="bottom" />
     </Screen>
   );
 }

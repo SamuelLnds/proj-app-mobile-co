@@ -1481,9 +1481,9 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 
 **Critères d'acceptation :**
 - [ ] Conforme à la maquette, clair et sombre.
-- [ ] L'empreinte est affichée en entier et lisible à voix haute ; l'acceptation rappelle de la comparer.
-- [ ] La révocation demande une confirmation explicite ; un lecteur ne voit aucune action.
-- [ ] Documentation mise à jour : `apps/mobile/README.md`, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
+- [x] L'empreinte est affichée en entier et lisible à voix haute ; l'acceptation rappelle de la comparer.
+- [x] La révocation demande une confirmation explicite ; un lecteur ne voit aucune action.
+- [x] Documentation mise à jour : `apps/mobile/README.md`, partie sécurité et « Où on en est » de `docs/synthese-projet.md`.
 
 **Dépend de :** #69, #70 ; #81 pour le branchement · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [Charte graphique](05-charte-graphique.md)
 
@@ -1494,7 +1494,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 **Contexte :** le projet Wokwi est public : l'objet ne doit contenir aucun secret ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)).
 
 **À faire :**
-- Au démarrage sans certificat valide, après l'heure NTP : clé P-256 en mémoire et CSR (mbedTLS) ; affichage sur le moniteur série du nom et de l'empreinte de la clé publique, jamais de la clé privée.
+- Au démarrage sans certificat valide, après l'heure NTP : clé P-256 en mémoire et CSR (mbedTLS) ; affichage sur le moniteur série du nom et de l'empreinte de la clé publique, jamais de la clé privée. L'empreinte est affichée comme dans l'app : SHA-256 de la clé publique (`SubjectPublicKeyInfo` en DER), en hexadécimal minuscule, groupes de 4 caractères, 4 groupes par ligne ([charte, « Section Objets »](05-charte-graphique.md)).
 - Demande au service d'enrôlement en HTTPS (racine publique du certificat de l'API embarquée, [D028](../journal/decisions/D028-hebergement-vps.md)), puis suivi toutes les 3 s jusqu'à l'acceptation ou au refus, avec l'état affiché sur le moniteur série.
 - Vérification de la réponse : nom commun et clé publique du certificat identiques aux siens, sinon rejet.
 - Connexion MQTT sur 8883 avec le certificat et la clé privée (`setCertificate`, `setPrivateKey`), à la place de l'identifiant et du mot de passe de #20.
