@@ -451,13 +451,13 @@ describe("décisions de l'exploitant", () => {
     expect(t.applied.at(-1)!.devices).toEqual([{ deviceName: DEVICE.name, siteCode: "SITE01" }]);
   });
 
-  it("accepte une durée choisie et refuse plus de 48 h", async () => {
+  it("accepte une durée choisie et refuse plus de 168 h", async () => {
     const t = await setup();
     const { id: enrollmentId } = await pendingEnrollment(t);
-    expect((await t.decide(enrollmentId, "accept", { ttlHours: 49 })).statusCode).toBe(422);
-    const accepted = enrollment((await t.decide(enrollmentId, "accept", { ttlHours: 48 })).json());
+    expect((await t.decide(enrollmentId, "accept", { ttlHours: 169 })).statusCode).toBe(422);
+    const accepted = enrollment((await t.decide(enrollmentId, "accept", { ttlHours: 168 })).json());
     expect(accepted.certificateExpiresAt).toBe(
-      new Date(START.getTime() + 48 * 3_600_000).toISOString(),
+      new Date(START.getTime() + 168 * 3_600_000).toISOString(),
     );
   });
 

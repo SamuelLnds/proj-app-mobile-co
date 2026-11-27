@@ -6,7 +6,7 @@ App Expo (React Native, Expo Router) de supervision et de pilotage du parc solai
 
 L'écran **Objets** (`app/devices.tsx`, [D027](../../docs/journal/decisions/D027-certificat-objet-et-enrolement.md)) n'est accessible qu'à l'exploitant, par la carte « Objets du site » de l'écran Supervision. Il liste :
 
-- les **demandes en attente** : un objet qui démarre sans certificat envoie une demande à l'API. L'app affiche son empreinte en entier (groupes de 4 caractères, épelée par le lecteur d'écran). L'exploitant la compare avec celle du moniteur série de l'objet, puis accepte, en choisissant la durée du certificat (8 h par défaut, 48 h au plus), ou refuse ;
+- les **demandes en attente** : un objet qui démarre sans certificat envoie une demande à l'API. L'app affiche son empreinte en entier (groupes de 4 caractères, épelée par le lecteur d'écran). L'exploitant la compare avec celle du moniteur série de l'objet, puis accepte, en choisissant la durée du certificat (8 h par défaut, 24 h ou une semaine), ou refuse ;
 - les **objets actifs**, avec la fin de validité de leur certificat, et la **révocation**, après une confirmation explicite.
 
 Un lecteur voit seulement « Réservé aux exploitants ». Sans réseau, les boutons sont désactivés. Avec la source `mock`, l'écran présente une demande en attente et un objet actif ; accepter la demande révoque le certificat précédent, comme l'API.

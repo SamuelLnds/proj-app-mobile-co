@@ -230,10 +230,10 @@ describe("enrôlement des objets (/v1/enrollments)", () => {
     expect(FingerprintParamsSchema.safeParse({ fingerprint: "a".repeat(63) }).success).toBe(false);
   });
 
-  it("donne 8 h par défaut au certificat et refuse plus de 48 h", () => {
+  it("donne 8 h par défaut au certificat et refuse plus de 168 h", () => {
     expect(AcceptEnrollmentRequestSchema.parse({})).toEqual({ ttlHours: 8 });
-    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 48 }).success).toBe(true);
-    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 49 }).success).toBe(false);
+    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 168 }).success).toBe(true);
+    expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 169 }).success).toBe(false);
     expect(AcceptEnrollmentRequestSchema.safeParse({ ttlHours: 0 }).success).toBe(false);
   });
 
