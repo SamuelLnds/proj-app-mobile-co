@@ -198,8 +198,15 @@ function useEnrollmentDecision<T>(decide: (variables: T) => Promise<unknown>) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: decide,
-    // Même en cas d'erreur (broker non rechargé, demande expirée) : la liste est relue.
-    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.enrollments }),
+    // Même en cas d'erreur (broker non rechargé, demande expirée) : la liste est relue, et l'état
+    // du site aussi, pour que l'objet passe « en ligne » ou « hors ligne » sans attendre (#127).
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: queryKeys.enrollments }),
+        client.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === "sites" && query.queryKey.length <= 2,
+        }),
+      ]),
   });
 }
 

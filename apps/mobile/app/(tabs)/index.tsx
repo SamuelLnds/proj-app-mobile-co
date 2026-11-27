@@ -162,7 +162,7 @@ export default function SupervisionScreen() {
           />
         ) : null
       }
-      onRefresh={() => (siteId ? site.refetch() : sites.refetch())}
+      refreshable
     >
       <DevicesLink position="top" />
       {!data || !m ? (

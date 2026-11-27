@@ -60,7 +60,7 @@ export default function PanelScreen() {
           ) : null}
         </View>
       }
-      onRefresh={() => panel.refetch()}
+      refreshable
     >
       <OfflineBanner />
       {!p ? (
