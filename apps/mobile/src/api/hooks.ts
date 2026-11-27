@@ -1,4 +1,5 @@
 import {
+  type AcceptEnrollmentRequest,
   DEFAULT_PAGE_LIMIT,
   SITE_MEASUREMENT_PERIOD_S,
   type AlertStatus,
@@ -46,6 +47,7 @@ export const queryKeys = {
   // Hors de la branche `sites` : une page de l'historique ne doit jamais être rechargée seule.
   setpoints: (siteId: string) => ["setpoints", siteId] as const,
   alerts: (status?: AlertStatus) => ["alerts", status ?? "all"] as const,
+  enrollments: ["enrollments"] as const,
 };
 
 /**
@@ -174,6 +176,43 @@ export function useAlerts(status?: AlertStatus, options?: { enabled?: boolean })
       ),
     refetchInterval: REFRESH_MS,
   });
+}
+
+/**
+ * Demandes d'enrôlement et certificats des objets (exploitant seulement : la route renvoie 403 à
+ * un lecteur). Pas de copie locale : les décisions demandent le réseau, et une demande en
+ * attente expire en 30 min.
+ */
+export function useEnrollments(options?: { enabled?: boolean }) {
+  return useQuery({
+    enabled: options?.enabled ?? true,
+    queryKey: queryKeys.enrollments,
+    queryFn: () => dataSource.listEnrollments({ limit: 50 }),
+    refetchInterval: REFRESH_MS,
+  });
+}
+
+function useEnrollmentDecision<T>(decide: (variables: T) => Promise<unknown>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: decide,
+    // Même en cas d'erreur (broker non rechargé, demande expirée) : la liste est relue.
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.enrollments }),
+  });
+}
+
+export function useAcceptEnrollment() {
+  return useEnrollmentDecision(({ id, body }: { id: string; body: AcceptEnrollmentRequest }) =>
+    dataSource.acceptEnrollment(id, body),
+  );
+}
+
+export function useRejectEnrollment() {
+  return useEnrollmentDecision((id: string) => dataSource.rejectEnrollment(id));
+}
+
+export function useRevokeEnrollment() {
+  return useEnrollmentDecision((id: string) => dataSource.revokeEnrollment(id));
 }
 
 export function useCreateSetpoint(siteId: string | undefined) {

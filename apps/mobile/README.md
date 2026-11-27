@@ -2,6 +2,17 @@
 
 App Expo (React Native, Expo Router) de supervision et de pilotage du parc solaire. Voir `docs/conception/` pour la conception.
 
+## Objets du site : enrôlement et révocation
+
+L'écran **Objets** (`app/devices.tsx`, [D027](../../docs/journal/decisions/D027-certificat-objet-et-enrolement.md)) n'est accessible qu'à l'exploitant, par la carte « Objets du site » de l'écran Supervision. Il liste :
+
+- les **demandes en attente** : un objet qui démarre sans certificat envoie une demande à l'API. L'app affiche son empreinte en entier (groupes de 4 caractères, épelée par le lecteur d'écran). L'exploitant la compare avec celle du moniteur série de l'objet, puis accepte, en choisissant la durée du certificat (8 h par défaut, 48 h au plus), ou refuse ;
+- les **objets actifs**, avec la fin de validité de leur certificat, et la **révocation**, après une confirmation explicite.
+
+Un lecteur voit seulement « Réservé aux exploitants ». Sans réseau, les boutons sont désactivés. Avec la source `mock`, l'écran présente une demande en attente et un objet actif ; accepter la demande révoque le certificat précédent, comme l'API.
+
+Avec la source `api`, les routes `/v1/enrollments` de l'API sont utilisées (#81). Si l'API n'a pas pu recharger le broker, l'écran affiche « Décision enregistrée » avec le message de l'API : relancer `pnpm mqtt:reload` sur le serveur.
+
 ## Notifications d'alerte : configuration Firebase
 
 Les alertes `warning` et `critical` arrivent app fermée ou en arrière-plan par le **push Expo**, qui s'appuie sur Firebase Cloud Messaging (FCM) sur Android ([D030](../../docs/journal/decisions/D030-notifications-push-expo-et-locales.md)). Quand l'app est ouverte, aucune notification n'est affichée : l'alerte est déjà visible dans l'app, et le push d'une consigne refusée n'est pas envoyé ([D033](../../docs/journal/decisions/D033-regles-envoi-notifications-alerte.md)). La configuration Firebase se fait **une seule fois**, par le développeur, et n'est jamais versionnée.

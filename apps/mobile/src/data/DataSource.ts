@@ -1,7 +1,11 @@
 import type {
+  AcceptEnrollmentRequest,
   AlertPage,
   AlertsQuery,
   CreateSetpointRequest,
+  Enrollment,
+  EnrollmentPage,
+  EnrollmentsQuery,
   ErrorCode,
   LoginRequest,
   LoginResponse,
@@ -69,6 +73,15 @@ export interface DataSource {
 
   /** `GET /v1/alerts` */
   listAlerts(query?: AlertsQuery): Promise<AlertPage>;
+
+  /** `GET /v1/enrollments` (exploitant) */
+  listEnrollments(query?: Partial<EnrollmentsQuery>): Promise<EnrollmentPage>;
+  /** `POST /v1/enrollments/{id}/accept` (exploitant) */
+  acceptEnrollment(enrollmentId: string, body: AcceptEnrollmentRequest): Promise<Enrollment>;
+  /** `POST /v1/enrollments/{id}/reject` (exploitant) */
+  rejectEnrollment(enrollmentId: string): Promise<Enrollment>;
+  /** `POST /v1/enrollments/{id}/revoke` (exploitant) */
+  revokeEnrollment(enrollmentId: string): Promise<Enrollment>;
 }
 
 /** Erreur renvoyée par une source, au format des erreurs de l'API (section 7.1). */

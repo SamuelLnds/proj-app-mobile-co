@@ -1,9 +1,13 @@
 import {
   ErrorResponseSchema,
   ROUTES,
+  type AcceptEnrollmentRequest,
   type AlertPage,
   type AlertsQuery,
   type CreateSetpointRequest,
+  type Enrollment,
+  type EnrollmentPage,
+  type EnrollmentsQuery,
   type LoginRequest,
   type LoginResponse,
   type MeasurementQuery,
@@ -157,5 +161,21 @@ export class ApiDataSource implements DataSource {
 
   listAlerts(query?: AlertsQuery): Promise<AlertPage> {
     return this.request("GET", ROUTES.listAlerts, { query });
+  }
+
+  listEnrollments(query?: Partial<EnrollmentsQuery>): Promise<EnrollmentPage> {
+    return this.request("GET", ROUTES.listEnrollments, { query });
+  }
+
+  acceptEnrollment(enrollmentId: string, body: AcceptEnrollmentRequest): Promise<Enrollment> {
+    return this.request("POST", ROUTES.acceptEnrollment, { params: { id: enrollmentId }, body });
+  }
+
+  rejectEnrollment(enrollmentId: string): Promise<Enrollment> {
+    return this.request("POST", ROUTES.rejectEnrollment, { params: { id: enrollmentId } });
+  }
+
+  revokeEnrollment(enrollmentId: string): Promise<Enrollment> {
+    return this.request("POST", ROUTES.revokeEnrollment, { params: { id: enrollmentId } });
   }
 }

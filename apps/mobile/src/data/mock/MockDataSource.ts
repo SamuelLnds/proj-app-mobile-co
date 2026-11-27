@@ -3,12 +3,18 @@ import {
   CreateSetpointRequestSchema,
   DEFAULT_PAGE_LIMIT,
   LOW_PRODUCTION_RATIO,
+  DEVICE_CERT_DEFAULT_TTL_H,
+  ENROLLMENT_PENDING_TTL_MIN,
+  type AcceptEnrollmentRequest,
   type Alert,
   type AlertPage,
   type AlertsQuery,
   type ControlMode,
   type ControlState,
   type CreateSetpointRequest,
+  type Enrollment,
+  type EnrollmentPage,
+  type EnrollmentsQuery,
   type LoginRequest,
   type LoginResponse,
   type MeasurementQuery,
@@ -66,6 +72,7 @@ type State = {
   setpoints: SetpointRecord[];
   pending: { setpointId: string; dueAt: number } | null;
   panels: MockPanel[];
+  enrollments: Enrollment[];
   user: User | null;
 };
 
@@ -101,6 +108,7 @@ export class MockDataSource implements DataSource {
       setpoints: initialSetpoints(t),
       pending: null,
       panels: PANELS.map((p) => ({ ...p })),
+      enrollments: initialEnrollments(t),
       user,
     };
   }
@@ -302,6 +310,70 @@ export class MockDataSource implements DataSource {
         (!query?.siteId || a.site.id === query.siteId),
     );
     return paginate(alerts, (a) => a.startedAt, query);
+  }
+
+  async listEnrollments(query?: Partial<EnrollmentsQuery>): Promise<EnrollmentPage> {
+    await this.request();
+    this.requireOperator(DEVICES_OPERATOR_ONLY);
+    this.expireEnrollments();
+    const items = this.state.enrollments
+      .filter((e) => !query?.status || e.status === query.status)
+      .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+    return paginate(items, (e) => e.requestedAt, {
+      limit: query?.limit ?? DEFAULT_PAGE_LIMIT,
+      before: query?.before,
+    });
+  }
+
+  async acceptEnrollment(enrollmentId: string, body: AcceptEnrollmentRequest): Promise<Enrollment> {
+    await this.request();
+    const user = this.requireOperator(DEVICES_OPERATOR_ONLY);
+    this.expireEnrollments();
+    const enrollment = this.findPendingEnrollment(enrollmentId, "acceptée");
+    const t = this.time();
+    // Un seul certificat actif par objet : le précédent est révoqué (D027).
+    for (const other of this.state.enrollments) {
+      if (other.deviceName === enrollment.deviceName && other.status === "active") {
+        Object.assign(other, { status: "revoked", revokedAt: iso(t) });
+      }
+    }
+    Object.assign(enrollment, {
+      status: "active",
+      decidedAt: iso(t),
+      decidedBy: { id: user.id, name: user.name },
+      serialNumber: mockSerial(enrollment.id),
+      certificateExpiresAt: iso(t + (body.ttlHours ?? DEVICE_CERT_DEFAULT_TTL_H) * HOUR),
+    });
+    return { ...enrollment };
+  }
+
+  async rejectEnrollment(enrollmentId: string): Promise<Enrollment> {
+    await this.request();
+    const user = this.requireOperator(DEVICES_OPERATOR_ONLY);
+    this.expireEnrollments();
+    const enrollment = this.findPendingEnrollment(enrollmentId, "refusée");
+    Object.assign(enrollment, {
+      status: "rejected",
+      decidedAt: iso(this.time()),
+      decidedBy: { id: user.id, name: user.name },
+    });
+    return { ...enrollment };
+  }
+
+  async revokeEnrollment(enrollmentId: string): Promise<Enrollment> {
+    await this.request();
+    this.requireOperator(DEVICES_OPERATOR_ONLY);
+    this.expireEnrollments();
+    const enrollment = this.state.enrollments.find((e) => e.id === enrollmentId);
+    if (!enrollment) throw notFound();
+    if (enrollment.status !== "active") {
+      throw new DataSourceError(
+        "INVALID_ENROLLMENT_STATE",
+        "Seul un certificat actif peut être révoqué.",
+      );
+    }
+    Object.assign(enrollment, { status: "revoked", revokedAt: iso(this.time()) });
+    return { ...enrollment };
   }
 
   // --- Simulation -------------------------------------------------------------------------
@@ -548,14 +620,76 @@ export class MockDataSource implements DataSource {
     return panel;
   }
 
-  private requireOperator(): User {
+  private requireOperator(message = "Le pilotage est réservé aux exploitants."): User {
     const user = this.state.user;
     if (!user) throw new DataSourceError("UNAUTHENTICATED", "Session expirée, reconnectez-vous.");
-    if (user.role !== "operator") {
-      throw new DataSourceError("FORBIDDEN", "Le pilotage est réservé aux exploitants.");
-    }
+    if (user.role !== "operator") throw new DataSourceError("FORBIDDEN", message);
     return user;
   }
+
+  /** Comme l'API : demandes en attente et certificats échus passent en `expired`. */
+  private expireEnrollments(): void {
+    const t = iso(this.time());
+    for (const e of this.state.enrollments) {
+      if (e.status === "pending" && e.pendingExpiresAt < t) e.status = "expired";
+      if (e.status === "active" && e.certificateExpiresAt! < t) e.status = "expired";
+    }
+  }
+
+  private findPendingEnrollment(enrollmentId: string, verb: string): Enrollment {
+    const enrollment = this.state.enrollments.find((e) => e.id === enrollmentId);
+    if (!enrollment) throw notFound();
+    if (enrollment.status !== "pending") {
+      throw new DataSourceError(
+        "INVALID_ENROLLMENT_STATE",
+        `Seule une demande en attente peut être ${verb}.`,
+      );
+    }
+    return enrollment;
+  }
+}
+
+const DEVICES_OPERATOR_ONLY = "La gestion des objets est réservée aux exploitants.";
+
+/** Numéro de série d'exemple, dérivé de l'identifiant (32 caractères hexadécimaux). */
+const mockSerial = (id: string) => id.replace(/-/g, "").slice(0, 32);
+
+/**
+ * Demandes d'exemple : l'objet du site a un certificat actif, et une nouvelle demande attend
+ * (remise à zéro de la simulation Wokwi : nouvelle clé, donc nouvelle empreinte).
+ */
+function initialEnrollments(t: number): Enrollment[] {
+  const operator = USERS[0]!;
+  const base = {
+    deviceName: "device-site01",
+    decidedAt: null,
+    decidedBy: null,
+    serialNumber: null,
+    certificateExpiresAt: null,
+    revokedAt: null,
+  };
+  return [
+    {
+      ...base,
+      id: mockId(7, 2),
+      fingerprint: "3fa94c0e7b21d85a6e0f4c93b7d2a1e58c6b0f37d49e2a1c85b7f6e03d9a4c21",
+      status: "pending",
+      requestedAt: iso(t - 2 * MIN),
+      pendingExpiresAt: iso(t - 2 * MIN + ENROLLMENT_PENDING_TTL_MIN * MIN),
+    },
+    {
+      ...base,
+      id: mockId(7, 1),
+      fingerprint: "a81c5e0d94b7f2c6e3a05d8b1f47c92e6d0a3b5f8c1e74d29a6b0e5c3f817d4b",
+      status: "active",
+      requestedAt: iso(t - 3 * HOUR),
+      pendingExpiresAt: iso(t - 3 * HOUR + ENROLLMENT_PENDING_TTL_MIN * MIN),
+      decidedAt: iso(t - 3 * HOUR + 4 * MIN),
+      decidedBy: { id: operator.id, name: operator.name },
+      serialNumber: mockSerial(mockId(7, 1)),
+      certificateExpiresAt: iso(t - 3 * HOUR + 4 * MIN + DEVICE_CERT_DEFAULT_TTL_H * HOUR),
+    },
+  ];
 }
 
 const REJECTION_TEXT = {
