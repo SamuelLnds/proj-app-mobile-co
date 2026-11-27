@@ -143,6 +143,16 @@ erDiagram
     timestamptz started_at
     timestamptz ended_at
   }
+  DEVICE_ENROLLMENTS {
+    uuid id PK
+    uuid device_id FK
+    text fingerprint
+    enrollment_status status
+    text serial_number UK
+    timestamptz pending_expires_at
+    timestamptz certificate_expires_at
+    timestamptz revoked_at
+  }
 ```
 
 ## 3. Énumérations
@@ -263,7 +273,7 @@ Une ligne toutes les 5 secondes par site, publiée par l'ESP32.
 | Colonne | Type | Null | Contraintes | Description |
 |---|---|---|---|---|
 | `time` | `timestamptz` | non | PK (avec `site_id`) | Date de la mesure |
-| `site_id` | `uuid` | non | PK, FK → `sites.id` | Site mesuré |
+| `site_id` | `uuid` | non | PK, FK → `sites.id`, `ON DELETE CASCADE` | Site mesuré |
 | `irradiance_w_m2` | `real` | non | ≥ 0 | Ensoleillement (W/m²) |
 | `production_w` | `real` | non | ≥ 0 | Production totale du site (W) |
 | `temperature_c` | `real` | non | entre -40 et 125 | Température des panneaux (°C) |
@@ -280,7 +290,7 @@ Une ligne toutes les 10 secondes par panneau, publiée par le simulateur.
 | Colonne | Type | Null | Contraintes | Description |
 |---|---|---|---|---|
 | `time` | `timestamptz` | non | PK (avec `panel_id`) | Date de la mesure |
-| `panel_id` | `uuid` | non | PK, FK → `panels.id` | Panneau mesuré |
+| `panel_id` | `uuid` | non | PK, FK → `panels.id`, `ON DELETE CASCADE` | Panneau mesuré |
 | `production_w` | `real` | non | ≥ 0 | Production du panneau (W) |
 | `temperature_c` | `real` | non | entre -40 et 125 | Température du panneau (°C) |
 
@@ -353,7 +363,7 @@ Ces volumes sont faibles pour PostgreSQL et TimescaleDB.
 
 ## 7. Script SQL de référence
 
-Ce script décrit l'état cible. À l'étape 5, il sera traduit en schéma Drizzle et en migrations. Les parties propres à TimescaleDB (`create_hypertable`, `add_retention_policy`) iront dans une migration SQL écrite à la main.
+Ce script décrit l'état cible. Il est traduit dans le schéma Drizzle (`apps/api/src/db/schema.ts`) et les migrations (`apps/api/src/db/migrations/`). Ce que Drizzle ne génère pas est écrit à la main : les fonctions TimescaleDB (`create_hypertable`, `add_retention_policy`, migration `0002_hypertables.sql`) et `NULLS NOT DISTINCT` sur l'index unique des alertes (`0001_schema.sql`).
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS timescaledb;

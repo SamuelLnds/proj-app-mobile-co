@@ -237,17 +237,17 @@ git checkout -- apps/mobile/tsconfig.json
 
 ### 3.3 Autres scripts utiles
 
-| Commande                                                        | Effet                                                                                                 |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `pnpm db:up` · `pnpm db:down`                                   | Démarre ou arrête la base et le broker (Docker Compose, `infra/docker-compose.yml`)                   |
-| `pnpm mqtt:setup` · `pnpm mqtt:up`                              | Prépare puis démarre le broker                                                                        |
-| `pnpm mqtt:reload`                                              | Fait relire l'ACL des objets et la liste de révocation au broker                                      |
-| `pnpm mqtt:check-devices`                                       | Vérifie le TLS mutuel de l'écoute 8883 sur le broker démarré                                          |
-| `pnpm perf:report -- --from <date> --to <date> --log <journal>` | Indicateurs de performance d'une période ([dossier technique](docs/dossier-technique.md#performance)) |
-| `pnpm firmware:secrets --host <hôte> --port <port>`             | Génère `firmware/site-device/include/secrets.h` (ignoré par Git)                                      |
-| `pnpm --filter api dev`                                         | API seule (rechargement automatique)                                                                  |
-| `pnpm --filter simulator dev` · `pnpm --filter simulator start` | Simulateur seul (avec ou sans rechargement)                                                           |
-| `pnpm --filter api db:generate`                                 | Génère une migration Drizzle après modification de `schema.ts`                                        |
+| Commande                                                            | Effet                                                                                                 |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm db:up` · `pnpm db:down`                                       | Démarre la base, ou arrête la base et le broker (Docker Compose, `infra/docker-compose.yml`)          |
+| `pnpm mqtt:setup` · `pnpm mqtt:up`                                  | Prépare puis démarre le broker                                                                        |
+| `pnpm mqtt:reload`                                                  | Fait relire l'ACL des objets et la liste de révocation au broker                                      |
+| `pnpm mqtt:check-devices`                                           | Vérifie le TLS mutuel de l'écoute 8883 sur le broker démarré                                          |
+| `pnpm perf:report -- --from <date> --to <date> --log <journal>`     | Indicateurs de performance d'une période ([dossier technique](docs/dossier-technique.md#performance)) |
+| `pnpm firmware:secrets --host <hôte> --port <port> --api-url <url>` | Génère `firmware/site-device/include/secrets.h` (ignoré par Git)                                      |
+| `pnpm --filter api dev`                                             | API seule (rechargement automatique)                                                                  |
+| `pnpm --filter simulator dev` · `pnpm --filter simulator start`     | Simulateur seul (avec ou sans rechargement)                                                           |
+| `pnpm --filter api db:generate`                                     | Génère une migration Drizzle après modification de `schema.ts`                                        |
 
 ## 4. Build de développement de l'app et notifications push
 
@@ -532,8 +532,11 @@ Le détail, issue par issue, est dans [`docs/synthese-projet.md`](docs/synthese-
 | Arborescence, dépendances, topics MQTT, routes REST, constantes, variables d'environnement | [`docs/conception/03-cartographie-technique.md`](docs/conception/03-cartographie-technique.md)                                                                                                    |
 | Issues, critères d'acceptation, définition de « terminé »                                  | [`docs/conception/04-besoins-fonctionnels.md`](docs/conception/04-besoins-fonctionnels.md)                                                                                                        |
 | Couleurs, typographie, icônes, maquettes                                                   | [`docs/conception/05-charte-graphique.md`](docs/conception/05-charte-graphique.md)                                                                                                                |
-| Pourquoi chaque choix a été fait                                                           | [`docs/journal/`](docs/journal/README.md) (fiches D001 à D034)                                                                                                                                    |
+| Pourquoi chaque choix a été fait                                                           | [`docs/journal/`](docs/journal/README.md) (fiches D001 à D035)                                                                                                                                    |
 | Infrastructure Docker et tunnel bore                                                       | [`infra/README.md`](infra/README.md)                                                                                                                                                              |
 | App mobile, configuration Firebase du push                                                 | [`apps/mobile/README.md`](apps/mobile/README.md)                                                                                                                                                  |
 | Firmware, montage Wokwi, scénario de test du pilotage                                      | [`firmware/site-device/README.md`](firmware/site-device/README.md)                                                                                                                                |
+| API : organisation, commandes, enrôlement des objets                                       | [`apps/api/README.md`](apps/api/README.md)                                                                                                                                                        |
+| Schémas partagés et leurs tests                                                            | [`packages/contracts/README.md`](packages/contracts/README.md)                                                                                                                                    |
+| Simulateur des panneaux et de l'objet du site                                              | [`tools/simulator/README.md`](tools/simulator/README.md)                                                                                                                                          |
 | Organisation du dépôt                                                                      | `apps/mobile` (app Expo), `apps/api` (API Fastify), `packages/contracts` (schémas Zod partagés), `tools/simulator` (simulateur), `firmware/site-device` (ESP32), `infra/` (Docker, seed), `docs/` |

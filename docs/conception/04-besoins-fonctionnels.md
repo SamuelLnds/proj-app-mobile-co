@@ -1080,9 +1080,9 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 **Labels :** `type:docs`, `priority:core`
 
 **Critères d'acceptation :**
-- [ ] Le README racine permet à une personne extérieure de lancer le projet (base, API, simulateur, Wokwi, app) en suivant les étapes.
-- [ ] Chaque dossier (`apps/*`, `tools/*`, `packages/*`, `firmware/*`) a un README court.
-- [ ] Les documents de conception sont à jour avec le code livré.
+- [x] Le README racine permet à une personne extérieure de lancer le projet (base, API, simulateur, Wokwi, app) en suivant les étapes.
+- [x] Chaque dossier (`apps/*`, `tools/*`, `packages/*`, `firmware/*`) a un README court.
+- [x] Les documents de conception sont à jour avec le code livré.
 
 **Dépend de :** M5 terminé
 
