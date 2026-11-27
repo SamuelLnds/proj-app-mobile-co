@@ -252,6 +252,8 @@ adb install -r chemin\vers\solar.apk
 
 Les alertes `warning` et `critical` arrivent app **fermée** par le push Expo, qui s'appuie sur Firebase Cloud Messaging (FCM) sur Android ([D030](docs/journal/decisions/D030-notifications-push-expo-et-locales.md)). Sans cette configuration, tout fonctionne sauf les notifications. Procédure détaillée, étape par étape, dans [`apps/mobile/README.md`](apps/mobile/README.md). En résumé :
 
+Cette configuration est **déjà faite** sur le projet EAS : le fichier `google-services.json` et la clé FCM sont stockés chez EAS. Un membre invité dans le projet Expo n'a aucun fichier Firebase à récupérer : il passe directement à l'étape 5. Les étapes 1 à 4 ne servent que pour un nouveau projet Firebase ou EAS.
+
 1. Console Firebase : créer un projet, ajouter une app Android de nom de paquet exactement `fr.solar.mobile`, télécharger `google-services.json`.
 2. Le ranger **hors du dépôt et hors OneDrive**, dans un dossier **sans espace ni guillemet dans le chemin** (par exemple `C:\secrets-solar\`), sinon `eas` répond « File does not exist ».
 3. Le fournir à EAS par une variable de type fichier (`GOOGLE_SERVICES_JSON`, lue par `apps/mobile/app.config.ts`) :
