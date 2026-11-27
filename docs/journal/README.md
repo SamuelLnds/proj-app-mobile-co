@@ -66,3 +66,4 @@ Ce dossier trace **les études menées, les comparaisons, les choix et leur just
 | [D033](decisions/D033-regles-envoi-notifications-alerte.md) | Règles d'envoi des notifications d'alerte : aucune au premier plan, pas de push pour une consigne refusée | 2026-11-26 | Acceptée |
 | [D034](decisions/D034-alertes-lues-par-telephone.md) | Alertes lues : état propre à chaque téléphone | 2026-11-26 | Acceptée |
 | [D035](decisions/D035-signature-des-certificats-par-l-api.md) | Signature des certificats des objets par l'API (`@peculiar/x509`), base de données comme référence, seconde demande refusée | 2026-11-27 | Proposée |
+| [D036](decisions/D036-suppression-compte-par-anonymisation.md) | Suppression d'un compte par anonymisation, pour garder l'auteur des consignes | 2026-11-27 | Proposée |

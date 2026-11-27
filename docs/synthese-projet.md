@@ -116,6 +116,8 @@ Ce qui est en place :
 
 - le firmware de l'ESP32 suit le même parcours : clé générée en mémoire au démarrage, empreinte affichée sur le moniteur série, certificat demandé à l'API puis vérifié, connexion par certificat ; le projet Wokwi ne contient plus ni mot de passe ni clé privée.
 
+Le détail des mesures, de leurs preuves et des choix (au repos, mise à jour du firmware, tests d'intrusion avec MobSF, RGPD, ETSI EN 303 645) est dans le [dossier sécurité](dossier-securite.md).
+
 Ce qui reste à faire : vérifier dans Wokwi le parcours complet de l'ESP32 (empreinte, acceptation dans l'app, connexion, révocation) ; il est écrit et compilé, mais pas encore exécuté dans la simulation.
 
 ## Limites

@@ -34,6 +34,14 @@ const config: ExpoConfig = {
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    // Dossier sécurité (#51, analyse MobSF) : pas de sauvegarde Android des données de l'app (copie
+    // locale des mesures, alertes lues), et aucune permission inutile ajoutée par les dépendances.
+    allowBackup: false,
+    blockedPermissions: [
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ],
   },
   plugins: [
     "expo-router",
