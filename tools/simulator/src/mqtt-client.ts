@@ -1,5 +1,6 @@
-// Connexion du simulateur au broker MQTT. Les mots de passe ne sont jamais affichés.
-import { DEVICE_LAST_WILL, statusTopic } from "@solar/contracts";
+// Connexion du simulateur au broker MQTT (écoute locale, mesures des panneaux). Les mots de passe
+// ne sont jamais affichés. En mode objet du site, l'objet a sa propre connexion, par certificat
+// (device/run-enrolled-device.ts).
 import mqtt, { type IClientOptions, type MqttClient } from "mqtt";
 import type { Config } from "./config";
 
@@ -7,25 +8,16 @@ import type { Config } from "./config";
 const RECONNECT_PERIOD_MS = 5000;
 
 /**
- * Options de connexion. En mode objet du site, le Last Will annonce `offline` (retained, QoS 1)
- * si le simulateur s'arrête brutalement.
+ * Options de la connexion des panneaux : identifiant et mot de passe du simulateur. Pas de Last
+ * Will : celui de l'objet est porté par sa propre connexion.
  */
 export function buildConnectOptions(config: Config): IClientOptions {
-  const options: IClientOptions = {
+  return {
     username: config.MQTT_USERNAME,
     password: config.MQTT_PASSWORD,
     clientId: `simulator-${config.SITE_CODE.toLowerCase()}`,
     reconnectPeriod: RECONNECT_PERIOD_MS,
   };
-  if (config.SIMULATE_DEVICE) {
-    options.will = {
-      topic: statusTopic(config.SITE_CODE),
-      payload: Buffer.from(JSON.stringify(DEVICE_LAST_WILL)),
-      qos: 1,
-      retain: true,
-    };
-  }
-  return options;
 }
 
 /** Ouvre la connexion au broker et affiche dans la console le résultat (connexion ou erreur). */

@@ -206,12 +206,18 @@ importers:
 
   tools/simulator:
     dependencies:
+      '@peculiar/x509':
+        specifier: ^3.1.0
+        version: 3.1.0(@peculiar/asn1-schema@3.1.0(asn1js@4.1.0))(asn1js@4.1.0)
       '@solar/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       mqtt:
         specifier: ^5.16.1
         version: 5.16.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
       zod:
         specifier: ^4.6.7
         version: 4.6.7

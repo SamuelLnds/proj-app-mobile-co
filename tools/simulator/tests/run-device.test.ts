@@ -40,6 +40,10 @@ function baseConfig(simulateDevice: boolean): Config {
     SIMULATE_DEVICE: simulateDevice,
     FAULTY_PANELS: [],
     EXTRA_PANELS: [],
+    DEVICE_NAME: "device-site01",
+    API_URL: "http://127.0.0.1:3000/v1",
+    DEVICE_MQTT_URL: "mqtts://localhost:8883",
+    BROKER_CA_PATH: "ca.crt",
   };
 }
 
@@ -132,18 +136,13 @@ describe("startDeviceMode", () => {
   });
 });
 
-describe("buildConnectOptions", () => {
-  it("avec SIMULATE_DEVICE : Last Will offline sur le topic status (retained, QoS 1)", () => {
-    const will = buildConnectOptions(baseConfig(true)).will;
-    expect(will).toBeDefined();
-    expect(will?.topic).toBe("solar/SITE01/status");
-    expect(JSON.parse(String(will?.payload))).toEqual({ v: 1, status: "offline" });
-    expect(will?.qos).toBe(1);
-    expect(will?.retain).toBe(true);
-  });
-
-  it("sans SIMULATE_DEVICE : aucun Last Will", () => {
-    expect(buildConnectOptions(baseConfig(false)).will).toBeUndefined();
+describe("buildConnectOptions (connexion des panneaux)", () => {
+  it("utilise l'identifiant du simulateur et ne porte jamais le Last Will de l'objet", () => {
+    for (const simulateDevice of [true, false]) {
+      const options = buildConnectOptions(baseConfig(simulateDevice));
+      expect(options.username).toBe("simulator");
+      expect(options.will).toBeUndefined();
+    }
   });
 });
 
@@ -153,7 +152,9 @@ describe("startSimulator", () => {
 
   it("sans SIMULATE_DEVICE : le mode objet ne publie rien et n'écoute pas les consignes", () => {
     const { client, emitter, published, subscriptions } = fakeClient();
-    const stop = startSimulator(client, baseConfig(false));
+    const startDevice = vi.fn(() => () => undefined);
+    const stop = startSimulator(client, baseConfig(false), startDevice);
+    expect(startDevice).not.toHaveBeenCalled();
     emitter.emit("connect");
     emitter.emit("message", "solar/SITE01/setpoint", Buffer.from(JSON.stringify(VALID_SETPOINT)));
     vi.advanceTimersByTime(60_000);
@@ -164,11 +165,15 @@ describe("startSimulator", () => {
     stop();
   });
 
-  it("avec SIMULATE_DEVICE : le mode objet est démarré", () => {
+  it("avec SIMULATE_DEVICE : l'objet est démarré sur sa propre connexion, jamais sur celle des panneaux", () => {
     const { client, emitter, published } = fakeClient();
-    const stop = startSimulator(client, baseConfig(true));
+    const stopDevice = vi.fn();
+    const startDevice = vi.fn(() => stopDevice);
+    const stop = startSimulator(client, baseConfig(true), startDevice);
     emitter.emit("connect");
-    expect(published.some((m) => m.topic === "solar/SITE01/status")).toBe(true);
+    expect(startDevice).toHaveBeenCalledWith(baseConfig(true));
+    expect(published.some((m) => m.topic === "solar/SITE01/status")).toBe(false);
     stop();
+    expect(stopDevice).toHaveBeenCalled();
   });
 });

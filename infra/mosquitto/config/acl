@@ -6,10 +6,9 @@
 user api
 topic readwrite solar/#
 
-# Simulateur : mesures des panneaux, et rôle de l'objet du site en mode simulation (D024)
+# Simulateur : mesures des panneaux, calculées à partir de l'ensoleillement du site. En mode objet
+# du site, l'objet simulé a sa propre connexion sur 8883, par certificat (D027, #84) : le compte
+# simulator n'a aucun droit sur les topics de l'objet.
 user simulator
 topic write solar/SITE01/panels/+/measurements
-topic readwrite solar/SITE01/measurements
-topic write solar/SITE01/status
-topic write solar/SITE01/state
-topic read solar/SITE01/setpoint
+topic read solar/SITE01/measurements

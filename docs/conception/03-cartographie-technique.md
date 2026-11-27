@@ -288,10 +288,13 @@ apps/mobile/
 | Dépendance | Rôle |
 |---|---|
 | `mqtt` | Publication des mesures |
+| `@peculiar/x509`, `reflect-metadata` | Demande de certificat (CSR) et vérification du certificat reçu en mode objet du site ([D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)) |
 | `tsx` | Exécution |
 | `@solar/contracts` (interne) | Format des messages et topics |
 
 **Mode objet du site** (`SIMULATE_DEVICE=true`, [D024](../journal/decisions/D024-objet-simule-et-connexion-wokwi.md)) : le simulateur joue aussi l'ESP32. Il publie les mesures du site toutes les 5 s (ensoleillement suivant une courbe de journée accélérée), son statut et son Last Will, et applique les consignes avec l'algorithme de la section 7 de `02-uml.md`, qui sert d'implémentation de référence testée pour le firmware.
+
+Comme l'objet réel ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), #84), l'objet simulé s'enrôle avant de se connecter : il génère une clé P-256 en mémoire, affiche son nom et son empreinte (4 lignes de 4 groupes, comme dans l'app), envoie sa demande à l'API (`API_URL`), la suit toutes les `ENROLLMENT_POLL_PERIOD_S`, vérifie le certificat reçu (nom commun et clé publique), puis se connecte sur l'écoute 8883 (`DEVICE_MQTT_URL`) en TLS mutuel, **sans identifiant ni mot de passe**. Une demande refusée par l'API (autre demande en attente, API absente) est renouvelée toutes les 15 s. Une fois connecté, il contrôle son certificat toutes les 30 s : révoqué, expiré ou refusé, il se déconnecte et recommence avec une nouvelle clé. Les mesures des panneaux restent publiées sur la connexion du compte `simulator` (écoute 1883), qui n'a plus aucun droit sur les topics de l'objet. La clé privée reste en mémoire : chaque redémarrage du simulateur produit une nouvelle demande, à accepter dans l'app.
 
 Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publier une mesure dont la production suit l'ensoleillement de la dernière mesure du site (lue sur le topic `solar/SITE01/measurements`), avec une variation aléatoire de ± 5 %. Ce mode tourne toujours, avec ou sans `SIMULATE_DEVICE` (en mode objet du site, le simulateur lit ses propres mesures sur le broker) ; tant qu'aucune mesure du site n'a été reçue, aucune mesure de panneau n'est publiée. La variable d'environnement `FAULTY_PANELS` (par exemple `P07,P12`) divise la production de ces panneaux par 5, pour déclencher des alertes pendant la démo. La variable `EXTRA_PANELS` (par exemple `P21`) ajoute des panneaux absents du seed : l'API les détecte et les crée à l'état « non positionné », ce qui permet de démontrer l'inventaire ([D020](../journal/decisions/D020-inventaire-des-panneaux.md)).
 
@@ -466,7 +469,7 @@ Le Last Will est le message fixe `{ "v": 1, "status": "offline" }`.
 | Client | Identifiant MQTT | Droits |
 |---|---|---|
 | Objet (écoute 8883) | `device-site01`, nom commun de son certificat | ACL des objets `infra/mosquitto/devices/acl`, écrite par l'API à l'acceptation : publier sur `solar/SITE01/measurements`, `state`, `status` ; s'abonner à `solar/SITE01/setpoint` |
-| Simulateur (écoute 1883) | `simulator` | Fichier `infra/mosquitto/config/acl` : publier sur `solar/SITE01/panels/+/measurements` ; lire et publier `solar/SITE01/measurements` ; en mode objet du site, publier `status` et `state`, lire `setpoint` |
+| Simulateur (écoute 1883) | `simulator` | Fichier `infra/mosquitto/config/acl` : publier sur `solar/SITE01/panels/+/measurements` ; lire `solar/SITE01/measurements`. En mode objet du site, l'objet simulé se connecte à part sur 8883 avec le certificat obtenu par enrôlement (#84), comme l'objet réel |
 | API (écoute 1883) | `api` | Fichier `infra/mosquitto/config/acl` : tous les topics `solar/#` |
 
 L'app mobile n'a pas d'identifiant sur le broker : elle passe uniquement par l'API. Sur l'écoute TLS 8883 ([D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), #80), l'objet s'authentifie par un certificat client signé par l'autorité des objets (`require_certificate`, `crlfile`), dont le nom commun sert d'identifiant MQTT (`use_identity_as_username`) ; il n'a pas de mot de passe. Sans entrée dans l'ACL des objets, il n'a aucun droit. L'écoute locale 1883 garde l'identifiant et le mot de passe pour l'API et le simulateur (`per_listener_settings`).
@@ -609,6 +612,10 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | simulator | `SITE_CODE` | `SITE01` | non |
 | simulator | `FAULTY_PANELS` | `P07,P12` | non |
 | simulator | `SIMULATE_DEVICE` | `true` (le simulateur joue l'objet du site) | non |
+| simulator | `DEVICE_NAME` | `device-site01` (par défaut : `device-` suivi du code du site en minuscules) | non |
+| simulator | `API_URL` | `http://127.0.0.1:3000/v1` (par défaut) : API d'enrôlement | non |
+| simulator | `DEVICE_MQTT_URL` | `mqtts://localhost:8883` (par défaut) : écoute TLS mutuelle du broker | non |
+| simulator | `BROKER_CA_PATH` | `../../infra/mosquitto/generated/ca.crt` (par défaut) : autorité du serveur, publique | non |
 | infra | `MQTT_API_PASSWORD` / `MQTT_SIMULATOR_PASSWORD` | `***` | **oui** |
 | infra | `MQTT_TLS_HOSTS` | `localhost,bore.pub` | non |
 | infra | `DB_PORT` / `MQTT_PORT` / `MQTTS_PORT` | `5432` / `1883` / `8883` | non |
