@@ -182,6 +182,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #83 | Firmware : enrôlement et connexion par certificat | M9 | firmware |
 | #84 | Simulateur : enrôlement en mode objet du site | M9 | simulator |
 | #104 | Mobile : marquer les alertes comme lues | M5 | mobile |
+| #108 | Mobile : bandeau d'alerte quand l'app est ouverte | M5 | mobile, design |
 
 ---
 
@@ -976,6 +977,36 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 - [ ] Un appui qui marque comme lue ne fait ni sauter ni défiler la liste ; l'état « lu » reste après un redémarrage de l'app (à vérifier sur le téléphone).
 
 **Dépend de :** #50, #76 · **Références :** [D034](../journal/decisions/D034-alertes-lues-par-telephone.md), [D014](../journal/decisions/D014-stockage-local-sqlite.md), [UML, UC09](02-uml.md), [Cartographie, section 5.3](03-cartographie-technique.md), [Charte graphique](05-charte-graphique.md)
+
+---
+
+### #108 · Mobile : bandeau d'alerte quand l'app est ouverte
+
+**Labels :** `type:feature`, `area:mobile`, `type:design`, `priority:core`
+
+**Contexte :** depuis [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md), aucune notification système n'est affichée quand l'app est au premier plan, pour ne pas doubler ce que l'écran montre. Mais une nouvelle alerte (objet hors ligne, production basse…) ne se voit alors qu'à la pastille de l'onglet Alertes : une déconnexion ponctuelle de l'objet passe inaperçue si l'on ne regarde pas la pastille. Il faut un bandeau dans l'app, sans notification système.
+
+**À faire :**
+- Maquette du bandeau dans le canevas (clair et sombre, une alerte et plusieurs alertes) et description dans la charte graphique, avant le code ; note de suivi dans D033.
+- Bandeau affiché en haut de l'écran, sous la barre d'état et au-dessus du contenu : icône et libellé de gravité (la couleur ne porte pas seule l'information), texte de l'alerte (même texte que la notification push), bouton « Voir » qui ouvre la même cible que la notification (écran Alertes ou détail du panneau) et bouton de fermeture avec `accessibilityLabel` « Fermer » ; zones tactiles de 48 px au moins.
+- Disparition automatique après quelques secondes (constante de l'app), fermeture manuelle possible ; annoncé au lecteur d'écran.
+- Détection côté app, au rafraîchissement des alertes actives : une alerte active, non lue (D034), qui n'était pas dans la liste précédente, déclenche le bandeau. Rien au premier chargement ni pour les alertes déjà présentes à l'ouverture de l'app. Plusieurs nouvelles alertes au même rafraîchissement : un seul bandeau « N nouvelles alertes » qui ouvre l'écran Alertes.
+- Mêmes exclusions que le push (`PUSH_EXCLUDED_ALERT_TYPES` de `@solar/contracts`) : pas de bandeau pour une consigne refusée, déjà affichée sur l'écran Pilotage.
+- Pas de bandeau quand l'écran Alertes est affiché : la liste suffit.
+- « Voir » ne marque pas l'alerte comme lue par lui-même.
+- Aucun changement dans `apps/api`, `packages/contracts` ni en base serveur.
+
+**Critères d'acceptation :**
+- [ ] La maquette du bandeau est dans le canevas et décrite dans la charte ; D033 porte une note de suivi.
+- [ ] Une nouvelle alerte active et non lue, app au premier plan, affiche le bandeau avec gravité, texte, « Voir » et « Fermer » (test).
+- [ ] Aucun bandeau au premier chargement, pour une alerte déjà présente, déjà lue, de type exclu, ni sur l'écran Alertes (test).
+- [ ] Plusieurs nouvelles alertes au même rafraîchissement donnent un seul bandeau « N nouvelles alertes » (test).
+- [ ] « Voir » ouvre l'écran Alertes ou le détail du panneau ; « Fermer » et le délai font disparaître le bandeau (test).
+- [ ] Gravité indiquée par une icône et un libellé, pas par la couleur seule ; zones tactiles de 48 px ; jetons de thème uniquement, clair et sombre.
+- [ ] Toujours aucune notification système app au premier plan (D033).
+- [ ] Une déconnexion de l'objet, app ouverte sur Supervision, fait apparaître le bandeau (à vérifier sur le téléphone).
+
+**Dépend de :** #104 · **Références :** [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md), [D034](../journal/decisions/D034-alertes-lues-par-telephone.md), [Charte graphique](05-charte-graphique.md), [UML, règles d'alerte](02-uml.md)
 
 ---
 
