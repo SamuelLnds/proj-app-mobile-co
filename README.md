@@ -316,27 +316,33 @@ Terminal 1, la pile serveur **sans** `SIMULATE_DEVICE=true` (Wokwi remplace l'ob
 pnpm dev
 ```
 
-Terminal 2, le tunnel, avec relance automatique car bore.pub (gratuit) coupe parfois :
+Terminal 2, le tunnel du broker, avec relance automatique car bore.pub (gratuit) coupe parfois :
 
 ```powershell
 while ($true) { bore local 8883 --to bore.pub --port 6800; Start-Sleep 5 }
 ```
 
-Terminal 3, une fois : les secrets du firmware (le **port du tunnel est compilé dans le firmware**), puis la compilation :
+Terminal 3, le tunnel de l'API, par lequel l'ESP32 demande son certificat ([D027](docs/journal/decisions/D027-certificat-objet-et-enrolement.md), #83) :
 
 ```powershell
-pnpm firmware:secrets --host bore.pub --port 6800
+while ($true) { bore local 3000 --to bore.pub --port 6801; Start-Sleep 5 }
+```
+
+Terminal 4, une fois : les secrets du firmware (les **ports des tunnels sont compilés dans le firmware**), puis la compilation :
+
+```powershell
+pnpm firmware:secrets --host bore.pub --port 6800 --api-url http://bore.pub:6801/v1
 cd firmware/site-device
 python -m platformio run
 ```
 
-`pnpm firmware:secrets` écrit `firmware/site-device/include/secrets.h` (ignoré par Git) à partir de `MQTT_TLS_HOSTS` et de `infra/mosquitto/generated/ca.crt`, sans rien afficher (plus de mot de passe d'objet depuis #80 : l'ESP32 ne se connecte plus tant que l'enrôlement, #83, n'est pas fait). La commande `pio` n'est souvent pas dans le `PATH` : utiliser `python -m platformio`. La première compilation télécharge la chaîne ESP32 ; elle produit `firmware/site-device/.pio/build/esp32dev/firmware.bin` et `.elf`.
+`pnpm firmware:secrets` écrit `firmware/site-device/include/secrets.h` (ignoré par Git) à partir de `MQTT_TLS_HOSTS`, de l'adresse de l'API et de `infra/mosquitto/generated/ca.crt`, sans rien afficher. Il ne contient ni mot de passe ni clé privée : l'objet obtient son certificat par enrôlement (#83). La commande `pio` n'est souvent pas dans le `PATH` : utiliser `python -m platformio`. La première compilation télécharge la chaîne ESP32 ; elle produit `firmware/site-device/.pio/build/esp32dev/firmware.bin` et `.elf`.
 
 Si le port 6800 est déjà pris, lancer `bore local 8883 --to bore.pub` **sans** `--port` : bore affiche `listening at bore.pub:<port>` ; reporter ce port par `pnpm firmware:secrets --host bore.pub --port <port>` et recompiler. Il faut aussi regénérer `secrets.h` et recompiler si l'autorité de certification a changé (suppression de `infra/mosquitto/generated/`).
 
 Lancer le simulateur Wokwi : **`wokwi.toml` est dans `firmware/site-device/`**, pas à la racine. Ouvrir ce dossier dans VS Code, ou, depuis la racine, F1 « Wokwi: Select Config File » (choisir `firmware/site-device/wokwi.toml`), puis F1 « Wokwi: Start Simulator ». **Garder l'onglet du schéma visible** : la simulation se met en pause sinon.
 
-Contrôle : le moniteur série affiche `Parc solaire - objet du site SITE01, firmware 0.1.0`, la connexion WiFi, l'heure NTP, puis `MQTT : connecté, statut online publié`. L'objet apparaît « en ligne » dans l'app.
+Contrôle : le moniteur série affiche `Parc solaire - objet du site SITE01, firmware 0.1.0`, la connexion WiFi, l'heure NTP, puis l'**empreinte** de la clé de l'objet et `Demande envoyée`. Dans l'app (compte exploitant), Supervision, « Objets du site » : comparer l'empreinte avec celle du moniteur série, puis « Accepter ». Le moniteur série affiche alors `Certificat reçu`, puis `MQTT : connecté, statut online publié`, et l'objet apparaît « en ligne ». Après chaque remise à zéro de la simulation, une nouvelle demande est à accepter (refuser l'ancienne si elle est encore en attente).
 
 ### 5.3 Utiliser le simulateur
 
@@ -473,7 +479,7 @@ Le certificat doit contenir `bore.pub` : `MQTT_TLS_HOSTS=localhost,bore.pub` dan
 - Le port est **compilé dans le firmware** : si 6800 est pris, lancer bore sans `--port`, puis `pnpm firmware:secrets --host bore.pub --port <port>` et recompiler.
 - Le tunnel est temporaire : en production, le broker est sur le VPS ([D028](docs/journal/decisions/D028-hebergement-vps.md), [D031](docs/journal/decisions/D031-tunnel-bore-pour-wokwi.md)).
 - Tant que le tunnel est ouvert, le port est joignable depuis Internet : il n'accepte que des certificats d'objet signés par le projet. Fermer le tunnel (Ctrl+C) après usage.
-- **Depuis #80, l'ESP32 ne peut plus se connecter** : l'écoute 8883 exige un certificat client, que le firmware n'obtiendra qu'avec l'enrôlement (#81, #83). En attendant, le simulateur joue l'objet du site (`SIMULATE_DEVICE=true`). Le moniteur série affiche alors un échec TLS à la connexion.
+- **L'ESP32 attend son certificat** : `Demande envoyée` sans suite signifie que la demande n'a pas été acceptée dans l'app. `Demande refusée par l'API (code -1 …)` : tunnel de l'API (port 3000) absent ou `ENROLLMENT_URL` erroné. `code 409` : une autre demande est en attente pour `device-site01`, la refuser dans l'app.
 
 ### Compiler le firmware : `pio` introuvable
 

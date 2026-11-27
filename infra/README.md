@@ -51,5 +51,5 @@ L'ESP32 simulé par Wokwi (offre gratuite) ne joint que des services accessibles
 
 - **Un seul émetteur pour le site** : quand l'ESP32 est connecté, ne pas lancer le simulateur en mode objet du site (`SIMULATE_DEVICE=true`), sinon deux objets publient les mesures de `SITE01`.
 - Tant que le tunnel est ouvert, le port est joignable par n'importe qui sur Internet : il n'accepte que les certificats d'objet signés par le projet. Fermer le tunnel (Ctrl+C) dès que la démonstration est finie.
-- **Depuis #80, l'ESP32 n'a plus de mot de passe** et ne peut plus se connecter tant que l'enrôlement n'existe pas (#81, #83) ; le simulateur joue l'objet du site en attendant.
+- **L'ESP32 n'a pas de mot de passe** : il demande son certificat à l'API par un **second tunnel** (`bore local 3000 --to bore.pub`), dont l'adresse est passée à `pnpm firmware:secrets --api-url` (#83). Ce tunnel expose l'API en HTTP : la demande et le certificat sont publics, mais fermer aussi ce tunnel après la démonstration.
 - Si le tunnel est instable, le repli est la passerelle privée de Wokwi (abonnement Hobby) ou un vrai ESP32 ; le noter alors dans le journal.

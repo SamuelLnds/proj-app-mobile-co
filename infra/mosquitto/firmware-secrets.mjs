@@ -4,9 +4,11 @@
 // L'objet n'a plus de mot de passe : l'écoute 8883 exige un certificat client (D027, #80), que
 // le firmware obtiendra par enrôlement (#83). D'ici là, le fichier généré ne se connecte pas.
 //
-// Usage : pnpm firmware:secrets --host bore.pub --port 41234
-//   --host  hôte du tunnel (doit figurer dans MQTT_TLS_HOSTS, sinon le certificat sera refusé) ; défaut : bore.pub
-//   --port  port TLS distant attribué par bore ; défaut : 8883
+// Usage : pnpm firmware:secrets --host bore.pub --port 41234 --api-url http://bore.pub:41235/v1
+//   --host     hôte du tunnel (doit figurer dans MQTT_TLS_HOSTS, sinon le certificat sera refusé) ; défaut : bore.pub
+//   --port     port TLS distant attribué par bore ; défaut : 8883
+//   --api-url  adresse de l'API d'enrôlement vue par l'objet (second tunnel bore vers le port 3000) ;
+//              défaut : http://bore.pub:6801/v1
 //   --env, --ca, --out  chemins alternatifs (tests)
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -27,6 +29,7 @@ const { values: args } = parseArgs({
   options: {
     host: { type: "string", default: "bore.pub" },
     port: { type: "string", default: "8883" },
+    "api-url": { type: "string", default: "http://bore.pub:6801/v1" },
     env: { type: "string", default: join(root, "infra", ".env") },
     ca: { type: "string", default: join(here, "generated", "ca.crt") },
     out: {
@@ -57,6 +60,10 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) fail(`Port invalide : $
 if (!/^[A-Za-z0-9.-]+$/.test(args.host)) fail(`Hôte invalide : ${args.host}.`);
 
 const env = readEnv(args.env);
+const apiUrl = args["api-url"];
+if (!/^https?:\/\/[A-Za-z0-9.-]+(:\d+)?\/v1$/.test(apiUrl)) {
+  fail(`Adresse de l'API invalide : ${apiUrl} (attendu : http://hôte:port/v1).`);
+}
 
 const tlsHosts = (env.MQTT_TLS_HOSTS || "localhost").split(",").map((h) => h.trim());
 if (!tlsHosts.includes(args.host)) {
@@ -84,9 +91,8 @@ const content = `// Généré par « pnpm firmware:secrets » : NE PAS VERSIONNE
 #define MQTT_HOST ${cString(args.host)}
 #define MQTT_PORT ${port}
 
-// Aucun mot de passe : le broker exige un certificat client sur 8883 (D027).
-#define MQTT_USERNAME "device-site01"
-#define MQTT_PASSWORD ""
+// API d'enrôlement : l'objet y obtient son certificat client (D027), aucun mot de passe.
+#define ENROLLMENT_URL ${cString(apiUrl)}
 
 static const char MQTT_CA_CERT[] = R"EOF(
 ${ca}
@@ -95,4 +101,6 @@ ${ca}
 
 mkdirSync(dirname(args.out), { recursive: true });
 writeFileSync(args.out, content);
-console.log(`secrets.h généré (broker ${args.host}:${port}). Recompilez avec « pio run ».`);
+console.log(
+  `secrets.h généré (broker ${args.host}:${port}, API ${apiUrl}). Recompilez avec « pio run ».`,
+);

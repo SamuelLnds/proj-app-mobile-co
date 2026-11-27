@@ -1501,10 +1501,10 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - Nouvelle demande après un refus de connexion (certificat révoqué ou expiré).
 
 **Critères d'acceptation :**
-- [ ] Le projet Wokwi ne contient ni mot de passe MQTT ni clé privée.
+- [x] Le projet Wokwi ne contient ni mot de passe MQTT ni clé privée.
 - [ ] L'empreinte affichée par l'objet est celle que montre l'app ; après acceptation, l'objet publie `online` puis ses mesures.
 - [ ] Après révocation, l'objet est refusé par le broker et refait une demande.
-- [ ] Documentation mise à jour : `README.md` et `firmware/site-device/README.md` (enrôlement dans Wokwi, plus de mot de passe dans `secrets.h`, problèmes connus), partie sécurité de `docs/synthese-projet.md`.
+- [x] Documentation mise à jour : `README.md` et `firmware/site-device/README.md` (enrôlement dans Wokwi, plus de mot de passe dans `secrets.h`, problèmes connus), partie sécurité de `docs/synthese-projet.md`.
 
 **Dépend de :** #20, #81 · **Références :** [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md), [UML, section 4.7](02-uml.md)
 

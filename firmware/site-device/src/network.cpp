@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "config.h"
+#include "enrollment.h"
 #include "messages.h"
 #include "secrets.h"
 
@@ -29,6 +30,10 @@ unsigned long mqttConnectedAtMs = 0;
 unsigned long ntpStartedAtMs = 0;
 unsigned long lastWifiAttemptMs = 0;
 unsigned long lastMqttAttemptMs = 0;
+// Certificat en place dans la connexion TLS, refus successifs du broker, dernier contrôle du certificat.
+uint32_t appliedGeneration = 0;
+int mqttFailures = 0;
+unsigned long lastCertificateCheckMs = 0;
 
 // Consigne reçue, en attente d'être lue par main.cpp (un seul emplacement : PubSubClient::loop() ne
 // traite qu'un paquet par appel et main.cpp vide l'emplacement entre deux appels).
@@ -67,7 +72,8 @@ void onMessage(char *topic, uint8_t *payload, unsigned int length) {
   hasPendingSetpoint = true;
 }
 
-// Le Last Will est enregistré auprès du broker à la connexion ; `online` est publié ensuite.
+// Le Last Will est enregistré auprès du broker à la connexion ; `online` est publié ensuite. L'objet
+// s'authentifie par son certificat client (D027) : ni identifiant ni mot de passe.
 bool connectMqtt() {
   char statusTopic[64];
   char willPayload[MESSAGE_BUFFER_SIZE];
@@ -76,9 +82,9 @@ bool connectMqtt() {
   formatDeviceStatus(willPayload, sizeof(willPayload), false, nullptr);
   formatDeviceStatus(onlinePayload, sizeof(onlinePayload), true, FIRMWARE_VERSION);
 
-  Serial.printf("MQTT : connexion à %s:%d (TLS)\n", MQTT_HOST, MQTT_PORT);
-  const bool connected = mqtt.connect(MQTT_DEVICE_ID, MQTT_USERNAME, MQTT_PASSWORD, statusTopic,
-                                      1 /* QoS du Last Will */, true /* retained */, willPayload);
+  Serial.printf("MQTT : connexion à %s:%d (TLS mutuel)\n", MQTT_HOST, MQTT_PORT);
+  const bool connected =
+      mqtt.connect(MQTT_DEVICE_ID, statusTopic, 1 /* QoS du Last Will */, true /* retained */, willPayload);
   if (!connected) {
     char tlsError[100] = "";
     tlsClient.lastError(tlsError, sizeof(tlsError));
@@ -152,6 +158,24 @@ void loop() {
     Serial.println("NTP : heure synchronisée");
   }
 
+  // Sans certificat valide, l'objet s'enrôle d'abord (la session MQTT éventuelle est fermée).
+  if (!enrollment::ready()) {
+    if (mqtt.connected()) {
+      mqtt.disconnect();
+      mqttWasConnected = false;
+    }
+    enrollment::loop();
+    return;
+  }
+  if (appliedGeneration != enrollment::generation()) {
+    tlsClient.stop();
+    tlsClient.setCertificate(enrollment::certificatePem());
+    tlsClient.setPrivateKey(enrollment::privateKeyPem());
+    appliedGeneration = enrollment::generation();
+    mqttFailures = 0;
+    lastMqttAttemptMs = 0;
+  }
+
   if (!mqtt.connected()) {
     if (mqttWasConnected) {
       Serial.println("MQTT : session perdue");
@@ -160,11 +184,23 @@ void loop() {
     if (now - lastMqttAttemptMs >= RECONNECT_INTERVAL_MS || lastMqttAttemptMs == 0) {
       lastMqttAttemptMs = now == 0 ? 1 : now;
       mqttWasConnected = connectMqtt();
-      if (mqttWasConnected) mqttConnectedAtMs = millis();
+      if (mqttWasConnected) {
+        mqttConnectedAtMs = millis();
+        lastCertificateCheckMs = mqttConnectedAtMs;
+        mqttFailures = 0;
+      } else if (++mqttFailures >= MQTT_FAILURES_BEFORE_CHECK) {
+        // Refus répétés : certificat peut-être révoqué ou expiré, l'API le dit.
+        mqttFailures = 0;
+        enrollment::checkCertificate();
+      }
     }
     return;
   }
   mqtt.loop();
+  if (millis() - lastCertificateCheckMs >= CERTIFICATE_CHECK_PERIOD_MS) {
+    lastCertificateCheckMs = millis();
+    enrollment::checkCertificate();
+  }
 }
 
 bool isMqttConnected() { return mqtt.connected(); }

@@ -303,6 +303,7 @@ Comportement des panneaux : toutes les 10 s, pour chacun des 20 panneaux, publie
 | Bibliothèque | Rôle |
 |---|---|
 | `WiFi`, `WiFiClientSecure` (fournies) | Réseau et TLS |
+| `HTTPClient`, mbedTLS (fournis) | Enrôlement : clé P-256, demande de certificat, vérification du certificat reçu, appels à l'API (#83) |
 | `PubSubClient` | MQTT |
 | `OneWire`, `DallasTemperature` | Sonde DS18B20 |
 
@@ -314,16 +315,20 @@ Composants Wokwi : photorésistance, potentiomètre, DS18B20, 2 relais, barre de
 firmware/site-device/
 ├── platformio.ini · wokwi.toml · diagram.json
 ├── include/   config.h (constantes partagées), pins.h, readings.h, messages.h, control.h (algorithme de la section 7),
-│              setpoint.h (lecture de la consigne) et pilot.h (consigne en vigueur, batterie, état à publier) :
+│              setpoint.h (lecture de la consigne), pilot.h (consigne en vigueur, batterie, état à publier) et
+│              enrollment_text.h (corps de la demande, lecture des réponses, empreinte) :
 │              logique pure, sans Arduino ; secrets.example.h (modèle versionné) et secrets.h (ignoré par Git)
 ├── src/       main.cpp (boucle : pilotage chaque seconde, mesure toutes les 5 s, consigne dès réception),
-│              network.cpp (WiFi, NTP, MQTT TLS, abonnement aux consignes), sensors.cpp (capteurs, bouton, sorties)
-├── test/      format/dump_messages.cpp et control/ (dump_control.cpp, parse_setpoint.cpp) : programmes de poste
+│              network.cpp (WiFi, NTP, MQTT en TLS mutuel, abonnement aux consignes), sensors.cpp (capteurs, bouton,
+│              sorties), enrollment.cpp (enrôlement auprès de l'API) et device_identity.cpp (clé, CSR et vérification
+│              du certificat avec mbedTLS, sans Arduino)
+├── test/      format/dump_messages.cpp, control/ (dump_control.cpp, parse_setpoint.cpp) et
+│              enrollment/dump_enrollment.cpp : programmes de poste
 │              dont les sorties sont validées par le simulateur
 └── README.md  Tableau des broches et procédure de test
 ```
 
-Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker (hôte, port, certificat de l'autorité du serveur ; plus de mot de passe depuis #80) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` et l'état appliqué (`state`) sont donc publiés en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1). L'abonnement aux consignes, lui, est en QoS 1 (`subscribe(topic, 1)`). Le tampon MQTT est de 512 octets (`MQTT_BUFFER_SIZE`) : un message entrant ou sortant plus grand serait ignoré, ce qui n'arrive pas avec les messages de la section 6.2 (moins de 320 octets).
+Le broker est joint par le tunnel `bore` décrit dans `infra/README.md` ([D031](../journal/decisions/D031-tunnel-bore-pour-wokwi.md)). Les paramètres du broker et de l'API d'enrôlement (hôte, port, adresse de l'API, certificat de l'autorité du serveur ; aucun mot de passe, D027) sont dans `include/secrets.h`, généré par `pnpm firmware:secrets` à partir de `infra/.env` et de `infra/mosquitto/generated/ca.crt`. PubSubClient ne publie qu'en QoS 0 : `online` et l'état appliqué (`state`) sont donc publiés en retained QoS 0 (le Last Will, enregistré par le broker, est bien en QoS 1). L'abonnement aux consignes, lui, est en QoS 1 (`subscribe(topic, 1)`). Le tampon MQTT est de 512 octets (`MQTT_BUFFER_SIZE`) : un message entrant ou sortant plus grand serait ignoré, ce qui n'arrive pas avec les messages de la section 6.2 (moins de 320 octets).
 
 La boucle exécute le pilotage **chaque seconde** (`CONTROL_TICK_PERIOD_MS`) : batterie (capacité 10 000 Wh, départ à 50 %), flux, relais et barre de LED ; la mesure part toutes les 5 s avec les valeurs du dernier tick. Une consigne reçue est analysée et appliquée aussitôt (dans la seconde), et son état est publié dans la foulée. Une consigne lisible mais invalide n'est pas adoptée : l'objet répond `rejected` / `invalid_setpoint` pour son identifiant, puis republie l'état de la consigne en vigueur. Une consigne illisible (JSON cassé, identifiant qui n'est pas un UUID) est ignorée et journalisée sur le port série. La consigne retained renvoyée après une reconnexion est appliquée sans republier d'état si elle est identique à celle en vigueur.
 
@@ -626,7 +631,7 @@ Aucune valeur secrète n'est versionnée. Chaque application fournit un fichier 
 | mobile (build) | `GOOGLE_SERVICES_JSON` | variable EAS de type fichier (chemin de `google-services.json`, configuration Firebase du binôme) ; à défaut, `google-services.json` local, ignoré par Git | **oui** (fichier) |
 | infra | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `solar` / `***` / `solar` | **oui** (mot de passe) |
 
-Côté firmware, les identifiants WiFi, l'hôte et le port du broker et le certificat de l'autorité du serveur sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné ; `pnpm firmware:secrets --host <hôte> --port <port>` le génère à partir de `infra/.env` (variable `MQTT_TLS_HOSTS`). L'objet n'a plus de mot de passe MQTT (#80) : il se connectera avec le certificat obtenu par enrôlement (#83).
+Côté firmware, les identifiants WiFi, l'hôte et le port du broker, l'adresse de l'API d'enrôlement (`ENROLLMENT_URL`, et `ENROLLMENT_CA_CERT` si elle est en HTTPS) et le certificat de l'autorité du serveur sont placés dans un fichier `secrets.h` ignoré par Git, avec un modèle `secrets.example.h` versionné ; `pnpm firmware:secrets --host <hôte> --port <port> --api-url <url>` le génère à partir de `infra/.env` (variable `MQTT_TLS_HOSTS`). Malgré son nom, ce fichier ne contient plus de secret : l'objet n'a pas de mot de passe MQTT et sa clé privée, générée au démarrage, reste en mémoire vive (#83).
 
 ## 10. Décisions structurantes
 

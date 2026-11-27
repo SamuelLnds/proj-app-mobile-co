@@ -11,10 +11,11 @@
 #define MQTT_HOST "bore.pub"
 #define MQTT_PORT 8883
 
-// Identifiant de l'objet : le nom est fixé (device-site01). Plus de mot de passe : le broker
-// exige un certificat client sur 8883 (D027), obtenu par enrôlement (#83).
-#define MQTT_USERNAME "device-site01"
-#define MQTT_PASSWORD ""
+// API d'enrôlement (D027) : l'objet y demande son certificat client, sans mot de passe. En
+// développement, l'API locale exposée par un second tunnel bore (bore local 3000 --to bore.pub) ;
+// sur le VPS, son adresse HTTPS (définir alors ENROLLMENT_CA_CERT avec la racine publique de son
+// certificat).
+#define ENROLLMENT_URL "http://bore.pub:6801/v1"
 
 // Certificat de l'autorité du projet (infra/mosquitto/generated/ca.crt, public).
 static const char MQTT_CA_CERT[] = R"EOF(
