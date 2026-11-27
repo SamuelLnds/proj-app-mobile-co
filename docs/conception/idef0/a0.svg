@@ -102,7 +102,7 @@
 <text x="800" y="89" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">et hystérésis</text>
 <polyline points="819,115 819,538" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
 <text x="825" y="129" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de</text>
-<text x="825" y="144" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification (D033)</text>
+<text x="825" y="144" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification</text>
 <polyline points="987,170 987,680" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
 <text x="993" y="184" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Rôles exploitant /</text>
 <text x="993" y="199" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">lecteur</text>

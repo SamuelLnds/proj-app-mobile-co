@@ -70,7 +70,7 @@
 <text x="762" y="159" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">une nouvelle est créée</text>
 <polyline points="965,50 965,525" fill="none" stroke="#222222" stroke-width="1.8" stroke-linejoin="miter" marker-end="url(#ah)"/>
 <text x="971" y="54" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">Règles de</text>
-<text x="971" y="69" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification (D033)</text>
+<text x="971" y="69" font-size="13" text-anchor="start" font-weight="normal" fill="#1a1a1a" stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">notification</text>
 <text x="1186" y="728" font-size="12" text-anchor="end" font-weight="normal" fill="#1a1a1a">( ) flèche tunnelée : absente du diagramme parent</text>
 <rect x="20" y="440" width="380" height="158" fill="#fff" stroke="#999" stroke-width="1"/>
 <rect x="20" y="440" width="4" height="158" fill="#1f5f99"/>
