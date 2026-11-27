@@ -34,6 +34,26 @@ L'objet du site et le simulateur publient leurs mesures sur le broker. L'API s'y
 
 Tout le code est dans un seul dépôt. Les formats échangés (messages MQTT, requêtes, réponses) sont décrits une seule fois dans un paquet partagé, `@solar/contracts`, utilisé par l'API, l'app et le simulateur. Le firmware en reprend les mêmes valeurs.
 
+## Le processus
+
+Les diagrammes suivent la méthode IDEF0. Chaque boîte est une fonction du système. À gauche, ce qui entre. À droite, ce qui sort. En haut, les règles qui la contrôlent. En bas, les outils qui la réalisent.
+
+Vue d'ensemble : le système reçoit l'ensoleillement, les mesures et les consignes, et rend un tableau de bord, des alertes et une batterie pilotée.
+
+![A-0 : superviser et piloter le parc solaire](conception/idef0/a-0.svg)
+
+Les six fonctions : mesurer, transmettre, enregistrer, détecter les anomalies, restituer à l'utilisateur et piloter la batterie. L'état appliqué par l'objet revient dans la base, ce qui ferme la boucle.
+
+![A0 : décomposition en six fonctions](conception/idef0/a0.svg)
+
+Zoom sur les alertes : on calcule la production attendue, on évalue les règles, on ouvre ou on ferme l'alerte, puis on notifie.
+
+![A4 : détecter les anomalies et alerter](conception/idef0/a4.svg)
+
+Zoom sur le pilotage : l'exploitant confirme la consigne, l'API la vérifie et la publie, l'objet l'applique avec ses limites, puis rend compte de ce qu'il a fait.
+
+![A6 : piloter la répartition batterie et réseau](conception/idef0/a6.svg)
+
 ## Technologies
 
 | Partie | Outils | Raison principale |
@@ -109,3 +129,5 @@ Reste à faire, dans l'ordre :
 4. la livraison : VPS (#54), APK (#53), dossier sécurité (#51), mesures de performance (#110), tests (#52), documentation (#55), démonstration (#56), bilan (#57).
 
 Les bonus (vue 3D, rotation des panneaux, temps réel poussé, ajout par QR code) viennent ensuite. Le détail de chaque issue est dans [les besoins fonctionnels](conception/04-besoins-fonctionnels.md).
+
+Les notions du module utilisées par le projet, avec leurs sources : [notions et sources](notions-et-sources.md).
