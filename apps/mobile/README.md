@@ -58,7 +58,7 @@ Cette clé permet aux serveurs d'Expo d'envoyer un message à FCM pour votre pro
 
 1. Console Firebase, « Project settings » (roue dentée), onglet « Service accounts ».
 2. Cliquer sur « Generate new private key », puis confirmer par « Generate key ». Un fichier JSON se télécharge.
-3. **Ce fichier est un secret.** Ne jamais le placer dans le dépôt, ne jamais le coller dans une discussion ou une issue. Le ranger **hors du dépôt** (par exemple dans le dossier personnel) le temps du dépôt sur EAS.
+3. **Ce fichier est un secret.** Ne jamais le placer dans le dépôt, ne jamais le coller dans une discussion ou une issue. Le ranger **hors du dépôt et hors OneDrive**, dans un dossier dont le chemin n'a ni espace ni guillemet (par exemple `C:\secrets-solar\`, sinon `eas` répond « File does not exist ») le temps du dépôt sur EAS.
 4. Depuis `apps/mobile`, lancer `eas credentials`, puis choisir dans les menus :
    1. `Android`
    2. le profil de build : `development`

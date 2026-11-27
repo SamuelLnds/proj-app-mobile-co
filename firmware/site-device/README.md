@@ -43,7 +43,7 @@ Les entrées analogiques sont sur l'ADC1 : l'ADC2 est inutilisable quand le WiFi
 ```
 pip install platformio        # une fois (ou l'extension PlatformIO IDE de VS Code)
 cd firmware/site-device
-pio run
+python -m platformio run
 ```
 
 Le premier build télécharge la chaîne ESP32. Il produit `.pio/build/esp32dev/firmware.bin` et `firmware.elf`, lus par `wokwi.toml`. Le dossier `.pio/` n'est pas versionné.
@@ -75,7 +75,7 @@ Prérequis : Docker, bore ([`infra/README.md`](../../infra/README.md)), Platform
 1. **Broker** : copier `infra/.env.example` en `infra/.env`, choisir des mots de passe longs, mettre `MQTT_TLS_HOSTS=localhost,bore.pub`, puis `pnpm mqtt:setup` et `pnpm mqtt:up`.
 2. **Tunnel** : dans un terminal à part, `bore local 8883 --to bore.pub` ; noter le port affiché (`bore.pub:<port>`).
 3. **Secrets du firmware** : `pnpm firmware:secrets --host bore.pub --port <port>` (écrit `include/secrets.h`, ignoré par Git, sans rien afficher). Sans cette commande : copier `include/secrets.example.h` en `secrets.h` et le remplir à la main.
-4. **Compilation** : `cd firmware/site-device && pio run`.
+4. **Compilation** : `cd firmware/site-device` puis `python -m platformio run` (la commande `pio` n'est souvent pas dans le `PATH`).
 5. **Simulation** : ne pas lancer `pnpm dev` avec `SIMULATE_DEVICE=true` (un seul émetteur pour `SITE01`). Lancer au besoin l'API et la base seulement. Dans VS Code, ouvrir `firmware/site-device`, F1 puis « Wokwi: Start Simulator ». Le port série affiche `Parc solaire - objet du site SITE01, firmware 0.1.0` (critère #19), puis la connexion WiFi, l'heure NTP et `MQTT : connecté, statut online publié`.
 6. **Contrôle avec un client MQTT** (depuis la racine du dépôt) :
    `mosquitto_sub -h bore.pub -p <port> --cafile infra/mosquitto/generated/ca.crt -u device-site01 -P <mot de passe> -t "solar/SITE01/#" -v`
