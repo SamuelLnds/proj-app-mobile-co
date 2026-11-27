@@ -603,7 +603,7 @@ Définies dans `packages/contracts/src/constants.ts`. Les valeurs propres au fir
 | `PUSH_EXCLUDED_ALERT_TYPES` | `setpoint_rejected` | API (types d'alerte sans push, [D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) |
 | `ENROLLMENT_PENDING_TTL_MIN` | 30 | API (expiration d'une demande d'enrôlement, [D027](../journal/decisions/D027-certificat-objet-et-enrolement.md)) |
 | `ENROLLMENT_POLL_PERIOD_S` | 3 | Objet, simulateur (suivi de la demande) |
-| `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 48 | API, app (durée du certificat d'un objet) |
+| `DEVICE_CERT_DEFAULT_TTL_H` / `DEVICE_CERT_MAX_TTL_H` | 8 / 168 | API, app (durée du certificat d'un objet : 8 h, 24 h ou une semaine) |
 | Paramètres du site de démo | crête 4 000 W, batterie 10 000 Wh, charge max 3 000 W, facteur 4.0 | Seed, objet |
 
 ## 9. Variables d'environnement

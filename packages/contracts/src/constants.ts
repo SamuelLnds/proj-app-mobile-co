@@ -66,8 +66,8 @@ export const ENROLLMENT_PENDING_TTL_MIN = 30;
 export const ENROLLMENT_POLL_PERIOD_S = 3;
 /** Durée par défaut du certificat d'un objet (h). */
 export const DEVICE_CERT_DEFAULT_TTL_H = 8;
-/** Durée maximale du certificat d'un objet (h). */
-export const DEVICE_CERT_MAX_TTL_H = 48;
+/** Durée maximale du certificat d'un objet (h) : une semaine. */
+export const DEVICE_CERT_MAX_TTL_H = 168;
 
 // Paramètres du site de démonstration (seed et objet).
 /** Puissance crête du site de démonstration (W). */

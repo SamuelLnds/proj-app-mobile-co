@@ -329,8 +329,8 @@ const EXAMPLES: Record<string, Examples> = {
     invalid: [{ items: [enrollment], next: "x" }],
   },
   AcceptEnrollmentRequestSchema: {
-    valid: [{}, { ttlHours: 48 }],
-    invalid: [{ ttlHours: 49 }, { ttlHours: 0 }],
+    valid: [{}, { ttlHours: 168 }],
+    invalid: [{ ttlHours: 169 }, { ttlHours: 0 }],
   },
 };
 

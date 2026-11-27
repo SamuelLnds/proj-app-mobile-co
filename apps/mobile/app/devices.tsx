@@ -35,11 +35,12 @@ import {
   speakFingerprint,
 } from "../src/utils/format";
 
-/** Durées proposées pour le certificat (h) : défaut, une journée, maximum. */
-const TTL_OPTIONS = [DEVICE_CERT_DEFAULT_TTL_H, 24, DEVICE_CERT_MAX_TTL_H].map((hours) => ({
-  value: String(hours),
-  label: `${hours} h`,
-}));
+/** Durées proposées pour le certificat (h) : journée de travail (défaut), journée, semaine (maximum). */
+const TTL_OPTIONS = [
+  { hours: DEVICE_CERT_DEFAULT_TTL_H, label: `${DEVICE_CERT_DEFAULT_TTL_H} h` },
+  { hours: 24, label: "24 h" },
+  { hours: DEVICE_CERT_MAX_TTL_H, label: "1 semaine" },
+].map(({ hours, label }) => ({ value: String(hours), label }));
 
 /** Empreinte complète, 4 groupes par ligne, épelée par le lecteur d'écran. */
 function Fingerprint({ value }: { value: string }) {

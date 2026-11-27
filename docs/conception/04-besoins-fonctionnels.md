@@ -185,6 +185,7 @@ M2 (données) et M8 (interface) avancent en parallèle après le socle ; M3 et M
 | #108 | Mobile : bandeau d'alerte quand l'app est ouverte | M5 | mobile, design |
 | #110 | Performance : indicateurs tirés de la télémétrie | M6 | api, infra, docs |
 | #111 | Mobile : suspendre les rafraîchissements en arrière-plan | M3 | mobile |
+| #126 | Enrôlement : durées de certificat de 8 h, 24 h et une semaine | M9 | mobile, api, contracts |
 | #127 | Mobile : le geste de rafraîchissement met à jour toutes les données de l'écran | M3 | mobile |
 
 ---
@@ -1477,7 +1478,7 @@ La sécurité de l'objet fait partie du socle : le projet n'est pas réalisé sa
 - Constantes `ENROLLMENT_PENDING_TTL_MIN`, `ENROLLMENT_POLL_PERIOD_S`, `DEVICE_CERT_DEFAULT_TTL_H`, `DEVICE_CERT_MAX_TTL_H` dans `@solar/contracts`.
 - Schémas dans `@solar/contracts` et routes ajoutées à la section 7 de la cartographie : demande (`POST`, nom et CSR, réponse `202` avec l'empreinte) et suivi par empreinte (`GET`), publics ; liste, acceptation (avec durée), refus et révocation, réservés au rôle `operator`.
 - Empreinte = SHA-256 de la clé publique du CSR. Demande en attente expirée après 30 min ; une seule demande en attente par nom.
-- Signature du CSR par l'autorité des objets : **nom commun imposé** (le nom approuvé, celui du CSR est ignoré), durée de 8 h par défaut et 48 h au plus ; dépendance de signature ajoutée à la cartographie.
+- Signature du CSR par l'autorité des objets : **nom commun imposé** (le nom approuvé, celui du CSR est ignoré), durée de 8 h par défaut et 168 h (une semaine) au plus ; dépendance de signature ajoutée à la cartographie.
 - À l'acceptation : entrée ACL de l'objet et rechargement du broker (#80). À la révocation : retrait de l'ACL, ajout à la liste de révocation, rechargement. Un nouvel enrôlement accepté révoque le certificat précédent du même nom.
 - Limitation du débit des routes publiques.
 

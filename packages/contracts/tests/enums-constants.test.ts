@@ -102,7 +102,7 @@ describe("constantes", () => {
       ENROLLMENT_PENDING_TTL_MIN: 30,
       ENROLLMENT_POLL_PERIOD_S: 3,
       DEVICE_CERT_DEFAULT_TTL_H: 8,
-      DEVICE_CERT_MAX_TTL_H: 48,
+      DEVICE_CERT_MAX_TTL_H: 168,
     });
   });
 });
