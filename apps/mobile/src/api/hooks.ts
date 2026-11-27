@@ -3,6 +3,7 @@ import {
   DEFAULT_PAGE_LIMIT,
   SITE_MEASUREMENT_PERIOD_S,
   type AlertStatus,
+  type CreatePanelRequest,
   type CreateSetpointRequest,
   type MeasurementInterval,
   type UpdatePanelRequest,
@@ -224,6 +225,17 @@ export function useCreateSetpoint(siteId: string | undefined) {
       void client.invalidateQueries({ queryKey: ["sites"] });
       void client.resetQueries({ queryKey: ["setpoints"] });
       void client.invalidateQueries({ queryKey: ["alerts"] });
+    },
+  });
+}
+
+export function useCreatePanel(siteId: string | undefined) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreatePanelRequest) => dataSource.createPanel(siteId!, body),
+    onSuccess: (panel) => {
+      client.setQueryData(queryKeys.panel(panel.id), panel);
+      if (siteId) void client.invalidateQueries({ queryKey: queryKeys.panels(siteId) });
     },
   });
 }

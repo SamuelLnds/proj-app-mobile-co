@@ -501,6 +501,32 @@ sequenceDiagram
 
 La demande ne contient que des données publiques (nom, clé publique) et le certificat renvoyé l'est aussi : sans la clé privée, restée sur l'objet, il est inutilisable. Le nom ne prouve rien ; c'est la comparaison de l'**empreinte** par l'exploitant qui empêche un tiers d'obtenir un certificat à la place de l'objet. Une demande non traitée expire après 30 min, et deux demandes en attente pour le même nom ne coexistent pas : une nouvelle demande d'une autre clé est refusée (`409 ENROLLMENT_PENDING`) tant que l'exploitant n'a pas refusé la première ou qu'elle n'a pas expiré ; la même demande renvoyée (même empreinte) reçoit la réponse de la première ([D035](../journal/decisions/D035-signature-des-certificats-par-l-api.md)).
 
+### 4.9 Ajouter un panneau sur le terrain (UC18, bonus #63)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor E as Exploitant
+  participant App
+  participant API
+  participant DB as Base
+  E->>App: Carte, « Ajouter un panneau »
+  App->>App: Caméra : QR code solar:panel:P21 (ou code saisi à la main)
+  App->>App: Position du téléphone (ou latitude et longitude saisies)
+  E->>App: Puissance nominale, nom (facultatif), « Ajouter »
+  App->>API: POST /v1/sites/{id}/panels (rôle operator)
+  alt Code déjà présent sur le site
+    API-->>App: 409 PANEL_CODE_TAKEN
+    App-->>E: « Un panneau P21 existe déjà sur ce site »
+  else Nouveau code
+    API->>DB: panneau, source manual, positionné
+    API-->>App: 201 PanelDetail
+    App-->>E: Détail du panneau ; il apparaît sur la carte
+  end
+```
+
+Le panneau publiera ensuite ses mesures sous son code : l'API les rattache à ce panneau, sans en créer un nouveau.
+
 ### 4.8 Marquer une alerte comme lue (UC09)
 
 ```mermaid

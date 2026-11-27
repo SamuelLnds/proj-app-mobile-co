@@ -261,6 +261,17 @@ const EXAMPLES: Record<string, Examples> = {
     valid: [{ name: "Panneau 7" }, { latitude: 47.25, longitude: -1.55 }],
     invalid: [{}, { latitude: 47.25 }],
   },
+  CreatePanelRequestSchema: {
+    valid: [
+      { code: "P21", latitude: 47.25, longitude: -1.55 },
+      { code: "P121", name: "Rangée C", latitude: 0, longitude: 0, ratedPowerW: 250 },
+    ],
+    invalid: [
+      { code: "21", latitude: 47.25, longitude: -1.55 },
+      { code: "P21", latitude: 95, longitude: 0 },
+      { code: "P21", latitude: 1 },
+    ],
+  },
   PanelMeasurementPointSchema: {
     valid: [panelPoint],
     invalid: [{ ...panelPoint, temperature: 200 }],

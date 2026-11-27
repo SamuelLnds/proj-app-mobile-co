@@ -27,6 +27,7 @@ function ThemedStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="login" />
         <Stack.Screen name="panel/[id]" />
+        <Stack.Screen name="panel/new" />
         <Stack.Screen name="devices" />
       </Stack>
     </>
