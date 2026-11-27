@@ -251,7 +251,7 @@ apps/mobile/
 │   ├── storage/                  # Base SQLite locale `solar.db` : database.ts (ouverture et tables), responses.ts (dernières réponses de l'API), read-alerts.ts (alertes lues)
 │   ├── components/               # Composants réutilisables
 │   ├── theme/                    # Couleurs, typographie, espacements (étape 3)
-│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification)
+│   ├── notifications/            # push.ts (autorisation et jeton Expo), local.ts (chargement du module, canal Android, gestionnaire qui ne montre rien au premier plan, cible d'un appui), NotificationEffects.tsx (appui sur une notification), alert-banner.ts et AlertBanner.tsx (bandeau d'alerte app ouverte, #108)
 │   └── utils/
 ├── assets/                       # Polices, icône de l'app
 ├── app.config.ts                 # Configuration Expo (variables d'environnement)

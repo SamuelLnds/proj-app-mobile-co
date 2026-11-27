@@ -123,6 +123,17 @@ Dans l'onglet « Actives », une alerte non lue ([D034](../journal/decisions/D03
 
 Une alerte de panneau a, sous son texte, un contrôle **« Voir le panneau »** (icône `CaretRight`, couleur `primary`, hauteur d'au moins 48 px) ; une alerte du site n'a pas de navigation. Le bouton secondaire **« Tout marquer comme lu »** est à droite du titre de l'écran tant qu'il existe des alertes non lues.
 
+### Bandeau d'alerte (app ouverte)
+
+Quand une nouvelle alerte s'ouvre alors que l'app est au premier plan, aucune notification système n'est affichée ([D033](../journal/decisions/D033-regles-envoi-notifications-alerte.md)) : un bandeau la remplace ([#108](04-besoins-fonctionnels.md)).
+
+- **Place** : en haut de l'écran, sous la barre d'état, par-dessus le contenu, marges latérales de 16 px ; sur tous les écrans sauf Alertes, dont la liste suffit.
+- **Contenu, une alerte** : icône de gravité (`Warning` ou `WarningOctagon`, couleur `status-*`), libellé de gravité en `bodyBold` (« Avertissement », « Critique »), texte de l'alerte en `label` (le même que la notification push, trois lignes au plus), puis le bouton texte **« Voir »** (`bodyBold`, couleur `primary`) et le bouton **Fermer** (icône `X`, couleur `ink`, `accessibilityLabel` « Fermer »). Les deux boutons font au moins 48 × 48 px.
+- **Plusieurs alertes au même rafraîchissement** : un seul bandeau « N nouvelles alertes », avec l'icône de la gravité la plus haute et sans texte ; « Voir » ouvre l'écran Alertes.
+- **Couleurs** : fond `status-*-soft` et bordure `status-*` de la gravité, comme les autres bandeaux ; texte `ink`. Uniquement des jetons, en clair comme en sombre. La gravité est toujours portée par l'icône et le libellé, jamais par la couleur seule.
+- **Comportement** : disparition seule après 8 s (`ALERT_BANNER_DURATION_MS`), ou à la fermeture ; « Voir » ouvre le détail du panneau ou l'écran Alertes, sans marquer l'alerte comme lue. Le bandeau est annoncé au lecteur d'écran (« Nouvelle alerte, Critique : … »).
+- **Quand il n'apparaît pas** : au premier chargement et pour les alertes déjà présentes à l'ouverture de l'app, pour une alerte déjà lue (D034), pour une alerte `info` et pour les types de `PUSH_EXCLUDED_ALERT_TYPES` (consigne refusée), comme le push.
+
 ### Graphique de courbe (lecture d'une valeur)
 
 Le graphique de production (écran Supervision, détail d'un panneau) se lit au toucher ([#106](04-besoins-fonctionnels.md)) :
@@ -138,3 +149,4 @@ Le graphique de production (écran Supervision, détail d'un panneau) se lit au 
 - Le design system ne contient pas encore de composants réutilisables (boutons, pastilles, cartes) : ils seront écrits directement en React Native à partir des jetons.
 - Les maquettes ont été validées par le binôme le 6 novembre 2026 (critère de l'issue #2).
 - L'écran Alertes montre le marqueur « Nouvelle », le contrôle « Voir le panneau » et le bouton « Tout marquer comme lu » ([D034](../journal/decisions/D034-alertes-lues-par-telephone.md)). La maquette (canevas hors du dépôt) a été mise à jour le 2026-11-26 : écran Alertes, thème sombre compris, et état « Alertes · toutes lues ».
+- Le bandeau d'alerte app ouverte (#108) est décrit ci-dessus, mais **pas encore dessiné sur le canevas** (clair et sombre, une alerte et plusieurs alertes) : la maquette reste à ajouter.

@@ -1,4 +1,4 @@
-import type { Alert, AlertSeverity, AlertStatus } from "@solar/contracts";
+import type { Alert, AlertStatus } from "@solar/contracts";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -13,15 +13,9 @@ import {
   Segmented,
   toneColors,
 } from "../../src/components";
-import { Icon, radius, sizes, spacing, typography, useTheme, type IconName } from "../../src/theme";
+import { Icon, radius, sizes, spacing, typography, useTheme } from "../../src/theme";
 import { formatAge, formatDateTime } from "../../src/utils/format";
-import { SEVERITY, useNow } from "../../src/utils/labels";
-
-const SEVERITY_ICON: Record<AlertSeverity, IconName> = {
-  info: "Info",
-  warning: "Warning",
-  critical: "WarningOctagon",
-};
+import { SEVERITY, SEVERITY_ICON, useNow } from "../../src/utils/labels";
 
 /** Largeur de la pastille de gravité (px). */
 const BADGE_SIZE = 36;
