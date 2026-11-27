@@ -15,6 +15,8 @@ const googleServicesFile =
 
 const config: ExpoConfig = {
   name: "Solar",
+  // Organisation Expo qui porte le projet EAS (membres, identifiants, variables).
+  owner: "solar-m2dfs",
   slug: "solar",
   version: "0.0.0",
   orientation: "portrait",
